@@ -11,14 +11,15 @@ relay_pin = machine.Pin(12, machine.Pin.OUT, value=0) # turn replay off
 button_pin = machine.Pin(0, machine.Pin.IN)
 
 STYLES="""
-body{font-family: Helvetica; display:inline-block; margin: 0px auto; text-align: center;}
-h1{color: #0F3376; padding: 2vh;}
-p{font-size: 1.5rem;}
+html{text-align: center;}
+body{font-family: Helvetica;}
+h1{color: #0F3376;}
 .button{
-  display: inline-block; background-color: #e7bd3b; border: none; 
-  border-radius: 4px; color: white; padding: 16px 40px; text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;
+  background-color: #e7bd3b;
+  border-radius: 12px; color: white; padding: 10px 40px; text-decoration: none; font-size: 30px; 
+  cursor: pointer;
 }
-.button2{background-color: #4286f4;}
+.button-off{background-color: #4286f4;}
 """
 
 HTML="""<html>
@@ -32,7 +33,7 @@ HTML="""<html>
   <h1>Sonoff S20 Web Switch</h1> 
   <p>state: <strong>{state}</strong></p>
   <p><a href="/?power=on"><button class="button">ON</button></a></p>
-  <p><a href="/?power=off"><button class="button button2">OFF</button></a></p>
+  <p><a href="/?power=off"><button class="button button-off">OFF</button></a></p>
   <p><a href="https://github.com/jedie/micropython-sonoff-webswitch">github.com/jedie/micropython-sonoff-webswitch</a></p>
   <p><small>(Server time in UTC: {utc})</small></p>
 </body>
