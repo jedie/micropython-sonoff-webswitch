@@ -1,6 +1,7 @@
 {
     "wifi": {
-        "ssid": "insert-your-wifi-ssid",
-        "password": "insert-your-wifi-password",
+        "your-ssid-1": "Your-Password-1",
+        "your-ssid-2": "Your-Password-2"
     }
 }
+
