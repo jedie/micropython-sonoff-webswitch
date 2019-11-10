@@ -21,17 +21,26 @@ if ap.active():
     ap.active(False)
 
 wlan = network.WLAN(network.STA_IF) # create station interface
-wlan.active(False)
+#wlan.active(False)     # uncomment to force reconnection
 wlan.active(True)       # activate the interface
 
 def get_known_ssid(wlan, config):
     print('Scan WiFi...')
+    
+    auth_mode_dict={
+        0:"open",
+        1:"WEP",
+        2:"WPA-PSK",
+        3:"WPA2-PSK",
+        4:"WPA/WPA2-PSK",
+    }
     known_ssid = None
     for no in range(3):
         for info in wlan.scan():
-            ssid, bssid, channel, RSSI, authmode, hidden = info
+            ssid, bssid, channel, RSSI, auth_mode, hidden = info
+            auth_mode = auth_mode_dict.get(auth_mode, auth_mode)
             ssid = ssid.decode("UTF-8")
-            print('SSID:', ssid, '(channel:', channel, 'hidden:', hidden, ')')
+            print('SSID:', ssid, '(channel:', channel, 'authmode:', auth_mode, 'hidden:', hidden, ')')
             if ssid in wifi_configs:
                 known_ssid = ssid
         if known_ssid is not None:
@@ -40,10 +49,29 @@ def get_known_ssid(wlan, config):
 
 
 def connect(wlan, ssid, password):
-    for no in range(3):
+    status_dict={
+        network.STAT_IDLE:'no connection and no activity',
+        network.STAT_CONNECTING:'connecting in progress',
+        network.STAT_WRONG_PASSWORD:'failed due to incorrect password',
+        network.STAT_NO_AP_FOUND:'failed because no access point replied',
+        network.STAT_CONNECT_FAIL:'failed due to other problems',
+        network.STAT_GOT_IP:'connection successful',
+    }
+    for no in range(0,3):
+        print('PHY mode:', network.phy_mode())
         print('Connect to Wifi access point:', ssid, repr(password))
         wlan.connect(ssid, password)
-        time.sleep(1)
+        for x in range(30):
+            status = wlan.status()
+            status_text = status_dict[status]
+            print(status_text)
+            if status == network.STAT_GOT_IP:
+                return
+            elif status == network.STAT_WRONG_PASSWORD:
+                return
+            print('wait...')
+            time.sleep(1)
+
         if wlan.isconnected():
             print('Connected to:', ssid)
             return
