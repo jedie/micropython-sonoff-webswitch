@@ -8,8 +8,13 @@ https://github.com/tsaarni/mqtt-micropython-smartsocket
 
 ## quickstart
 
-* change `config.json` and insert your WiFi SSID/password
-* push all file to S20
+Create a `src/config.json` with your WiFi SSID/password (See example file)
+
+run e.g.:
+```bash
+pipenv sync
+./upload_to_esp.sh
+```
 
 The device will do:
 
