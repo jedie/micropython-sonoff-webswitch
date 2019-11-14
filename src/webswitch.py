@@ -35,6 +35,7 @@ HTML = """<html>
 <body>
   <h1>Sonoff S20 - ESP Web Server</h1>
   <p>state: <strong>{state}</strong></p>
+  <p>{message}</p>
   <p><a href="/?power=on"><button class="button">ON</button></a></p>
   <p><a href="/?power=off"><button class="button button2">OFF</button></a></p>
   <p><a href="/?gc"><button class="button">Run a garbage collection</button></a></p>
@@ -63,21 +64,6 @@ def get_value(pin):
     return cur_value
 
 
-def web_page():
-    if relay_pin.value() == 1:
-        state = "ON"
-    else:
-        state = "OFF"
-
-    return HTML.format(
-        styles=STYLES,
-        state=state,
-        utc=rtc.datetime(),
-        alloc=gc.mem_alloc(),
-        free=gc.mem_free(),
-    )
-
-
 def button_pressed(pin):
     print('button pressed...')
     cur_button_value = get_value(pin)
@@ -90,6 +76,24 @@ def button_pressed(pin):
             relay_pin.value(1)
 
 
+def web_page(conn, message=""):
+    conn.send('HTTP/1.1 200 OK\n')
+    conn.send('Content-Type: text/html\n')
+    conn.send('Connection: close\n\n')
+
+    if relay_pin.value() == 1:
+        state = "ON"
+    else:
+        state = "OFF"
+
+    conn.sendall(HTML.format(
+        styles=STYLES,
+        state=state,
+        message=message,
+        utc=rtc.datetime(),
+        alloc=gc.mem_alloc(),
+        free=gc.mem_free(),
+    ))
 
 
 def send_redirect(conn, url='/'):
@@ -123,37 +127,34 @@ def main():
 
         if url == '/':
             print('response root page')
-            response = web_page()
-            conn.send('HTTP/1.1 200 OK\n')
-            conn.send('Content-Type: text/html\n')
-            conn.send('Connection: close\n\n')
-            conn.sendall(response)
+            web_page(conn, message="")
 
         elif url == '/?power=on':
             print('POWER ON')
             relay_pin.value(1)
-            send_redirect(conn, url='/')
+            web_page(conn, message="power on")
 
         elif url == '/?power=off':
             print('POWER OFF')
             relay_pin.value(0)
-            send_redirect(conn, url='/')
+            web_page(conn, message="power off")
 
         elif url == '/?gc':
             print('Run a garbage collection')
             alloced = gc.mem_alloc()
             gc.collect()
-            print("Freeing: %i Bytes (now free: %i Bytes)" % (
-                alloced - gc.mem_alloc(),
-                gc.mem_free()
-            ))
-            send_redirect(conn, url='/')
+            web_page(conn,
+                message="Freeing: %i Bytes (now free: %i Bytes)" % (
+                    alloced - gc.mem_alloc(),
+                    gc.mem_free()
+                )
+            )
 
         else:
             print("Error: unknown request!")
             conn.send('HTTP/1.1 404 not found\n')
+            conn.send('Connection: close\n\n')
 
-        conn.send('Connection: close\n\n')
         conn.close()
 
 
