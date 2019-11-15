@@ -7,7 +7,7 @@ for no in range(5, 1, -1):
 
 import esp
 print('Check Firmware:')
-esp.check_fw()
+assert esp.check_fw() is True, "Firmware error?!?"
 esp.osdebug(None)       # turn off vendor O/S debugging messages
 
 
@@ -127,4 +127,5 @@ print('UTC:', rtc.datetime())
 
 
 led_pin.value(1)  # turn power LED off
+
 
