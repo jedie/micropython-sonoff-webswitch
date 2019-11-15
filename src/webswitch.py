@@ -2,21 +2,65 @@ import gc
 import sys
 import time
 
-import machine
-import network
-
 try:
     import usocket as socket
-except BaseException:
+except ImportError:
     import socket
 
+try:
+    import machine
+    import network
+    ON_ESP=True
+    PORT=80
+except ImportError:
+    ON_ESP=False
+    PORT=8000
 
-led_pin = machine.Pin(13, machine.Pin.OUT, value=0)  # turn power LED on
-relay_pin = machine.Pin(12, machine.Pin.OUT, value=0)  # turn replay off
-button_pin = machine.Pin(0, machine.Pin.IN)
+if ON_ESP:
+    led_pin = machine.Pin(13, machine.Pin.OUT, value=0)  # turn power LED on
+    relay_pin = machine.Pin(12, machine.Pin.OUT, value=0)  # turn replay off
+    button_pin = machine.Pin(0, machine.Pin.IN)
+    rtc = machine.RTC()
 
 
-rtc = machine.RTC()
+HEX='0123456789ABCDEF'
+
+
+def unquote(string):
+    string=string.replace('+', ' ')
+    if '%' not in string:
+        return string
+
+    bits = string.split('%')
+    if len(bits) == 1:
+        return string
+
+    res = [bits[0]]
+    for item in bits[1:]:
+        if len(item)>=2:
+            a, b = item[:2].upper()
+            if a in HEX and b in HEX:
+                res.append(chr(int(a + b, 16)))
+                res.append(item[2:])
+                continue
+
+        res.append('%')
+        res.append(item)
+
+    return ''.join(res)
+
+
+def parse_qsl(qs):
+    pairs = [s2 for s1 in qs.split('&') for s2 in s1.split(';')]
+    res = []
+    for name_value in pairs:
+        try:
+            name, value = name_value.split('=', 1)
+        except ValueError:
+            res.append((unquote(name_value), ''))
+        else:
+            res.append((unquote(name), unquote(value)))
+    return res
 
 
 STYLES = '''
@@ -37,18 +81,29 @@ HTML = '''<html>
     <style>{styles}</style>
 </head>
 <body>
-  <h1>Sonoff S20 - ESP Web Server</h1>
-  <p>state: <strong>{state}</strong></p>
-  <p>{message}</p>
-  <p><a href="/?power=on"><button class="button">ON</button></a></p>
-  <p><a href="/?power=off"><button class="button button2">OFF</button></a></p>
-  <p><a href="/?soft_reset"><button class="button">Soft reset Device</button></a></p>
-  <p><a href="/?hard_reset"><button class="button">Hard reset Device</button></a></p>
-  <p><small>
-      {alloc}bytes of heap RAM that are allocated<br>
-      {free}bytes of available heap RAM (-1 == amount is not known)<br>
-      Server time in UTC: {utc}
-  </small></p>
+    <h1>Sonoff S20 - ESP Web Server</h1>
+    <p>state: <strong>{state}</strong></p>
+    <p>{message}</p>
+    <p>
+        <a href="/?power=on"><button class="button">ON</button></a>
+        <a href="/?power=off"><button class="button button2">OFF</button></a>
+    </p>
+    <p>
+        <a href="/?soft_reset"><button class="button">Soft reset Device</button></a>
+        <a href="/?hard_reset"><button class="button">Hard reset Device</button></a>
+    </p>
+    <form action="/save" method="post">
+        First name:<br>
+        <input type="text" name="firstname" value="Mickey"><br>
+        Last name:<br>
+        <input type="text" name="lastname" value="Mouse+%E4%F6%FC%DF"><br><br>
+        <input type="submit" value="Submit">
+    </form> 
+    <p><small>
+        {alloc}bytes of heap RAM that are allocated<br>
+        {free}bytes of available heap RAM (-1 == amount is not known)<br>
+        Server time in UTC: {utc}
+    </small></p>
 </body>
 </html>
 '''
@@ -78,6 +133,9 @@ def get_wifi_ip():
 
 
 def garbage_collection():
+    if not ON_ESP:
+        return
+
     print('Run a garbage collection:', end='')
     alloced = gc.mem_alloc()
     gc.collect()
@@ -91,18 +149,22 @@ class WebSwitch:
     running = False
 
     def __init__(self):
-        self.ip = get_wifi_ip()
-        if self.ip is None:
-            print('ERROR: WiFi not connected!')
-            print('Hint: boot.py / main.py should create WiFi connection!')
-            raise RuntimeError('No WiFi connection!')
+        if not ON_ESP:
+            self.ip = "127.0.0.1"
+        else:
+            self.ip = get_wifi_ip()
+            if self.ip is None:
+                print('ERROR: WiFi not connected!')
+                print('Hint: boot.py / main.py should create WiFi connection!')
+                raise RuntimeError('No WiFi connection!')
 
-        print('Start Webserver on:', self.ip)
+        print('Start Webserver on: http;//%s:%i' % (self.ip, PORT))
+
         garbage_collection()
 
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.s.bind(('', 80))
+        self.s.bind((self.ip, PORT))
         self.s.listen(5)
 
     def button_pressed(self, pin):
@@ -125,86 +187,122 @@ class WebSwitch:
                 print('Webserver still running, ok.')
 
     def send_web_page(self, message=''):
-        self.conn.send('HTTP/1.1 200 OK\n')
-        self.conn.send('Content-Type: text/html\n')
-        self.conn.send('Connection: close\n\n')
+        self.conn.send(b'HTTP/1.1 200 OK\n')
+        self.conn.send(b'Content-Type: text/html\n')
+        self.conn.send(b'Connection: close\n\n')
 
-        if relay_pin.value() == 1:
-            state = 'ON'
+        if not ON_ESP:
+            state="NOT ON ESP"
+            utc=0,
+            alloc=0
+            free=0
         else:
-            state = 'OFF'
+            if relay_pin.value() == 1:
+                state = 'ON'
+            else:
+                state = 'OFF'
+            utc=rtc.datetime(),
+            alloc=gc.mem_alloc()
+            free=gc.mem_free()
 
-        self.conn.sendall(HTML.format(
+        html = HTML.format(
             styles=STYLES,
             state=state,
             message=message,
-            utc=rtc.datetime(),
-            alloc=gc.mem_alloc(),
-            free=gc.mem_free(),
-        ))
+            utc=utc,
+            alloc=alloc,
+            free=free,
+        )
+        self.conn.sendall(html.encode("UTF-8"))
 
     def send_redirect(self, url='/'):
-        self.conn.send('HTTP/1.1 302 redirect\n')
-        self.conn.send('Location: %s\n' % url)
+        self.conn.send(b'HTTP/1.1 302 redirect\n')
+        self.conn.send(b'Location: %s\n' % url)
 
     def handle_one_request(self):
         print('\nWait for connection on:', self.ip)
 
-        led_pin.value(0)  # Turn LED on
+        if ON_ESP:
+            led_pin.value(0)  # Turn LED on
+
         self.conn, addr = self.s.accept()
-        led_pin.value(1)  # Turn LED off
+
+        if ON_ESP:
+            led_pin.value(1)  # Turn LED off
 
         print('Connection from IP:', addr[0])
 
-        header = self.conn.recv(1024)
-        print('Header:', header)
+        request = self.conn.recv(2048)
+        # print('request bytes:', request)
 
-        request = header.split(b'\r\n')[0].decode('ASCII')
-        print('Request: %r' % request)
+        request, body = request.split(b'\r\n\r\n',1)
+        # print('request:', request)
+        # print('body:', body)
+        request, headers = request.split(b'\r\n',1)
+        request = request.decode("UTF-8")
+        # print('request: %r' % request)
+        # print('headers:', headers)
 
-        url = request.split(' ', 2)[1]
-        print('url: %r' % url)
+        body = body.decode("UTF-8")
+        print('body: %r' % body)
 
-        if url == '/':
-            print('response root page')
-            self.send_web_page(message='')
-
-        elif url == '/?power=on':
-            relay_pin.value(1)
-            self.send_web_page(message='power on')
-
-        elif url == '/?power=off':
-            relay_pin.value(0)
-            self.send_web_page(message='power off')
-
-        elif url == '/?soft_reset':
-            relay_pin.value(0)
-            self.send_web_page(message='Soft reset device... Restart WebServer by pressing the Button on your device!')
-            self.conn.close()
-            print('Soft reset device...')
-            self.running = False
-
-        elif url == '/?hard_reset':
-            relay_pin.value(0)
-            self.send_web_page(message='Hard reset device... Restart WebServer by pressing the Button on your device!')
-            self.conn.close()
-            for no in range(3, 0, -1):
-                print('Hard reset device %i wait...' % no)
-                time.sleep(1)
-            print('Hard reset device...')
-            self.running = False
-            machine.reset()
-
+        try:
+            method, url, version = request.split(' ', 2)
+        except IndexError:
+            print("Error parsing request: %r" % request)
+            self.send_web_page(message='Error parsing request!')
         else:
-            print('Error: unknown request: %r' % url)
-            self.send_web_page(message='Error: unknown request!')
-            # self.conn.send('HTTP/1.1 404 not found\n')
-            # self.conn.send('Connection: close\n\n')
+            print('method: %r' % method)
+            print('url: %r' % url)
+            if method == 'POST':
+                body = dict(parse_qsl(body))
+                print('POST body:', body)
+
+            if url == '/':
+                print('response root page')
+                self.send_web_page(message='')
+
+            elif url == '/?power=on':
+                if ON_ESP:
+                    relay_pin.value(1)
+                self.send_web_page(message='power on')
+
+            elif url == '/?power=off':
+                if ON_ESP:
+                    relay_pin.value(0)
+                self.send_web_page(message='power off')
+
+            elif url == '/?soft_reset':
+                if ON_ESP:
+                    relay_pin.value(0)
+                self.send_web_page(message='Soft reset device... Restart WebServer by pressing the Button on your device!')
+                self.conn.close()
+                print('Soft reset device...')
+                self.running = False
+
+            elif url == '/?hard_reset':
+                if ON_ESP:
+                    relay_pin.value(0)
+                self.send_web_page(message='Hard reset device... Restart WebServer by pressing the Button on your device!')
+                self.conn.close()
+                for no in range(3, 0, -1):
+                    print('Hard reset device %i wait...' % no)
+                    time.sleep(1)
+                print('Hard reset device...')
+                self.running = False
+                machine.reset()
+
+            else:
+                print('Error: unknown request: %r' % url)
+                self.send_web_page(message='Error: unknown request!')
+                # self.conn.send('HTTP/1.1 404 not found\n')
+                # self.conn.send('Connection: close\n\n')
 
         self.conn.close()
 
     def main_loop(self):
-        button_pin.irq(self.button_pressed)
+        if ON_ESP:
+            button_pin.irq(self.button_pressed)
 
         self.running = True
         while self.running:
