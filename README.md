@@ -1,10 +1,16 @@
 # micropython-sonoff-webswitch
 
-Minimal microPython project to get a webserver on Sonoff S20 WiFi Smart Socket.
+Minimal microPython project to get a webserver on Sonoff WiFi Smart Socket.
 
 Very good information to get startet can you found here:
 
 https://github.com/tsaarni/mqtt-micropython-smartsocket
+
+Tested devices:
+
+* Sonoff S20 (Easy to connect. Solder joints prepared.)
+* Sonoff S26 (Harder to connect: Solder joints very small.)
+
 
 ## quickstart
 
@@ -26,6 +32,15 @@ The device will do:
 Point you Webserver to the IP from the device.
 
 You can turn the switch on/off by the web page or the device button.
+
+
+## Screenshot
+
+The Web Page looks like this:
+
+![Screenshot_2019-11-15 Sonoff S20 - ESP Web Server.png](
+https://raw.githubusercontent.com/jedie/micropython-sonoff-webswitch/master/Screenshot_2019-11-15%20Sonoff%20S20%20-%20ESP%20Web%20Server.png)
+
 
 ## References
 
