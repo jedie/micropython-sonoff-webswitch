@@ -6,7 +6,10 @@ verify_ssl = true
 [dev-packages]
 
 [packages]
-adafruit-ampy = "*"
+adafruit-ampy = {git = "https://github.com/scientifichackers/ampy.git"}
+
 
 [requires]
 python_version = "3.6"
+
+
