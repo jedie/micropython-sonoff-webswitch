@@ -1,9 +1,17 @@
 import gc
 import sys
-import time
 
+import constants
 import machine
 import network
+import ntptime
+import utime as time
+from leds import power_led
+from ntp import ntp_sync
+from watchdog import watchdog
+from wifi import wifi
+
+rtc = machine.RTC()
 
 try:
     import usocket as socket
@@ -11,7 +19,6 @@ except BaseException:
     import socket
 
 
-led_pin = machine.Pin(13, machine.Pin.OUT, value=0)  # turn power LED on
 relay_pin = machine.Pin(12, machine.Pin.OUT, value=0)  # turn replay off
 button_pin = machine.Pin(0, machine.Pin.IN)
 
@@ -103,7 +110,7 @@ class WebSwitch:
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.s.bind(('', 80))
-        self.s.listen(5)
+        self.s.listen(0)
 
     def button_pressed(self, pin):
         print('button pressed...')
@@ -150,9 +157,9 @@ class WebSwitch:
     def handle_one_request(self):
         print('\nWait for connection on:', self.ip)
 
-        led_pin.value(0)  # Turn LED on
+        power_led.on()
         self.conn, addr = self.s.accept()
-        led_pin.value(1)  # Turn LED off
+        power_led.off()
 
         print('Connection from IP:', addr[0])
 
@@ -179,14 +186,16 @@ class WebSwitch:
 
         elif url == '/?soft_reset':
             relay_pin.value(0)
-            self.send_web_page(message='Soft reset device... Restart WebServer by pressing the Button on your device!')
+            self.send_web_page(
+                message='Soft reset device... Restart WebServer by pressing the Button on your device!')
             self.conn.close()
             print('Soft reset device...')
             self.running = False
 
         elif url == '/?hard_reset':
             relay_pin.value(0)
-            self.send_web_page(message='Hard reset device... Restart WebServer by pressing the Button on your device!')
+            self.send_web_page(
+                message='Hard reset device... Restart WebServer by pressing the Button on your device!')
             self.conn.close()
             for no in range(3, 0, -1):
                 print('Hard reset device %i wait...' % no)
@@ -209,6 +218,11 @@ class WebSwitch:
         self.running = True
         while self.running:
             self.handle_one_request()
+            print('watchdog 1:', watchdog)
+            watchdog.feed()
+            print('watchdog 2:', watchdog)
+            print('wifi:', wifi)
+            print('ntp_sync:', ntp_sync)
 
         sys.exit()
 
@@ -221,5 +235,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
