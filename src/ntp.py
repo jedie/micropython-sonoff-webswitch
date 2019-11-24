@@ -7,7 +7,6 @@ import ntptime
 import utime as time
 from watchdog import watchdog
 
-
 rtc = machine.RTC()
 
 
@@ -57,10 +56,14 @@ class NtpSync:
                 watchdog.feed()
                 return
 
-    def __repr__(self):
-        return '<NtpSync last refresh: %s - success count: %i - error count: %i' % (
+    def __str__(self):
+        return 'NtpSync last refresh: %s - success count: %i - error count: %i' % (
             self.last_refresh, self.success_count, self.error_count
         )
 
 
 ntp_sync = NtpSync()
+
+
+if __name__ == '__main__':
+    print(ntp_sync)

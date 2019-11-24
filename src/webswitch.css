@@ -1,0 +1,19 @@
+html{
+    font-family: Georgia, serif;
+    text-align: center;
+    font-size: 1.5em;
+}
+.button{
+    background-color: #e7bd3b;
+    border: none;
+    border-radius: 4px; color: #fff;
+    padding: 16px 40px;
+    cursor: pointer;
+}
+.button2{
+    background-color: #4286f4;
+}
+small {
+    font-family: "Courier New", Courier, monospace;
+    font-size: 0.5em;
+}
