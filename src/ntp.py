@@ -7,6 +7,7 @@ import ntptime
 import utime as time
 from watchdog import watchdog
 
+
 rtc = machine.RTC()
 
 
@@ -37,11 +38,11 @@ class NtpSync:
             self.timer.deinit()
 
     def _sync(self):
-        print('Synchronize time from NTP server ...')
+        print('Synchronize time from %r ...' % ntptime.host)
         gc.collect()
         print('old UTC:', rtc.datetime())
+        s = 1
         while True:
-            s = 1
             try:
                 ntptime.settime()
             except Exception as e:

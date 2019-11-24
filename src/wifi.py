@@ -9,6 +9,8 @@ import utime as time
 from leds import power_led
 from watchdog import watchdog
 
+
+gc.collect()
 rtc = machine.RTC()
 
 
@@ -127,7 +129,7 @@ class WiFi:
             print('Connect to Wifi access point:', ssid)
             power_led.toggle()
             self.station.connect(ssid, password)
-            for x in range(30, 1, -1):
+            for wait_sec in range(30, 1, -1):
                 status = self.station.status()
                 status_text = status_dict[status]
                 print(status_text)
@@ -137,7 +139,7 @@ class WiFi:
                     return
                 elif status == network.STAT_WRONG_PASSWORD:
                     return
-                print('wait %i...' % no)
+                print('wait %i...' % wait_sec)
                 power_led.flash(sleep=0.1, count=10)
 
             if self.station.isconnected():

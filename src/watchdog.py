@@ -40,7 +40,10 @@ class Watchdog:
         self.last_refresh = rtc.datetime()
         print('diff:', self.last_diff)
         if self.last_diff >= self.timeout:
-            print('Timeout -> reset!')
+            for no in range(3, 0, -1):
+                print('Watchdog timeout -> reset in %i sec...' % no)
+                time.sleep(1)
+
             self.timer.deinit()
             machine.reset()  # Hard reset
             sys.exit()  # Soft reset
