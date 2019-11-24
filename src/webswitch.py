@@ -16,49 +16,6 @@ relay_pin = machine.Pin(12, machine.Pin.OUT, value=0)  # turn replay off
 button_pin = machine.Pin(0, machine.Pin.IN)
 
 
-STYLES = '''
-html{text-align: center;font-size: 1.3em;}
-.button{
-  background-color: #e7bd3b; border: none;
-  border-radius: 4px; color: #fff; padding: 16px 40px; cursor: pointer;
-}
-.button2{background-color: #4286f4;}
-'''
-
-
-HTML = '''<html>
-<head>
-    <title>Sonoff S20 - ESP Web Server</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="/styles.css" type="text/css">
-</head>
-<body>
-    <h1>Sonoff S20 - ESP Web Server</h1>
-    <p>state: <strong>{state}</strong></p>
-    <p>{message}</p>
-    <p>
-        <a href="/?power=on"><button class="button">ON</button></a>
-        <a href="/?power=off"><button class="button button2">OFF</button></a>
-    </p>
-    <p>
-        <a href="/?soft_reset"><button class="button">Soft reset Device</button></a>
-        <a href="/?hard_reset"><button class="button">Hard reset Device</button></a>
-    </p>
-    <p><pre>
-        {wifi}
-        {ntp_sync}
-        {watchdog}
-    </pre></p>
-    <p><small>
-        {alloc}bytes of heap RAM that are allocated<br>
-        {free}bytes of available heap RAM<br>
-        Server time in UTC: {utc}
-    </small></p>
-</body>
-</html>
-'''
-
-
 def send_web_page(writer, message=''):
     yield from writer.awrite('HTTP/1.0 200 OK\r\n')
     yield from writer.awrite('Content-type: text/html; charset=utf-8\r\n')
@@ -69,18 +26,19 @@ def send_web_page(writer, message=''):
     else:
         state = 'OFF'
 
-    yield from writer.awrite(HTML.format(
-        state=state,
-        message=message,
+    with open('webswitch.html', 'r') as f:
+        yield from writer.awrite(f.read().format(
+            state=state,
+            message=message,
 
-        wifi=wifi,
-        ntp_sync=ntp_sync,
-        watchdog=watchdog,
+            wifi=wifi,
+            ntp_sync=ntp_sync,
+            watchdog=watchdog,
 
-        utc=rtc.datetime(),
-        alloc=gc.mem_alloc(),
-        free=gc.mem_free(),
-    ))
+            utc=rtc.datetime(),
+            alloc=gc.mem_alloc(),
+            free=gc.mem_free(),
+        ))
     gc.collect()
 
 
@@ -116,12 +74,13 @@ def request_handler(reader, writer):
             yield from send_web_page(writer, message='')
             not_found = False
 
-        elif url == '/styles.css':
+        elif url == '/webswitch.css':
             yield from writer.awrite('HTTP/1.0 200 OK\r\n')
             yield from writer.awrite('Content-Type: text/css\r\n')
             yield from writer.awrite('Cache-Control: max-age=6000\r\n')
             yield from writer.awrite('\r\n')
-            yield from writer.awrite(STYLES)
+            with open('webswitch.css', 'r') as f:
+                yield from writer.awrite(f.read())
             not_found = False
 
         elif url == '/?power=on':
