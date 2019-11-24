@@ -1,77 +1,60 @@
 import gc
 import sys
-import time
-import constants
-import machine
-import network
-import ntptime
-import utime as time
-from leds import power_led
-from ntp import ntp_sync
-from watchdog import watchdog
-from wifi import wifi
-
-rtc = machine.RTC()
-
-try:
-    import usocket as socket
-except ImportError:
-    import socket
 
 try:
     import machine
-    import network
-    ON_ESP=True
-    PORT=80
+    ON_ESP = True
 except ImportError:
-    ON_ESP=False
-    PORT=8000
+    ON_ESP = False
+    PORT = 8080
+    import os
+    import asyncio
+    import datetime
+    import time
 
-if ON_ESP:
-    led_pin = machine.Pin(13, machine.Pin.OUT, value=0)  # turn power LED on
+    class FakeRtc:
+        def datetime(self):
+            return datetime.datetime.utcnow()
+    rtc = FakeRtc()
+else:
+    PORT = 80
+    import uos as os
+    import uasyncio as asyncio
+    import utime as time
+    import network
+
+    rtc = machine.RTC()
     relay_pin = machine.Pin(12, machine.Pin.OUT, value=0)  # turn replay off
     button_pin = machine.Pin(0, machine.Pin.IN)
-    rtc = machine.RTC()
 
 
-HEX='0123456789ABCDEF'
+def garbage_collection():
+    if not ON_ESP:
+        return
+
+    print('Run a garbage collection:', end='')
+    alloced = gc.mem_alloc()
+    gc.collect()
+    freed = alloced - gc.mem_alloc()
+    free = gc.mem_free()
+    print('Freed: %i Bytes (now %i Bytes free)' % (freed, free))
+    return freed, free
 
 
-def unquote(string):
-    string=string.replace('+', ' ')
-    if '%' not in string:
-        return string
+def get_wifi_ip():
+    if not ON_ESP:
+        return '127.0.0.1'
 
-    bits = string.split('%')
-    if len(bits) == 1:
-        return string
+    for interface_type in (network.AP_IF, network.STA_IF):
+        interface = network.WLAN(interface_type)
+        if interface.active():
+            if interface_type == network.AP_IF:
+                print('WiFi access point is active!')
+            return interface.ifconfig()[0]
 
-    res = [bits[0]]
-    for item in bits[1:]:
-        if len(item)>=2:
-            a, b = item[:2].upper()
-            if a in HEX and b in HEX:
-                res.append(chr(int(a + b, 16)))
-                res.append(item[2:])
-                continue
-
-        res.append('%')
-        res.append(item)
-
-    return ''.join(res)
-
-
-def parse_qsl(qs):
-    pairs = [s2 for s1 in qs.split('&') for s2 in s1.split(';')]
-    res = []
-    for name_value in pairs:
-        try:
-            name, value = name_value.split('=', 1)
-        except ValueError:
-            res.append((unquote(name_value), ''))
-        else:
-            res.append((unquote(name), unquote(value)))
-    return res
+    print('ERROR: WiFi not connected!')
+    print('Hint: boot.py / main.py should create WiFi connection!')
+    raise RuntimeError('No WiFi connection!')
 
 
 STYLES = '''
@@ -88,8 +71,7 @@ HTML = '''<html>
 <head>
     <title>Sonoff S20 - ESP Web Server</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="icon" href="data:,">
-    <style>{styles}</style>
+    <link rel="stylesheet" href="/styles.css" type="text/css">
 </head>
 <body>
     <h1>Sonoff S20 - ESP Web Server</h1>
@@ -103,13 +85,6 @@ HTML = '''<html>
         <a href="/?soft_reset"><button class="button">Soft reset Device</button></a>
         <a href="/?hard_reset"><button class="button">Hard reset Device</button></a>
     </p>
-    <form action="/save" method="post">
-        First name:<br>
-        <input type="text" name="firstname" value="Mickey"><br>
-        Last name:<br>
-        <input type="text" name="lastname" value="Mouse+%E4%F6%FC%DF"><br><br>
-        <input type="submit" value="Submit">
-    </form> 
     <p><small>
         {alloc}bytes of heap RAM that are allocated<br>
         {free}bytes of available heap RAM (-1 == amount is not known)<br>
@@ -134,206 +109,189 @@ def get_debounced_value(pin):
     return cur_value
 
 
-def get_wifi_ip():
-    for interface_type in (network.AP_IF, network.STA_IF):
-        interface = network.WLAN(interface_type)
-        if interface.active():
-            if interface_type == network.AP_IF:
-                print('WiFi access point is active!')
-            return interface.ifconfig()[0]
-
-
-def garbage_collection():
-    if not ON_ESP:
-        return
-
-    print('Run a garbage collection:', end='')
-    alloced = gc.mem_alloc()
-    gc.collect()
-    freed = alloced - gc.mem_alloc()
-    free = gc.mem_free()
-    print('Freed: %i Bytes (now %i Bytes free)' % (freed, free))
-    return freed, free
-
-
-class WebSwitch:
-    running = False
-
-    def __init__(self):
-        if not ON_ESP:
-            self.ip = "127.0.0.1"
+def button_pressed(pin):
+    print('button pressed...')
+    cur_button_value = get_debounced_value(pin)
+    if cur_button_value == 1:
+        if relay_pin.value() == 1:
+            print('turn off by button.')
+            relay_pin.value(0)
         else:
-            self.ip = get_wifi_ip()
-            if self.ip is None:
-                print('ERROR: WiFi not connected!')
-                print('Hint: boot.py / main.py should create WiFi connection!')
-                raise RuntimeError('No WiFi connection!')
-
-        print('Start Webserver on: http;//%s:%i' % (self.ip, PORT))
+            print('turn on by button.')
+            relay_pin.value(1)
 
         garbage_collection()
 
-        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.s.bind((self.ip, PORT))
-        self.s.listen(0)
 
-    def button_pressed(self, pin):
-        print('button pressed...')
-        cur_button_value = get_debounced_value(pin)
-        if cur_button_value == 1:
-            if relay_pin.value() == 1:
-                print('turn off by button.')
-                relay_pin.value(0)
-            else:
-                print('turn on by button.')
+if ON_ESP:
+    button_pin.irq(button_pressed)
+
+
+def send_web_page(writer, message=''):
+    yield from writer.awrite('HTTP/1.0 200 OK\r\n')
+    yield from writer.awrite('Content-type: text/html; charset=utf-8\r\n')
+    yield from writer.awrite('Connection: close\r\n\r\n')
+
+    # yield from writer.awrite('OK %s' % repr(rtc.datetime()))
+    # return
+
+    if not ON_ESP:
+        state = "NOT ON ESP"
+        utc = 0,
+        alloc = 0
+        free = 0
+    else:
+        if relay_pin.value() == 1:
+            state = 'ON'
+        else:
+            state = 'OFF'
+        utc = rtc.datetime()
+        alloc = gc.mem_alloc()
+        free = gc.mem_free()
+
+    yield from writer.awrite(HTML.format(
+        state=state,
+        message=message,
+        utc=utc,
+        alloc=alloc,
+        free=free,
+    ))
+    if ON_ESP:
+        garbage_collection()
+
+
+@asyncio.coroutine
+def request_handler(reader, writer):
+    print('\nWait for request...')
+
+    if ON_ESP:
+        garbage_collection()
+
+    address = writer.get_extra_info('peername')
+    print('Accepted connection from %s:%s' % address)
+
+    request = yield from reader.read()
+
+    request, body = request.split(b'\r\n\r\n', 1)
+    request, headers = request.split(b'\r\n', 1)
+    request = request.decode('UTF-8')
+    print('request: %r' % request)
+    print('headers:', headers)
+
+    body = body.decode('UTF-8')
+    print('body: %r' % body)
+
+    method, url, version = request.split(' ', 2)
+    print(method, url, version)
+
+    not_found = True
+    soft_reset = False
+    hard_reset = False
+
+    if method == 'GET':
+        if url == '/':
+            print('response root page')
+            yield from send_web_page(writer, message='')
+            not_found = False
+
+        elif url == '/styles.css':
+            yield from writer.awrite('HTTP/1.0 200 OK\r\n')
+            yield from writer.awrite('Content-Type: text/css\r\n')
+            yield from writer.awrite('Cache-Control: max-age=6000\r\n')
+            yield from writer.awrite('\r\n')
+            yield from writer.awrite(STYLES)
+            not_found = False
+
+        elif url == '/?power=on':
+            if ON_ESP:
                 relay_pin.value(1)
+            yield from send_web_page(writer, message='power on')
+            not_found = False
 
-            garbage_collection()
+        elif url == '/?power=off':
+            if ON_ESP:
+                relay_pin.value(0)
+            yield from send_web_page(writer, message='power off')
+            not_found = False
 
-            if not self.running:
-                print('Restart Webserver')
-                self.main_loop()
-            else:
-                print('Webserver still running, ok.')
+        elif url == '/?soft_reset':
+            if ON_ESP:
+                relay_pin.value(0)
+            yield from send_web_page(
+                writer,
+                message=(
+                    'Soft reset device...'
+                    ' Restart WebServer by pressing the Button on your device!'
+                ))
+            print('Soft reset device...')
+            soft_reset = True
+            not_found = False
 
-    def send_web_page(self, message=''):
-        self.conn.send(b'HTTP/1.1 200 OK\n')
-        self.conn.send(b'Content-Type: text/html\n')
-        self.conn.send(b'Connection: close\n\n')
+        elif url == '/?hard_reset':
+            if ON_ESP:
+                relay_pin.value(0)
+            yield from send_web_page(
+                writer,
+                message=(
+                    'Hard reset device...'
+                    ' Restart WebServer by pressing the Button on your device!'
+                ))
+            hard_reset = True
+            not_found = False
 
-        if not ON_ESP:
-            state="NOT ON ESP"
-            utc=0,
-            alloc=0
-            free=0
-        else:
-            if relay_pin.value() == 1:
-                state = 'ON'
-            else:
-                state = 'OFF'
-            utc=rtc.datetime(),
-            alloc=gc.mem_alloc()
-            free=gc.mem_free()
+    if not_found:
+        print('not found -> 404')
+        yield from writer.awrite('HTTP/1.0 404 Not Found\r\n\r\n')
 
-        html = HTML.format(
-            styles=STYLES,
-            state=state,
-            message=message,
-            utc=utc,
-            alloc=alloc,
-            free=free,
-        )
-        self.conn.sendall(html.encode("UTF-8"))
+    if ON_ESP:
+        # yield from writer.awrite(response)
+        yield from writer.aclose()
+        garbage_collection()
+    else:
+        # writer.write(bytes(response, encoding='UTF-8'))
+        yield from writer.drain()
+        writer.close()
 
-    def send_redirect(self, url='/'):
-        self.conn.send(b'HTTP/1.1 302 redirect\n')
-        self.conn.send(b'Location: %s\n' % url)
+    if hard_reset:
+        for no in range(3, 0, -1):
+            print('Hard reset device %i wait...' % no)
+            time.sleep(1)
+        print('Hard reset device...')
+        machine.reset()
+        sys.exit()
 
-    def handle_one_request(self):
-        print('\nWait for connection on:', self.ip)
-
-        if ON_ESP:
-            power_led.on()
-
-        self.conn, addr = self.s.accept()
-
-        if ON_ESP:
-            power_led.off()
-
-        print('Connection from IP:', addr[0])
-
-        request = self.conn.recv(2048)
-        # print('request bytes:', request)
-
-        request, body = request.split(b'\r\n\r\n',1)
-        # print('request:', request)
-        # print('body:', body)
-        request, headers = request.split(b'\r\n',1)
-        request = request.decode("UTF-8")
-        # print('request: %r' % request)
-        # print('headers:', headers)
-
-        body = body.decode("UTF-8")
-        print('body: %r' % body)
-
-        try:
-            method, url, version = request.split(' ', 2)
-        except IndexError:
-            print("Error parsing request: %r" % request)
-            self.send_web_page(message='Error parsing request!')
-        else:
-            print('method: %r' % method)
-            print('url: %r' % url)
-            if method == 'POST':
-                body = dict(parse_qsl(body))
-                print('POST body:', body)
-
-            if url == '/':
-                print('response root page')
-                self.send_web_page(message='')
-
-            elif url == '/?power=on':
-                if ON_ESP:
-                    relay_pin.value(1)
-                self.send_web_page(message='power on')
-
-            elif url == '/?power=off':
-                if ON_ESP:
-                    relay_pin.value(0)
-                self.send_web_page(message='power off')
-
-            elif url == '/?soft_reset':
-                if ON_ESP:
-                    relay_pin.value(0)
-                self.send_web_page(message='Soft reset device... Restart WebServer by pressing the Button on your device!')
-                self.conn.close()
-                print('Soft reset device...')
-                self.running = False
-
-            elif url == '/?hard_reset':
-                if ON_ESP:
-                    relay_pin.value(0)
-                self.send_web_page(message='Hard reset device... Restart WebServer by pressing the Button on your device!')
-                self.conn.close()
-                for no in range(3, 0, -1):
-                    print('Hard reset device %i wait...' % no)
-                    time.sleep(1)
-                print('Hard reset device...')
-                self.running = False
-                machine.reset()
-
-            else:
-                print('Error: unknown request: %r' % url)
-                self.send_web_page(message='Error: unknown request!')
-                # self.conn.send('HTTP/1.1 404 not found\n')
-                # self.conn.send('Connection: close\n\n')
-
-        self.conn.close()
-
-    def main_loop(self):
-        if ON_ESP:
-            button_pin.irq(self.button_pressed)
-
-        self.running = True
-        while self.running:
-            self.handle_one_request()
-            print('watchdog 1:', watchdog)
-            watchdog.feed()
-            print('watchdog 2:', watchdog)
-            print('wifi:', wifi)
-            print('ntp_sync:', ntp_sync)
-
+    if soft_reset:
+        for no in range(3, 0, -1):
+            print('Soft reset device %i wait...' % no)
+            time.sleep(1)
+        print('Soft reset device...')
         sys.exit()
 
 
 def main():
-    web_switch = WebSwitch()
-    web_switch.running = False
-    web_switch.main_loop()
+    ip = get_wifi_ip()
+
+    print('start webserver on http://%s:%s' % (ip, PORT))
+
+    loop = asyncio.get_event_loop()
+
+    coro = asyncio.start_server(request_handler, ip, PORT)
+    loop.create_task(coro)
+
+    if ON_ESP:
+        garbage_collection()
+
+    print('run forever...')
+    try:
+        loop.run_forever()
+    except OSError as e:  # [Errno 12] ENOMEM
+        print('ERROR:', e)
+        print(' *** hard reset! ***')
+        machine.reset()
+        sys.exit()
+
+    loop.close()
 
 
 if __name__ == '__main__':
     main()
-
-
