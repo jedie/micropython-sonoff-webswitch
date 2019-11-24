@@ -1,6 +1,17 @@
 import gc
 import sys
 import time
+import constants
+import machine
+import network
+import ntptime
+import utime as time
+from leds import power_led
+from ntp import ntp_sync
+from watchdog import watchdog
+from wifi import wifi
+
+rtc = machine.RTC()
 
 try:
     import usocket as socket
@@ -165,7 +176,7 @@ class WebSwitch:
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.s.bind((self.ip, PORT))
-        self.s.listen(5)
+        self.s.listen(0)
 
     def button_pressed(self, pin):
         print('button pressed...')
@@ -223,12 +234,12 @@ class WebSwitch:
         print('\nWait for connection on:', self.ip)
 
         if ON_ESP:
-            led_pin.value(0)  # Turn LED on
+            power_led.on()
 
         self.conn, addr = self.s.accept()
 
         if ON_ESP:
-            led_pin.value(1)  # Turn LED off
+            power_led.off()
 
         print('Connection from IP:', addr[0])
 
@@ -307,6 +318,11 @@ class WebSwitch:
         self.running = True
         while self.running:
             self.handle_one_request()
+            print('watchdog 1:', watchdog)
+            watchdog.feed()
+            print('watchdog 2:', watchdog)
+            print('wifi:', wifi)
+            print('ntp_sync:', ntp_sync)
 
         sys.exit()
 
