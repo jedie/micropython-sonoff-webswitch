@@ -9,7 +9,6 @@ import utime as time
 from leds import power_led
 from watchdog import watchdog
 
-
 gc.collect()
 rtc = machine.RTC()
 
@@ -155,10 +154,13 @@ class WiFi:
         print("ERROR: WiFi not connected! Password wrong?!?")
         power_led.flash(sleep=0.2, count=20)
 
-    def __repr__(self):
-        return '<WiFi last refresh: %s - connected: %i - not connected: %i' % (
+    def __str__(self):
+        return 'WiFi last refresh: %s - connected: %i - not connected: %i' % (
             self.last_refresh, self.is_connected_count, self.not_connected_count
         )
 
 
 wifi = WiFi()
+
+if __name__ == '__main__':
+    print(wifi)

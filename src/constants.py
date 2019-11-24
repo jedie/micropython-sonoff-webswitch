@@ -1,7 +1,7 @@
-WATCHDOG_CHECK_PERIOD = const(30 * 1000)  # 30 sec
-WATCHDOG_TIMEOUT = const(25 * 1000) # 25 sec
+WATCHDOG_CHECK_PERIOD = const(50 * 1000)  # 50 sec
+WATCHDOG_TIMEOUT = const(40 * 1000) # 40 sec
 
-WIFI_TIMER = const(20 * 1000)  # 20 sec
+WIFI_TIMER = const(30 * 1000)  #30 sec
 NTP_TIMER = const(5 * 60 * 1000)  # 5 min
 
 assert WATCHDOG_TIMEOUT > WIFI_TIMER

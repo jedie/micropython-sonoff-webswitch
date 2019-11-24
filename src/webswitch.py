@@ -16,22 +16,6 @@ relay_pin = machine.Pin(12, machine.Pin.OUT, value=0)  # turn replay off
 button_pin = machine.Pin(0, machine.Pin.IN)
 
 
-print('wifi:', wifi)
-print('ntp_sync:', ntp_sync)
-print('power_led:', power_led)
-print('watchdog:', watchdog)
-
-
-def garbage_collection():
-    print('Run a garbage collection:', end='')
-    alloced = gc.mem_alloc()
-    gc.collect()
-    freed = alloced - gc.mem_alloc()
-    free = gc.mem_free()
-    print('Freed: %i Bytes (now %i Bytes free)' % (freed, free))
-    return freed, free
-
-
 STYLES = '''
 html{text-align: center;font-size: 1.3em;}
 .button{
@@ -60,12 +44,14 @@ HTML = '''<html>
         <a href="/?soft_reset"><button class="button">Soft reset Device</button></a>
         <a href="/?hard_reset"><button class="button">Hard reset Device</button></a>
     </p>
-    <p>{wifi}</p>
-    <p>{ntp_sync}</p>
-    <p>{watchdog}</p>
+    <p><pre>
+        {wifi}
+        {ntp_sync}
+        {watchdog}
+    </pre></p>
     <p><small>
         {alloc}bytes of heap RAM that are allocated<br>
-        {free}bytes of available heap RAM (-1 == amount is not known)<br>
+        {free}bytes of available heap RAM<br>
         Server time in UTC: {utc}
     </small></p>
 </body>
@@ -95,13 +81,13 @@ def send_web_page(writer, message=''):
         alloc=gc.mem_alloc(),
         free=gc.mem_free(),
     ))
-    garbage_collection()
+    gc.collect()
 
 
 @asyncio.coroutine
 def request_handler(reader, writer):
     print('\nWait for request...')
-    garbage_collection()
+    gc.collect()
 
     address = writer.get_extra_info('peername')
     print('Accepted connection from %s:%s' % address)
@@ -176,7 +162,7 @@ def request_handler(reader, writer):
         yield from writer.awrite('HTTP/1.0 404 Not Found\r\n\r\n')
 
     yield from writer.aclose()
-    garbage_collection()
+    gc.collect()
 
     if hard_reset:
         for no in range(3, 0, -1):
@@ -204,7 +190,7 @@ def main():
     coro = asyncio.start_server(request_handler, '0.0.0.0', 80)
     loop.create_task(coro)
 
-    garbage_collection()
+    gc.collect()
 
     print('run forever...')
     try:
