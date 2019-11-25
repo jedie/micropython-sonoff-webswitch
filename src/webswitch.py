@@ -21,6 +21,9 @@ def send_web_page(writer, message=''):
     yield from writer.awrite('Content-type: text/html; charset=utf-8\r\n')
     yield from writer.awrite('Connection: close\r\n\r\n')
 
+    alloc = gc.mem_alloc() / 1024
+    free = gc.mem_free() / 1024
+
     with open('webswitch.html', 'r') as f:
         yield from writer.awrite(f.read().format(
             state=relay.state,
@@ -31,8 +34,9 @@ def send_web_page(writer, message=''):
             watchdog=watchdog,
 
             utc=rtc.datetime(),
-            alloc=gc.mem_alloc(),
-            free=gc.mem_free(),
+            total=alloc + free,
+            alloc=alloc,
+            free=free,
         ))
     gc.collect()
 
