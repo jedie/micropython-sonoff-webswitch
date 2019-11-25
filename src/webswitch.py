@@ -6,11 +6,10 @@ import network
 import uasyncio as asyncio
 import uos as os
 import utime as time
-from leds import power_led
+from leds import power_led, relay
 from ntp import ntp_sync
 from watchdog import watchdog
 from wifi import wifi
-from leds import power_led, relay
 
 rtc = machine.RTC()
 button_pin = machine.Pin(0, machine.Pin.IN)
@@ -32,6 +31,7 @@ def send_web_page(writer, message=''):
             wifi=wifi,
             ntp_sync=ntp_sync,
             watchdog=watchdog,
+            rtc_memory=machine.RTC().memory(),
 
             utc=rtc.datetime(),
             total=alloc + free,
@@ -130,7 +130,7 @@ def main():
         print('Wait for WiFi connection %s sec.' % s)
         time.sleep(s)
         s += 5
-        
+
     print('Start webserver on %s...' % wifi.station.ifconfig()[0])
     loop = asyncio.get_event_loop()
 
