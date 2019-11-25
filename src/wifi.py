@@ -54,7 +54,6 @@ class WiFi:
             return True
 
     def _timer_callback(self, timer):
-        print('WiFi timer callback for:', timer)
         try:
             self._ensure_connection()
         except Exception as e:

@@ -4,6 +4,7 @@ import sys
 import constants
 import machine
 import utime as time
+from rtc_memory import RtcMemory
 
 rtc = machine.RTC()
 
@@ -13,6 +14,7 @@ class Watchdog:
     last_refresh = None
     timer_count = 0
     feed_count = 0
+    reset_count = RtcMemory().rtc_memory.get('watchdog_reset', 0)
 
     timer = machine.Timer(-1)
 
@@ -34,23 +36,20 @@ class Watchdog:
         return (time.time() - self.last_feed) * 1000
 
     def _timer_callback(self, timer):
-        print('Watchdog timer callback...', end='')
         gc.collect()
         self.timer_count += 1
         self.last_refresh = rtc.datetime()
-        print('diff:', self.last_diff)
         if self.last_diff >= self.timeout:
             for no in range(3, 0, -1):
                 print('Watchdog timeout -> reset in %i sec...' % no)
                 time.sleep(1)
 
+            RtcMemory().incr_rtc_count(key='watchdog_reset')  # Save reset count
             self.timer.deinit()
             machine.reset()  # Hard reset
             sys.exit()  # Soft reset
-        print(self)
 
     def feed(self):
-        print('Watchdog feeded:', self)
         self.last_feed = time.time()
         self.feed_count += 1
 
@@ -59,13 +58,15 @@ class Watchdog:
 
     def __str__(self):
         return (
-            'Watchdog timeout: %s'
-            ' - last diff: %s'
-            ' - last refresh: %s'
-            ' - timer count: %s'
-            ' - feed count: %s'
+            'Watchdog timeout: %s,'
+            ' last diff: %s,'
+            ' last refresh: %s,'
+            ' reset count: %s,'
+            ' timer count: %s,'
+            ' feed count: %s,'
         ) % (
-            self.timeout, self.last_diff, self.last_refresh, self.timer_count, self.feed_count
+            self.timeout, self.last_diff, self.last_refresh,
+            self.reset_count, self.timer_count, self.feed_count
         )
 
 

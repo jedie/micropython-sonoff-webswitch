@@ -10,9 +10,9 @@ from leds import power_led
 from ntp import ntp_sync
 from watchdog import watchdog
 from wifi import wifi
+from leds import power_led, relay
 
 rtc = machine.RTC()
-relay_pin = machine.Pin(12, machine.Pin.OUT, value=0)  # turn replay off
 button_pin = machine.Pin(0, machine.Pin.IN)
 
 
@@ -21,14 +21,9 @@ def send_web_page(writer, message=''):
     yield from writer.awrite('Content-type: text/html; charset=utf-8\r\n')
     yield from writer.awrite('Connection: close\r\n\r\n')
 
-    if relay_pin.value() == 1:
-        state = 'ON'
-    else:
-        state = 'OFF'
-
     with open('webswitch.html', 'r') as f:
         yield from writer.awrite(f.read().format(
-            state=state,
+            state=relay.state,
             message=message,
 
             wifi=wifi,
@@ -42,8 +37,9 @@ def send_web_page(writer, message=''):
     gc.collect()
 
 
-@asyncio.coroutine
-def request_handler(reader, writer):
+async def request_handler(reader, writer):
+    power_led.off()
+
     print('\nWait for request on %s...' % wifi.station.ifconfig()[0])
     gc.collect()
 
@@ -84,17 +80,17 @@ def request_handler(reader, writer):
             not_found = False
 
         elif url == '/?power=on':
-            relay_pin.value(1)
+            relay.on()
             yield from send_web_page(writer, message='power on')
             not_found = False
 
         elif url == '/?power=off':
-            relay_pin.value(0)
+            relay.off()
             yield from send_web_page(writer, message='power off')
             not_found = False
 
         elif url == '/?soft_reset':
-            relay_pin.value(0)
+            relay.off()
             yield from send_web_page(
                 writer,
                 message=(
@@ -106,7 +102,7 @@ def request_handler(reader, writer):
             not_found = False
 
         elif url == '/?hard_reset':
-            relay_pin.value(0)
+            relay.off()
             yield from send_web_page(
                 writer,
                 message=(
@@ -124,24 +120,25 @@ def request_handler(reader, writer):
     gc.collect()
 
     if hard_reset:
-        for no in range(3, 0, -1):
-            print('Hard reset device %i wait...' % no)
-            time.sleep(1)
+        print('Hard reset device wait with flash LED...')
+        power_led.flash(sleep=0.1, count=20)
         print('Hard reset device...')
         machine.reset()
         sys.exit()
 
     if soft_reset:
-        for no in range(3, 0, -1):
-            print('Soft reset device %i wait...' % no)
-            time.sleep(1)
+        print('Soft reset device wait with flash LED...')
+        power_led.flash(sleep=0.1, count=20)
         print('Soft reset device...')
         sys.exit()
 
     watchdog.feed()
+    power_led.on()
 
 
 def main():
+    power_led.off()
+
     s = 1
     while not wifi.is_connected:
         print('Wait for WiFi connection %s sec.' % s)

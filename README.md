@@ -32,6 +32,7 @@ The device will do:
 Point you Webserver to the IP from the device.
 
 You can turn the switch on/off by the web page or the device button.
+Reset the device by long pressing the button.
 
 
 ## Screenshot
