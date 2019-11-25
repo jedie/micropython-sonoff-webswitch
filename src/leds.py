@@ -1,23 +1,22 @@
-import gc
-
-import machine
+import pins
 import utime as time
 
 
 class Led:
-    def __init__(self, no):
-        self.pin = machine.Pin(no, machine.Pin.OUT)
+    def __init__(self, name, pin, on, off):
+        self.name = name
+        self.pin = pin
+        self._on = on
+        self._off = off
 
     def on(self):
-        """ turn LED on """
-        self.pin.value(0)
+        self.pin.value(self._on)
 
     def off(self):
-        """ turn LED off """
-        self.pin.value(1)
+        self.pin.value(self._off)
 
     def toggle(self):
-        self.pin.value(0 if self.pin.value() else 1)
+        self.pin.value(self._off if self.pin.value() else self._on)
 
     def flash(self, sleep=0.01, count=5):
         self._flash(sleep, count)
@@ -29,38 +28,21 @@ class Led:
             time.sleep(sleep)
         self.pin.value(old_value)
 
+    @property
+    def state(self):
+        if self._on:
+            return 'ON' if self.pin.value() else 'OFF'
+        else:
+            return 'OFF' if self.pin.value() else 'ON'
 
-class PowerLed(Led):
-    def __init__(self):
-        super().__init__(no=13)
+    def __str__(self):
+        return '%s %s: %s' % (self.name, self.pin, self.state)
 
 
-power_led = PowerLed()
-
-
-def test():
-    print('test starts...')
-    print('off')
-    power_led.off()
-    time.sleep(1)
-    print('on')
-    power_led.on()
-    time.sleep(1)
-    print('toggle 1')
-    power_led.toggle()
-    time.sleep(1)
-    print('toggle 2')
-    power_led.toggle()
-    time.sleep(1)
-
-    print('flash')
-    power_led.flash(sleep=0.1, count=5)
-
-    gc.collect()
-    print('test ends.')
+power_led = Led(name='power', pin=pins.power_led_pin, on=0, off=1)
+relay = Led(name='relay', pin=pins.relay_pin, on=1, off=0)
 
 
 if __name__ == '__main__':
-    print('LED test start...')
-    test()
-    print('LED test end')
+    print(relay)
+    print(power_led)
