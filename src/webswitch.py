@@ -44,7 +44,7 @@ def send_web_page(writer, message=''):
 
 @asyncio.coroutine
 def request_handler(reader, writer):
-    print('\nWait for request...')
+    print('\nWait for request on %s...' % wifi.station.ifconfig()[0])
     gc.collect()
 
     address = writer.get_extra_info('peername')
@@ -142,8 +142,13 @@ def request_handler(reader, writer):
 
 
 def main():
-    print('start webserver...')
-
+    s = 1
+    while not wifi.is_connected:
+        print('Wait for WiFi connection %s sec.' % s)
+        time.sleep(s)
+        s += 5
+        
+    print('Start webserver on %s...' % wifi.station.ifconfig()[0])
     loop = asyncio.get_event_loop()
 
     coro = asyncio.start_server(request_handler, '0.0.0.0', 80)
