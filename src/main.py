@@ -11,10 +11,9 @@ for no in range(3, 0, -1):
     time.sleep(1)
 
 from watchdog import watchdog  # noqa isort:skip
-from leds import power_led  # noqa isort:skip
-from ntp import ntp_sync  # noqa isort:skip
 from wifi import wifi  # noqa isort:skip
-
+from ntp import ntp_sync  # noqa isort:skip
+from leds import power_led  # noqa isort:skip
 
 print('watchdog:', watchdog)
 print('wifi:', wifi)

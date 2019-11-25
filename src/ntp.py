@@ -6,6 +6,7 @@ import machine
 import ntptime
 import utime as time
 from watchdog import watchdog
+from wifi import wifi  # noqa isort:skip
 
 rtc = machine.RTC()
 
@@ -39,6 +40,11 @@ class NtpSync:
     def _sync(self):
         print('Synchronize time from %r ...' % ntptime.host)
         gc.collect()
+
+        if not wifi.is_connected:
+            print('Skip NTP sync: not connectet to a WiFi!')
+            return
+        
         print('old UTC:', rtc.datetime())
         s = 1
         while True:
