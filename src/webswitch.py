@@ -6,11 +6,10 @@ import network
 import uasyncio as asyncio
 import uos as os
 import utime as time
-from leds import power_led
+from leds import power_led, relay
 from ntp import ntp_sync
 from watchdog import watchdog
 from wifi import wifi
-from leds import power_led, relay
 
 rtc = machine.RTC()
 button_pin = machine.Pin(0, machine.Pin.IN)
@@ -21,6 +20,9 @@ def send_web_page(writer, message=''):
     yield from writer.awrite('Content-type: text/html; charset=utf-8\r\n')
     yield from writer.awrite('Connection: close\r\n\r\n')
 
+    alloc = gc.mem_alloc() / 1024
+    free = gc.mem_free() / 1024
+
     with open('webswitch.html', 'r') as f:
         yield from writer.awrite(f.read().format(
             state=relay.state,
@@ -29,10 +31,12 @@ def send_web_page(writer, message=''):
             wifi=wifi,
             ntp_sync=ntp_sync,
             watchdog=watchdog,
+            rtc_memory=machine.RTC().memory(),
 
             utc=rtc.datetime(),
-            alloc=gc.mem_alloc(),
-            free=gc.mem_free(),
+            total=alloc + free,
+            alloc=alloc,
+            free=free,
         ))
     gc.collect()
 
@@ -62,7 +66,7 @@ async def request_handler(reader, writer):
 
     not_found = True
     soft_reset = False
-    hard_reset = False
+    reset = False
 
     if method == 'GET':
         if url == '/':
@@ -89,27 +93,15 @@ async def request_handler(reader, writer):
             yield from send_web_page(writer, message='power off')
             not_found = False
 
-        elif url == '/?soft_reset':
+        elif url == '/?reset':
             relay.off()
             yield from send_web_page(
                 writer,
                 message=(
-                    'Soft reset device...'
+                    'Reset device...'
                     ' Restart WebServer by pressing the Button on your device!'
                 ))
-            print('Soft reset device...')
-            soft_reset = True
-            not_found = False
-
-        elif url == '/?hard_reset':
-            relay.off()
-            yield from send_web_page(
-                writer,
-                message=(
-                    'Hard reset device...'
-                    ' Restart WebServer by pressing the Button on your device!'
-                ))
-            hard_reset = True
+            reset = True
             not_found = False
 
     if not_found:
@@ -119,17 +111,11 @@ async def request_handler(reader, writer):
     yield from writer.aclose()
     gc.collect()
 
-    if hard_reset:
+    if reset:
         print('Hard reset device wait with flash LED...')
         power_led.flash(sleep=0.1, count=20)
         print('Hard reset device...')
         machine.reset()
-        sys.exit()
-
-    if soft_reset:
-        print('Soft reset device wait with flash LED...')
-        power_led.flash(sleep=0.1, count=20)
-        print('Soft reset device...')
         sys.exit()
 
     watchdog.feed()
@@ -144,7 +130,7 @@ def main():
         print('Wait for WiFi connection %s sec.' % s)
         time.sleep(s)
         s += 5
-        
+
     print('Start webserver on %s...' % wifi.station.ifconfig()[0])
     loop = asyncio.get_event_loop()
 

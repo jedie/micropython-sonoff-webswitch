@@ -13,17 +13,16 @@
         <a href="/?power=off"><button class="button button2">OFF</button></a>
     </p>
     <p>
-        <a href="/?soft_reset"><button class="button">Soft reset Device</button></a>
-        <a href="/?hard_reset"><button class="button">Hard reset Device</button></a>
+        <a href="/?reset"><button class="button">Reset Device</button></a>
     </p>
     <p><small>
         {wifi}<br>
         {ntp_sync}<br>
-        {watchdog}
+        {watchdog}<br>
+        {rtc_memory}
     </small></p>
     <p><small>
-        {alloc}bytes of heap RAM that are allocated<br>
-        {free}bytes of available heap RAM<br>
+        total: {total:.2f} KB, used: {alloc:.2f} KB, free: {free:.2f} KB<br>
         Server time in UTC: {utc}
     </small></p>
 </body>
