@@ -6,16 +6,14 @@ import machine
 import uerrno as errno
 import usocket as socket
 import utime as time
-from rtc_memory import RtcMemory
+from rtc_memory import rtc_memory
 from wifi import wifi
 
 rtc = machine.RTC()
 
-rtc_memory = RtcMemory()
-
 # get reset info form RTC RAM:
-reset_count = rtc_memory.rtc_memory.get(constants.RTC_KEY_WATCHDOG_COUNT, 0)
-reset_reason = rtc_memory.rtc_memory.get(constants.RTC_KEY_RESET_REASON)
+reset_count = rtc_memory.d.get(constants.RTC_KEY_WATCHDOG_COUNT, 0)
+reset_reason = rtc_memory.d.get(constants.RTC_KEY_RESET_REASON)
 
 
 def reset(reason):
@@ -41,7 +39,6 @@ def can_bind_web_server_port():
     sock = socket.socket()
     try:
         sock.settimeout(1)
-        print('try to bind:')
         try:
             sock.bind(server_address)
         except OSError as e:
@@ -50,7 +47,7 @@ def can_bind_web_server_port():
             if e.args[0] == errno.EADDRINUSE:
                 return False
         else:
-            print('Can bind to %s:%i -> WebServer is not running!' % server_address)
+            print('ERROR: Web server not running! (Can bind to %s:%i)' % server_address)
             return True
     finally:
         sock.close()

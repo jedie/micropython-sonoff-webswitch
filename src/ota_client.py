@@ -45,7 +45,7 @@ class OtaClient:
             'file_info': self.file_info,
             'receive_file': self.receive_file,
         }
-
+        last_error = None
         while True:
             print('\nwait for command...', end='')
             command = self.read_line_string()
@@ -68,11 +68,15 @@ class OtaClient:
             except Exception as e:
                 print('Error running command:')
                 sys.print_exception(e)
+                last_error = str(e)
 
             print('Send new line: Command ends.')
             self.server_socket.sendall(b'\n')
 
             gc.collect()
+
+        if last_error:
+            raise AssertionError(last_error)
 
         return 'OK'
 

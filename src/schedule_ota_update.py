@@ -3,13 +3,13 @@ import sys
 
 import machine
 import utime as time
-from rtc_memory import RtcMemory
+from rtc_memory import rtc_memory
 
 
 def main():
     print('Schedule OTA via RTC RAM')
     gc.collect()
-    RtcMemory().save(data={'run': 'ota-update'})  # Save to RTC RAM for next boot
+    rtc_memory.save(data={'run': 'ota-update'})  # Save to RTC RAM for next boot
     print('Hard reset device...')
     machine.reset()
     time.sleep(1)
