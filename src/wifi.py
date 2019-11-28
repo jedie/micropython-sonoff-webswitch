@@ -1,24 +1,22 @@
 import gc
-import sys
 
-import constants
 import machine
 import network
-import ntptime
 import utime as time
-from leds import power_led
-from watchdog import watchdog
 
-gc.collect()
+from leds import power_led  # noqa isort:skip
+from ntp import ntp_sync  # noqa isort:skip
+
 rtc = machine.RTC()
 
 
 class WiFi:
+    verbose = True  # verbose while startup -> set to False by timer
+    connected_time = 0
+
     not_connected_count = 0
     is_connected_count = 0
     last_refresh = None
-
-    timer = machine.Timer(-1)
 
     def __init__(self):
         print('Setup WiFi interfaces')
@@ -27,52 +25,46 @@ class WiFi:
         self.station.active(True)  # activate the interface
 
         print('ensure connection on init')
-        self._ensure_connection()
-
-        print('Start WiFi period timer')
-        self.timer.deinit()
-        self.timer.init(
-            period=constants.WIFI_TIMER,
-            mode=machine.Timer.PERIODIC,
-            callback=self._timer_callback)
+        self.ensure_connection()
 
     @property
     def is_connected(self):
         if not self.station.isconnected():
-            print('Not connected to station!')
+            if self.verbose:
+                print('Not connected to station!')
             power_led.off()
             return False
         else:
-            print('Connected to station IP/netmask/gw/DNS addresses:', self.station.ifconfig())
+            self.connected_time = time.time()
+            if self.verbose:
+                print('Connected to station IP/netmask/gw/DNS addresses:', self.station.ifconfig())
             power_led.on()
-            watchdog.feed()
 
             if self.access_point.active():
-                print('deactivate access-point interface...')
+                if self.verbose:
+                    print('deactivate access-point interface...')
                 self.access_point.active(False)
 
             return True
 
-    def _timer_callback(self, timer):
-        try:
-            self._ensure_connection()
-        except Exception as e:
-            sys.print_exception(e)
-            self.timer.deinit()
+    def ensure_connection(self):
+        if self.verbose:
+            print('WiFi ensure connection...', end=' ')
 
-    def _ensure_connection(self):
-        print('WiFi ensure connection...', end=' ')
         gc.collect()
         if self.is_connected:
             self.is_connected_count += 1
             self.last_refresh = rtc.datetime()
+            ntp_sync.sync()  # update RTC via NTP
             return
 
         self.not_connected_count += 1
 
         power_led.flash(sleep=0.1, count=5)
 
-        print('read WiFi config...')
+        if self.verbose:
+            print('read WiFi config...')
+
         from get_config import config
         wifi_configs = config['wifi']
 
@@ -81,6 +73,8 @@ class WiFi:
             print('Skip Wifi connection.')
         else:
             self._connect(known_ssid, password=config['wifi'][known_ssid])
+
+        gc.collect()
 
     def get_known_ssid(self, wifi_configs):
         print('Scan WiFi...')
@@ -99,11 +93,12 @@ class WiFi:
                 ssid, bssid, channel, RSSI, auth_mode, hidden = info
                 auth_mode = auth_mode_dict.get(auth_mode, auth_mode)
                 ssid = ssid.decode("UTF-8")
-                print(
-                    'SSID: %s (channel: %s authmode: %s hidden: %s)' % (
-                        ssid, channel, auth_mode, hidden
+                if self.verbose:
+                    print(
+                        'SSID: %s (channel: %s authmode: %s hidden: %s)' % (
+                            ssid, channel, auth_mode, hidden
+                        )
                     )
-                )
                 if ssid in wifi_configs:
                     known_ssid = ssid
             if known_ssid is not None:
@@ -122,9 +117,11 @@ class WiFi:
             network.STAT_GOT_IP: 'connection successful',
         }
         for no in range(0, 3):
-            print('PHY mode:', network.phy_mode())
+            if self.verbose:
+                print('PHY mode:', network.phy_mode())
             # print('Connect to Wifi access point:', ssid, repr(password))
-            print('Connect to Wifi access point:', ssid)
+            if self.verbose:
+                print('Connect to Wifi access point:', ssid)
             power_led.toggle()
             self.station.connect(ssid, password)
             for wait_sec in range(30, 1, -1):
@@ -137,14 +134,17 @@ class WiFi:
                     return
                 elif status == network.STAT_WRONG_PASSWORD:
                     return
-                print('wait %i...' % wait_sec)
+                if self.verbose:
+                    print('wait %i...' % wait_sec)
                 power_led.flash(sleep=0.1, count=10)
 
             if self.station.isconnected():
-                print('Connected to:', ssid)
+                if self.verbose:
+                    print('Connected to:', ssid)
                 return
             else:
-                print('Try again...')
+                if self.verbose:
+                    print('Try again...')
                 self.station.active(False)
                 power_led.flash(sleep=0.1, count=20)
                 power_led.off()

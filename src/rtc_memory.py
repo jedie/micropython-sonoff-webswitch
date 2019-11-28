@@ -13,17 +13,26 @@ class RtcMemory:
             self.rtc_memory = {}
         gc.collect()
 
-    def save(self):
-        machine.RTC().memory(json.dumps(self.rtc_memory))
+    def save(self, data):
+        self.rtc_memory.update(data)
+        machine.RTC().memory(json.dumps(self.rtc_memory))  # Save to RTC RAM
         gc.collect()
+
+    def clear(self):
+        machine.RTC().memory(b'{}')
 
     def incr_rtc_count(self, key):
         count = self.rtc_memory.get(key, 0) + 1
-        self.rtc_memory[key] = count
-        self.save()
+        self.save(data={key: count})
         return count
+
+    def __str__(self):
+        return str(self.rtc_memory)
 
 
 if __name__ == '__main__':
-    count = RtcMemory().incr_rtc_count(key='test')
+    rtc_memory = RtcMemory()
+    print('RTC Memory 1:', rtc_memory)
+    count = rtc_memory.incr_rtc_count(key='test')
     print('RTC memory test call count:', count)
+    print('RTC Memory 2:', rtc_memory)

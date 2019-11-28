@@ -1,8 +1,10 @@
+RTC_KEY_RESET_REASON = 'reset-reason'
+RTC_KEY_WATCHDOG_COUNT = 'watchdog-reset'
+
+WEBSERVER_HOST = '0.0.0.0'
+WEBSERVER_PORT = const(80)
+
 WATCHDOG_CHECK_PERIOD = const(50 * 1000)  # 50 sec
-WATCHDOG_TIMEOUT = const(40 * 1000) # 40 sec
 
-WIFI_TIMER = const(30 * 1000)  # 30 sec
-NTP_TIMER = const(15 * 60 * 1000)  # 15 min
 
-assert WATCHDOG_TIMEOUT > WIFI_TIMER
-assert WATCHDOG_CHECK_PERIOD > WATCHDOG_TIMEOUT
+WIFI_TIMEOUT = const(20 * 1000)  # 20 sec

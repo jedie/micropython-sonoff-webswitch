@@ -1,18 +1,40 @@
 import gc
 import sys
 
+import constants
 import machine
-import network
 import uasyncio as asyncio
 import uos as os
 import utime as time
 from leds import power_led, relay
 from ntp import ntp_sync
+from rtc_memory import RtcMemory
 from watchdog import watchdog
 from wifi import wifi
 
 rtc = machine.RTC()
+
 button_pin = machine.Pin(0, machine.Pin.IN)
+power_led.off()
+
+
+def reset():
+    print('Hard reset device wait with flash LED...')
+    power_led.flash(sleep=0.2, count=20)
+    print('Hard reset device...')
+    time.sleep(1)
+    machine.reset()
+    time.sleep(1)
+    sys.exit()
+
+
+def schedule_reset(period=5000):
+    timer = machine.Timer(-1)
+    timer.init(
+        mode=machine.Timer.ONE_SHOT,
+        period=period,
+        callback=reset()
+    )
 
 
 def send_web_page(writer, message=''):
@@ -23,21 +45,38 @@ def send_web_page(writer, message=''):
     alloc = gc.mem_alloc() / 1024
     free = gc.mem_free() / 1024
 
+    uname = os.uname()
+
+    gc.collect()
+
+    context = {
+        'state': relay.state,
+        'message': message,
+
+        'wifi': wifi,
+        'ntp_sync': ntp_sync,
+        'watchdog': watchdog,
+        'rtc_memory': machine.RTC().memory(),
+
+        'nodename': uname.nodename,
+        'id': ':'.join(['%02x' % char for char in reversed(machine.unique_id())]),
+        'machine': uname.machine,
+        'release': uname.release,
+        'version': uname.version,
+
+        'total': alloc + free,
+        'alloc': alloc,
+        'free': free,
+
+        'utc': rtc.datetime(),
+    }
+    gc.collect()
     with open('webswitch.html', 'r') as f:
-        yield from writer.awrite(f.read().format(
-            state=relay.state,
-            message=message,
-
-            wifi=wifi,
-            ntp_sync=ntp_sync,
-            watchdog=watchdog,
-            rtc_memory=machine.RTC().memory(),
-
-            utc=rtc.datetime(),
-            total=alloc + free,
-            alloc=alloc,
-            free=free,
-        ))
+        while True:
+            line = f.readline()
+            if not line:
+                break
+            yield from writer.awrite(line.format(**context))
     gc.collect()
 
 
@@ -65,8 +104,8 @@ async def request_handler(reader, writer):
     print(method, url, version)
 
     not_found = True
-    soft_reset = False
-    reset = False
+
+    gc.collect()
 
     if method == 'GET':
         if url == '/':
@@ -74,12 +113,21 @@ async def request_handler(reader, writer):
             yield from send_web_page(writer, message='')
             not_found = False
 
+        elif url == '/favicon.ico':
+            yield from writer.awrite('HTTP/1.0 200 OK\r\n')
+            yield from writer.awrite('Content-Type: image/x-icon\r\n')
+            yield from writer.awrite('Cache-Control: max-age=6000\r\n')
+            yield from writer.awrite('\r\n')
+            with open('favicon.ico', 'rb') as f:
+                yield from writer.awrite(f.read())
+            not_found = False
+
         elif url == '/webswitch.css':
             yield from writer.awrite('HTTP/1.0 200 OK\r\n')
             yield from writer.awrite('Content-Type: text/css\r\n')
             yield from writer.awrite('Cache-Control: max-age=6000\r\n')
             yield from writer.awrite('\r\n')
-            with open('webswitch.css', 'r') as f:
+            with open('webswitch.css', 'rb') as f:
                 yield from writer.awrite(f.read())
             not_found = False
 
@@ -93,15 +141,47 @@ async def request_handler(reader, writer):
             yield from send_web_page(writer, message='power off')
             not_found = False
 
+        elif url == '/?clear':
+            RtcMemory().clear()
+            yield from send_web_page(writer, message='RTC RAM cleared')
+            not_found = False
+
+        elif url == '/?check_fw':
+            import esp
+            check = esp.check_fw()
+            if check:
+                message = 'esp.check_fw(): OK'
+            else:
+                message = 'Firmware error! Please check: esp.check_fw() !'
+            yield from send_web_page(writer, message=message)
+            not_found = False
+
+        elif url == '/?ota_update':
+            print('Set OTA update RTC RAM trigger...')
+
+            # Save to RTC RAM:
+            RtcMemory().save(data={
+                constants.RTC_KEY_RESET_REASON: 'OTA Update via web page',
+                'run': 'ota-update',  # triggered in main.py
+            })
+
+            yield from send_web_page(writer, message='Run OTA Update after device reset...')
+            schedule_reset()
+            not_found = False
+
         elif url == '/?reset':
             relay.off()
+
+            # Save to RTC RAM:
+            RtcMemory().save(data={constants.RTC_KEY_RESET_REASON: 'Reset via web page'})
+
             yield from send_web_page(
                 writer,
                 message=(
                     'Reset device...'
                     ' Restart WebServer by pressing the Button on your device!'
                 ))
-            reset = True
+            schedule_reset()
             not_found = False
 
     if not_found:
@@ -111,45 +191,24 @@ async def request_handler(reader, writer):
     yield from writer.aclose()
     gc.collect()
 
-    if reset:
-        print('Hard reset device wait with flash LED...')
-        power_led.flash(sleep=0.1, count=20)
-        print('Hard reset device...')
-        machine.reset()
-        sys.exit()
-
-    watchdog.feed()
     power_led.on()
 
 
-def main():
-    power_led.off()
+# Start Webserver:
 
-    s = 1
-    while not wifi.is_connected:
-        print('Wait for WiFi connection %s sec.' % s)
-        time.sleep(s)
-        s += 5
+s = 1
+while not wifi.is_connected:
+    print('Wait for WiFi connection %s sec.' % s)
+    time.sleep(s)
+    s += 5
 
-    print('Start webserver on %s...' % wifi.station.ifconfig()[0])
-    loop = asyncio.get_event_loop()
+print('Start webserver on %s...' % wifi.station.ifconfig()[0])
+loop = asyncio.get_event_loop()
 
-    coro = asyncio.start_server(request_handler, '0.0.0.0', 80)
-    loop.create_task(coro)
+coro = asyncio.start_server(request_handler, '0.0.0.0', 80)
+loop.create_task(coro)
 
-    gc.collect()
+gc.collect()
 
-    print('run forever...')
-    try:
-        loop.run_forever()
-    except OSError as e:  # [Errno 12] ENOMEM
-        print('ERROR:', e)
-        print(' *** hard reset! ***')
-        machine.reset()
-        sys.exit()
-
-    loop.close()
-
-
-if __name__ == '__main__':
-    main()
+print('run forever...')
+loop.run_forever()
