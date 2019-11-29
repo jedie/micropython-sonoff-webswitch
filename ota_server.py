@@ -49,6 +49,7 @@ class OtaServer:
 
         self.client_socket = None  # Client socked, created in self.run()
         self.client_chunk_size = None  # Change by client on connection in self.run()
+        self.files_info = None  # Requested in self.run()
 
     def run(self):
         print(f'Start OTA server for: {self.src_path}')
@@ -69,12 +70,14 @@ class OtaServer:
                     self.do_ping()
                     self.client_chunk_size = self.get_client_chunk_size()
 
+                    print('-' * 100)
+                    self.files_info = self.get_files_info()
+                    print('-' * 100)
+
                     file_count = 0
                     updated = []
                     up2date = 0
                     for item in self.src_path.iterdir():
-                        print('')
-                        print('_' * 100)
                         if item.is_dir():
                             print(f'Directories not supported, skip: %s' % item)
                             continue
@@ -83,7 +86,7 @@ class OtaServer:
                             continue
 
                         file_count += 1
-                        print('Update file: %s' % item)
+                        print(item.name, end=' ', flush=True)
 
                         if not self.client_file_outdated(item):
                             # local <-> device file are the same -> skip
@@ -91,10 +94,11 @@ class OtaServer:
                             continue
 
                         self.send_file(item)
+                        print('-' * 100)
                         updated.append(item)
 
                     self.send_exit()
-                    print()
+                    print('*' * 100)
                     print(f'*** Device {addr} update done:')
                     print(f'*** {file_count} files')
                     print(f'*** {up2date} files are up-to-date on device')
@@ -109,30 +113,30 @@ class OtaServer:
 
     def client_file_outdated(self, file_path):
         try:
-            device_file_size, device_sha256 = self.get_file_info(file_path=file_path)
-        except FileNotFoundError:
-            print('File does not exist on device -> upload file.')
+            device_file_size, device_sha256 = self.files_info[file_path.name]
+        except KeyError:
+            print('\nFile does not exist on device -> upload file.')
             return True
 
         local_file_size = file_path.stat().st_size
         if device_file_size != local_file_size:
+            print()
             print(f'Device file size..: {device_file_size} Bytes')
             print(f'Local file size...: {local_file_size} Bytes')
             print('File size not the same -> upload file.')
             return True
 
-        print('File size the same: Check Hash.')
-
         with file_path.open('rb') as f:
             local_sha256 = hashlib.sha256(f.read()).hexdigest()
 
         if local_sha256 != device_sha256:
+            print()
             print(f'Device file SHA256...: {device_sha256!r}')
             print(f'Local file SHA256....: {local_sha256!r}')
             print('File SHA256 hash not the same -> upload file.')
             return True
 
-        print('File SHA256 the same -> skip upload file.')
+        print('Skip file: Size + SHA256 are same')
         return False
 
     def send_line(self, line):
@@ -194,17 +198,23 @@ class OtaServer:
         self.send_line('send_ok')
         self.wait_for_ok(message='Get no OK')
 
+    def get_files_info(self):
+        self.send_line('files_info')
+        data = self.receive_all()
+
+        files_info = {}
+        for file_info in data.split('\r\n'):
+            name, size, hash = file_info.split('\r')
+            size = int(size)
+            print(f'{name:25s} {size:4} Bytes - SHA256: {hash}')
+            files_info[name] = (size, hash)
+        return files_info
+
     def get_client_chunk_size(self):
         self.send_line('chunk_size')
         client_chunk_size = int(self.readline())
         print(f'Client chunk size: {client_chunk_size!r} Bytes')
         return client_chunk_size
-
-    def request_filelist(self):
-        print('request file list')
-        self.send_line('filelist')
-        content = self.receive_all()
-        print(content)
 
     def send_exit(self):
         self.send_line('exit')
@@ -215,7 +225,7 @@ class OtaServer:
         Send file to micropython device
         """
         file_size = file_path.stat().st_size
-        print(f'send {file_path.name} ({file_size}Bytes)')
+        print(f' *** send ({file_size}Bytes) {file_path} ')
 
         self.send_line('receive_file')
         self.send_line(file_path.name)

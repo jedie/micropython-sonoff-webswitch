@@ -22,6 +22,7 @@ PORT = const(8266)
 CHUNK_SIZE = const(512)
 ENCODING = 'utf-8'
 BUFFER = bytearray(CHUNK_SIZE)
+FILE_TYPE = const(0x8000)
 
 
 def reset():
@@ -94,41 +95,33 @@ class OtaClient:
         if terminated:
             self.server_socket.sendall(b'\n')
 
-    def command_file_info(self):
-        """
-        Send file size, SHA256 from local filesystem to server,
-        """
-        print('file info for:', end=' ')
-        file_name = self.read_line_string()
-        print(file_name)
-        try:
-            stat = os.stat(file_name)
-        except OSError:
-            self.server_socket.sendall(b'File not found!')
-            return
-        self.command_send_ok(terminated=True)
-        self.server_socket.sendall(b','.join([b'%i' % no for no in stat]))
-        self.server_socket.sendall(b'\n')
-
-        sha256 = hashlib.sha256()
-        with open(file_name, 'rb') as f:
-            while True:
-                count = f.readinto(BUFFER, CHUNK_SIZE)
-                if count < CHUNK_SIZE:
-                    sha256.update(BUFFER[:count])
-                    break
-                else:
-                    sha256.update(BUFFER)
-
-        sha256 = binascii.hexlify(sha256.digest())
-        print('SHA256:', sha256)
-        self.server_socket.sendall(sha256)
-
     def command_chunk_size(self):
         """
         Send our chunk size in bytes.
         """
         self.server_socket.sendall(b'%i' % CHUNK_SIZE)
+
+    def command_files_info(self):
+        for name, file_type, inode, size in os.ilistdir():
+            if file_type != FILE_TYPE:
+                print(' *** Skip: %s' % name)
+                continue
+
+            self.server_socket.sendall(b'%s\r%i\r' % (name, size))
+
+            sha256 = hashlib.sha256()
+            with open(name, 'rb') as f:
+                while True:
+                    count = f.readinto(BUFFER, CHUNK_SIZE)
+                    if count < CHUNK_SIZE:
+                        sha256.update(BUFFER[:count])
+                        break
+                    else:
+                        sha256.update(BUFFER)
+
+            self.server_socket.sendall(binascii.hexlify(sha256.digest()))
+            self.server_socket.sendall(b'\r\n')
+        self.server_socket.sendall(b'\n\n')
 
     def command_receive_file(self):
         """
