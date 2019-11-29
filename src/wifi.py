@@ -80,19 +80,11 @@ class WiFi:
     def get_known_ssid(self, wifi_configs):
         print('Scan WiFi...')
 
-        auth_mode_dict = {
-            0: "open",
-            1: "WEP",
-            2: "WPA-PSK",
-            3: "WPA2-PSK",
-            4: "WPA/WPA2-PSK",
-        }
         known_ssid = None
         for no in range(3):
             for info in self.station.scan():
                 power_led.toggle()
                 ssid, bssid, channel, RSSI, auth_mode, hidden = info
-                auth_mode = auth_mode_dict.get(auth_mode, auth_mode)
                 ssid = ssid.decode("UTF-8")
                 if self.verbose:
                     print(
@@ -109,14 +101,6 @@ class WiFi:
         power_led.flash(sleep=0.2, count=20)
 
     def _connect(self, ssid, password):
-        status_dict = {
-            network.STAT_IDLE: 'no connection and no activity',
-            network.STAT_CONNECTING: 'connecting in progress',
-            network.STAT_WRONG_PASSWORD: 'failed due to incorrect password',
-            network.STAT_NO_AP_FOUND: 'failed because no access point replied',
-            network.STAT_CONNECT_FAIL: 'failed due to other problems',
-            network.STAT_GOT_IP: 'connection successful',
-        }
         for no in range(0, 3):
             if self.verbose:
                 print('PHY mode:', network.phy_mode())
@@ -127,13 +111,12 @@ class WiFi:
             self.station.connect(ssid, password)
             for wait_sec in range(30, 1, -1):
                 status = self.station.status()
-                status_text = status_dict[status]
-                print(status_text)
                 if status == network.STAT_GOT_IP:
                     # print('MAC:', self.station.config('mac'))
                     power_led.on()
                     return
                 elif status == network.STAT_WRONG_PASSWORD:
+                    print('Wrong password!')
                     return
                 if self.verbose:
                     print('wait %i...' % wait_sec)
