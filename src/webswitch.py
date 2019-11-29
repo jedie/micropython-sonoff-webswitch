@@ -4,18 +4,17 @@ import sys
 import constants
 import machine
 import uasyncio as asyncio
-import uos as os
 import utime as time
 from leds import power_led, relay
-from ntp import ntp_sync
-from rtc_memory import RtcMemory
+from rtc_memory import rtc_memory
 from watchdog import watchdog
 from wifi import wifi
+
+power_led.off()
 
 rtc = machine.RTC()
 
 button_pin = machine.Pin(0, machine.Pin.IN)
-power_led.off()
 
 
 def reset():
@@ -45,7 +44,7 @@ def send_web_page(writer, message=''):
     alloc = gc.mem_alloc() / 1024
     free = gc.mem_free() / 1024
 
-    uname = os.uname()
+    # uname = os.uname()
 
     gc.collect()
 
@@ -53,17 +52,17 @@ def send_web_page(writer, message=''):
         'state': relay.state,
         'message': message,
 
-        'wifi': wifi,
-        'ntp_sync': ntp_sync,
+        # 'wifi': wifi,
+        # 'ntp_sync': ntp_sync,
         'watchdog': watchdog,
-        'rtc_memory': machine.RTC().memory(),
+        'rtc_memory': rtc_memory.d,
 
-        'nodename': uname.nodename,
-        'id': ':'.join(['%02x' % char for char in reversed(machine.unique_id())]),
-        'machine': uname.machine,
-        'release': uname.release,
-        'version': uname.version,
-
+        # 'nodename': uname.nodename,
+        # 'id': ':'.join(['%02x' % char for char in reversed(machine.unique_id())]),
+        # 'machine': uname.machine,
+        # 'release': uname.release,
+        # 'version': uname.version,
+        #
         'total': alloc + free,
         'alloc': alloc,
         'free': free,
@@ -76,7 +75,9 @@ def send_web_page(writer, message=''):
             line = f.readline()
             if not line:
                 break
+            gc.collect()
             yield from writer.awrite(line.format(**context))
+            gc.collect()
     gc.collect()
 
 
@@ -142,7 +143,7 @@ async def request_handler(reader, writer):
             not_found = False
 
         elif url == '/?clear':
-            RtcMemory().clear()
+            rtc_memory.clear()
             yield from send_web_page(writer, message='RTC RAM cleared')
             not_found = False
 
@@ -160,7 +161,7 @@ async def request_handler(reader, writer):
             print('Set OTA update RTC RAM trigger...')
 
             # Save to RTC RAM:
-            RtcMemory().save(data={
+            rtc_memory.save(data={
                 constants.RTC_KEY_RESET_REASON: 'OTA Update via web page',
                 'run': 'ota-update',  # triggered in main.py
             })
@@ -173,7 +174,7 @@ async def request_handler(reader, writer):
             relay.off()
 
             # Save to RTC RAM:
-            RtcMemory().save(data={constants.RTC_KEY_RESET_REASON: 'Reset via web page'})
+            rtc_memory.save(data={constants.RTC_KEY_RESET_REASON: 'Reset via web page'})
 
             yield from send_web_page(
                 writer,
@@ -211,4 +212,5 @@ loop.create_task(coro)
 gc.collect()
 
 print('run forever...')
+power_led.on()
 loop.run_forever()

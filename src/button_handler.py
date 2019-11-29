@@ -1,16 +1,21 @@
 import gc
 import sys
 
+import constants
 import machine
 import micropython
 import utime as time
 from leds import power_led, relay
 from pins import button_pin
-from rtc_memory import RtcMemory
+from rtc_memory import rtc_memory
 
 
-def reset_device():
-    print('reset device...')
+def reset_device(reason):
+    print('Reset reason: %s' % reason)
+
+    # Save reason in RTC RAM:
+    rtc_memory.save(data={constants.RTC_KEY_RESET_REASON: reason})
+    time.sleep(1)
     machine.reset()
     time.sleep(1)
     sys.exit()
@@ -35,7 +40,7 @@ def get_debounced_value(pin):
 def ota_update(_):
     print('Set OTA update RTC RAM trigger...')
     gc.collect()
-    RtcMemory().save(data={'run': 'ota-update'})  # Save to RTC RAM for next boot
+    rtc_memory.save(data={'run': 'ota-update'})  # Save to RTC RAM for next boot
     reset_device()
 
 

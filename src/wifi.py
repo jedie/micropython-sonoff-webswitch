@@ -11,7 +11,7 @@ rtc = machine.RTC()
 
 
 class WiFi:
-    verbose = True  # verbose while startup -> set to False by timer
+    verbose = True  # verbose while startup -> set to False after first start
     connected_time = 0
 
     not_connected_count = 0
@@ -26,6 +26,7 @@ class WiFi:
 
         print('ensure connection on init')
         self.ensure_connection()
+        self.verbose=False
 
     @property
     def is_connected(self):
