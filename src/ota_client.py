@@ -51,7 +51,7 @@ class OtaClient:
             print('Receive command:', command)
             if command == 'exit':
                 print('exit!')
-                self.send_ok()
+                self.command_send_ok()
                 break
 
             gc.collect()
