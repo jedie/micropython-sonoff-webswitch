@@ -181,7 +181,9 @@ class OtaServer:
         return data
 
     def wait_for_ok(self, message='no OK received', raise_error=True):
+        print('Wait for OK...', end='')
         ok = self.readline()
+        print(ok)
         if ok != "OK":
             if raise_error:
                 raise CommunicationError(message)
