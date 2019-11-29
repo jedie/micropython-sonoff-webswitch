@@ -1,48 +1,28 @@
 import gc
-import sys
 
-import constants
 import machine
 import ntptime
 import utime as time
 
-from watchdog import watchdog  # noqa isort:skip
-from wifi import wifi  # noqa isort:skip
-
 rtc = machine.RTC()
+
+PERIOD = const(15 * 60 * 1000)  # 15 min
 
 
 class NtpSync:
     error_count = 0
     success_count = 0
     last_refresh = None
+    _next_refresh = 0
 
-    timer = machine.Timer(-1)
-
-    def __init__(self):
-        print('Sync NTP on init')
-        self._sync()
-
-        print('Start NTP period timer')
-        self.timer.deinit()
-        self.timer.init(
-            period=constants.NTP_TIMER,
-            mode=machine.Timer.PERIODIC,
-            callback=self._timer_callback)
-
-    def _timer_callback(self, timer):
-        try:
-            self._sync()
-        except Exception as e:
-            sys.print_exception(e)
-            self.timer.deinit()
-
-    def _sync(self):
+    def sync(self):
         gc.collect()
 
-        if not wifi.is_connected:
-            print('Skip NTP sync: not connectet to a WiFi!')
+        if time.time() < self._next_refresh:
+            # Last sync wasn't too long ago -> do nothing
             return
+
+        self._next_refresh = time.time() + PERIOD
 
         print('Synchronize time from %r ...' % ntptime.host)
         print('old UTC:', rtc.datetime())
@@ -59,7 +39,7 @@ class NtpSync:
                 self.success_count += 1
                 self.last_refresh = rtc.datetime()
                 print('new UTC:', rtc.datetime())
-                watchdog.feed()
+                gc.collect()
                 return
 
     def __str__(self):

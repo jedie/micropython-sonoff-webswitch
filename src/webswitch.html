@@ -13,13 +13,14 @@
         <a href="/?power=off"><button class="button button2">OFF</button></a>
     </p>
     <p>
+        <a href="/?clear"><button class="button">Clear RTC RAM</button></a>
+        <a href="/?check_fw"><button class="button">Check Firmware</button></a>
         <a href="/?reset"><button class="button">Reset Device</button></a>
+        <a href="/?ota_update"><button class="button">Request OTA Updates</button></a>
     </p>
     <p><small>
-        {wifi}<br>
-        {ntp_sync}<br>
         {watchdog}<br>
-        {rtc_memory}
+        RTC RAM: {rtc_memory}
     </small></p>
     <p><small>
         total: {total:.2f} KB, used: {alloc:.2f} KB, free: {free:.2f} KB<br>

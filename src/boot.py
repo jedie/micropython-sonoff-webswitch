@@ -1,21 +1,20 @@
-import gc
-
-import esp
 import utime as time
-
-print('gc.collect()')
-gc.collect()
-
 
 for no in range(2, 0, -1):
     print('%i boot.py wait...' % no)
     time.sleep(1)
 
-
-print('Check Firmware:')
-assert esp.check_fw() is True, "Firmware error?!?"
+print('Setup ESP')
+import esp
 esp.osdebug(None)  # turn off vendor O/S debugging messages
 esp.sleep_type(esp.SLEEP_NONE)  # Don't go into sleep mode
 
+print('Alloc emergency exception buffer')
+import micropython
+micropython.alloc_emergency_exception_buf(128)
+
+print('gc.collect()')
+import gc
+gc.collect()
 
 print('boot.py END')
