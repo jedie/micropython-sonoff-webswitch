@@ -109,9 +109,17 @@ class OtaClient:
         self.command_send_ok(terminated=True)
         self.server_socket.sendall(b','.join([b'%i' % no for no in stat]))
         self.server_socket.sendall(b'\n')
+
         sha256 = hashlib.sha256()
-        with open(file_name, "rb") as f:
-            sha256.update(f.read(CHUNK_SIZE))
+        with open(file_name, 'rb') as f:
+            while True:
+                count = f.readinto(BUFFER, CHUNK_SIZE)
+                if count < CHUNK_SIZE:
+                    sha256.update(BUFFER[:count])
+                    break
+                else:
+                    sha256.update(BUFFER)
+
         sha256 = binascii.hexlify(sha256.digest())
         print('SHA256:', sha256)
         self.server_socket.sendall(sha256)
@@ -143,10 +151,14 @@ class OtaClient:
                 sha256 = hashlib.sha256()
                 received = 0
                 while True:
-                    count = self.server_socket.readinto(BUFFER, CHUNK_SIZE)
-                    if count == 0:
-                        break
+                    if received + CHUNK_SIZE > file_size:
+                        size = file_size - received
+                        if size == 0:
+                            break
+                    else:
+                        size = CHUNK_SIZE
 
+                    count = self.server_socket.readinto(BUFFER, size)
                     print('.', end='')
 
                     received += count
