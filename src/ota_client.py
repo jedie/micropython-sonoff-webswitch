@@ -19,8 +19,9 @@ import utime as time
 
 SOCKET_TIMEOUT = const(10)
 PORT = const(8266)
-CHUNK_SIZE = const(1024)
+CHUNK_SIZE = const(512)
 ENCODING = 'utf-8'
+BUFFER = bytearray(CHUNK_SIZE)
 
 
 def reset():
@@ -142,16 +143,16 @@ class OtaClient:
                 sha256 = hashlib.sha256()
                 received = 0
                 while True:
-                    data = self.server_socket.recv(CHUNK_SIZE)
-                    if not data:
+                    count = self.server_socket.readinto(BUFFER, CHUNK_SIZE)
+                    if count == 0:
                         break
 
                     print('.', end='')
 
-                    f.write(data)
-                    sha256.update(data)
+                    f.write(BUFFER)
+                    sha256.update(BUFFER)
 
-                    received += len(data)
+                    received += count
                     if received >= file_size:
                         print('completed')
                         break
