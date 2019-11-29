@@ -181,7 +181,7 @@ class OtaServer:
         return data
 
     def wait_for_ok(self, message='no OK received', raise_error=True):
-        print('Wait for OK...', end='')
+        print('Wait for OK...', end='', flush=True)
         ok = self.readline()
         print(ok)
         if ok != "OK":
