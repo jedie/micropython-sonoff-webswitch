@@ -149,13 +149,15 @@ class OtaClient:
 
                     print('.', end='')
 
-                    f.write(BUFFER)
-                    sha256.update(BUFFER)
-
                     received += count
                     if received >= file_size:
+                        f.write(BUFFER[:count])
+                        sha256.update(BUFFER[:count])
                         print('completed')
                         break
+
+                    f.write(BUFFER)
+                    sha256.update(BUFFER)
 
             print('Received %i Bytes' % received, end=' ')
 
@@ -181,10 +183,12 @@ class OtaClient:
                 sha256 = hashlib.sha256()
                 with open(file_name, 'rb') as f:
                     while True:
-                        data = f.read(CHUNK_SIZE)
-                        if not data:
+                        count = f.readinto(BUFFER, CHUNK_SIZE)
+                        if count < CHUNK_SIZE:
+                            sha256.update(BUFFER[:count])
                             break
-                        sha256.update(data)
+                        else:
+                            sha256.update(BUFFER)
 
                 hexdigest = binascii.hexlify(sha256.digest()).decode(ENCODING)
                 if hexdigest == file_sha256:
