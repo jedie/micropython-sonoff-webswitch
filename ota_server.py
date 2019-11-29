@@ -121,22 +121,19 @@ class OtaServer:
             print('File size not the same -> upload file.')
             return True
 
-        print('File size the same -> skip upload file.')
-        return False
+        print('File size the same: Check Hash.')
 
-        # print('File size the same: Check Hash.')
-        #
-        # with file_path.open('rb') as f:
-        #     local_sha256 = hashlib.sha256(f.read()).hexdigest()
-        #
-        # if local_sha256 != device_sha256:
-        #     print(f'Device file SHA256...: {device_sha256!r}')
-        #     print(f'Local file SHA256....: {local_sha256!r}')
-        #     print('File SHA256 hash not the same -> upload file.')
-        #     return True
-        #
-        # print('File SHA256 the same -> skip upload file.')
-        # return False
+        with file_path.open('rb') as f:
+            local_sha256 = hashlib.sha256(f.read()).hexdigest()
+
+        if local_sha256 != device_sha256:
+            print(f'Device file SHA256...: {device_sha256!r}')
+            print(f'Local file SHA256....: {local_sha256!r}')
+            print('File SHA256 hash not the same -> upload file.')
+            return True
+
+        print('File SHA256 the same -> skip upload file.')
+        return False
 
     def send_line(self, line):
         if not isinstance(line, bytes):
