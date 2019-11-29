@@ -40,12 +40,6 @@ class OtaClient:
     def run(self):
         self.server_socket.settimeout(SOCKET_TIMEOUT)
 
-        commands = {
-            'send_ok': self.send_ok,
-            'chunk_size': self.chunk_size,
-            'file_info': self.file_info,
-            'receive_file': self.receive_file,
-        }
         last_error = None
         while True:
             print('\nwait for command...', end='')
@@ -63,18 +57,20 @@ class OtaClient:
             gc.collect()
 
             try:
-                commands[command]()
-            except KeyError:
-                print('Command unknown!')
-            except Exception as e:
-                print('Error running command:')
-                sys.print_exception(e)
-                last_error = str(e)
-
-            print('Send new line: Command ends.')
-            self.server_socket.sendall(b'\n')
+                func = getattr(self, 'command_%s' % command)
+            except AttributeError:
+                self.server_socket.sendall(b'Command unknown!')
+            else:
+                try:
+                    func()
+                except Exception as e:
+                    print('Error running command:')
+                    sys.print_exception(e)
+                    last_error = str(e)
 
             gc.collect()
+            print('Send new line: Command ends.')
+            self.server_socket.sendall(b'\n')
 
         if last_error:
             raise AssertionError(last_error)
@@ -93,12 +89,12 @@ class OtaClient:
     def read_line_string(self):
         return self.read_line_bytes().decode(ENCODING)
 
-    def send_ok(self, terminated=False):
+    def command_send_ok(self, terminated=False):
         self.server_socket.sendall(b'OK')
         if terminated:
             self.server_socket.sendall(b'\n')
 
-    def file_info(self):
+    def command_file_info(self):
         """
         Send file size, SHA256 from local filesystem to server,
         """
@@ -110,7 +106,7 @@ class OtaClient:
         except OSError:
             self.server_socket.sendall(b'File not found!')
             return
-        self.send_ok(terminated=True)
+        self.command_send_ok(terminated=True)
         self.server_socket.sendall(b','.join([b'%i' % no for no in stat]))
         self.server_socket.sendall(b'\n')
         sha256 = hashlib.sha256()
@@ -120,13 +116,13 @@ class OtaClient:
         print('SHA256:', sha256)
         self.server_socket.sendall(sha256)
 
-    def chunk_size(self):
+    def command_chunk_size(self):
         """
         Send our chunk size in bytes.
         """
         self.server_socket.sendall(b'%i' % CHUNK_SIZE)
 
-    def receive_file(self):
+    def command_receive_file(self):
         """
         Store a new/updated file on local micropython device.
         """
@@ -137,7 +133,7 @@ class OtaClient:
         print('%i Bytes' % file_size)
         file_sha256 = self.read_line_string()
         print('SHA256: %r' % file_sha256)
-        self.send_ok(terminated=True)
+        self.command_send_ok(terminated=True)
 
         temp_file_name = '%s.temp' % file_name
         print('Create %s' % temp_file_name)
@@ -193,7 +189,7 @@ class OtaClient:
                 hexdigest = binascii.hexlify(sha256.digest()).decode(ENCODING)
                 if hexdigest == file_sha256:
                     print('Hash OK:', hexdigest)
-                    self.send_ok()
+                    self.command_send_ok()
                     return
 
             print('Hash Error:', hexdigest)
