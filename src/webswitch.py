@@ -36,10 +36,10 @@ def schedule_reset(period=5000):
     )
 
 
-def send_web_page(writer, message=''):
-    yield from writer.awrite('HTTP/1.0 200 OK\r\n')
-    yield from writer.awrite('Content-type: text/html; charset=utf-8\r\n')
-    yield from writer.awrite('Connection: close\r\n\r\n')
+async def send_web_page(writer, message=''):
+    await writer.awrite('HTTP/1.0 200 OK\r\n')
+    await writer.awrite('Content-type: text/html; charset=utf-8\r\n')
+    await writer.awrite('Connection: close\r\n\r\n')
 
     alloc = gc.mem_alloc() / 1024
     free = gc.mem_free() / 1024
@@ -76,7 +76,7 @@ def send_web_page(writer, message=''):
             if not line:
                 break
             gc.collect()
-            yield from writer.awrite(line.format(**context))
+            await writer.awrite(line.format(**context))
             gc.collect()
     gc.collect()
 
@@ -90,7 +90,7 @@ async def request_handler(reader, writer):
     address = writer.get_extra_info('peername')
     print('Accepted connection from %s:%s' % address)
 
-    request = yield from reader.read()
+    request = await reader.read()
 
     request, body = request.split(b'\r\n\r\n', 1)
     request, headers = request.split(b'\r\n', 1)
@@ -111,40 +111,40 @@ async def request_handler(reader, writer):
     if method == 'GET':
         if url == '/':
             print('response root page')
-            yield from send_web_page(writer, message='')
+            await send_web_page(writer, message='')
             not_found = False
 
         elif url == '/favicon.ico':
-            yield from writer.awrite('HTTP/1.0 200 OK\r\n')
-            yield from writer.awrite('Content-Type: image/x-icon\r\n')
-            yield from writer.awrite('Cache-Control: max-age=6000\r\n')
-            yield from writer.awrite('\r\n')
+            await writer.awrite('HTTP/1.0 200 OK\r\n')
+            await writer.awrite('Content-Type: image/x-icon\r\n')
+            await writer.awrite('Cache-Control: max-age=6000\r\n')
+            await writer.awrite('\r\n')
             with open('favicon.ico', 'rb') as f:
-                yield from writer.awrite(f.read())
+                await writer.awrite(f.read())
             not_found = False
 
         elif url == '/webswitch.css':
-            yield from writer.awrite('HTTP/1.0 200 OK\r\n')
-            yield from writer.awrite('Content-Type: text/css\r\n')
-            yield from writer.awrite('Cache-Control: max-age=6000\r\n')
-            yield from writer.awrite('\r\n')
+            await writer.awrite('HTTP/1.0 200 OK\r\n')
+            await writer.awrite('Content-Type: text/css\r\n')
+            await writer.awrite('Cache-Control: max-age=6000\r\n')
+            await writer.awrite('\r\n')
             with open('webswitch.css', 'rb') as f:
-                yield from writer.awrite(f.read())
+                await writer.awrite(f.read())
             not_found = False
 
         elif url == '/?power=on':
             relay.on()
-            yield from send_web_page(writer, message='power on')
+            await send_web_page(writer, message='power on')
             not_found = False
 
         elif url == '/?power=off':
             relay.off()
-            yield from send_web_page(writer, message='power off')
+            await send_web_page(writer, message='power off')
             not_found = False
 
         elif url == '/?clear':
             rtc_memory.clear()
-            yield from send_web_page(writer, message='RTC RAM cleared')
+            await send_web_page(writer, message='RTC RAM cleared')
             not_found = False
 
         elif url == '/?check_fw':
@@ -154,7 +154,7 @@ async def request_handler(reader, writer):
                 message = 'esp.check_fw(): OK'
             else:
                 message = 'Firmware error! Please check: esp.check_fw() !'
-            yield from send_web_page(writer, message=message)
+            await send_web_page(writer, message=message)
             not_found = False
 
         elif url == '/?ota_update':
@@ -166,7 +166,7 @@ async def request_handler(reader, writer):
                 'run': 'ota-update',  # triggered in main.py
             })
 
-            yield from send_web_page(writer, message='Run OTA Update after device reset...')
+            await send_web_page(writer, message='Run OTA Update after device reset...')
             schedule_reset()
             not_found = False
 
@@ -176,7 +176,7 @@ async def request_handler(reader, writer):
             # Save to RTC RAM:
             rtc_memory.save(data={constants.RTC_KEY_RESET_REASON: 'Reset via web page'})
 
-            yield from send_web_page(
+            await send_web_page(
                 writer,
                 message=(
                     'Reset device...'
@@ -187,30 +187,33 @@ async def request_handler(reader, writer):
 
     if not_found:
         print('not found -> 404')
-        yield from writer.awrite('HTTP/1.0 404 Not Found\r\n\r\n')
+        await writer.awrite('HTTP/1.0 404 Not Found\r\n\r\n')
 
-    yield from writer.aclose()
+    await writer.aclose()
     gc.collect()
 
     power_led.on()
 
 
-# Start Webserver:
+def main():
+    s = 1
+    while not wifi.is_connected:
+        print('Wait for WiFi connection %s sec.' % s)
+        time.sleep(s)
+        s += 5
 
-s = 1
-while not wifi.is_connected:
-    print('Wait for WiFi connection %s sec.' % s)
-    time.sleep(s)
-    s += 5
+    print('Start webserver on %s...' % wifi.station.ifconfig()[0])
+    loop = asyncio.get_event_loop()
 
-print('Start webserver on %s...' % wifi.station.ifconfig()[0])
-loop = asyncio.get_event_loop()
+    coro = asyncio.start_server(request_handler, '0.0.0.0', 80)
+    loop.create_task(coro)
 
-coro = asyncio.start_server(request_handler, '0.0.0.0', 80)
-loop.create_task(coro)
+    gc.collect()
 
-gc.collect()
+    print('run forever...')
+    power_led.on()
+    loop.run_forever()
 
-print('run forever...')
-power_led.on()
-loop.run_forever()
+
+if __name__ == '__main__':
+    main()

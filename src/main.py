@@ -72,4 +72,5 @@ print('gc.collect()')
 gc.collect()
 
 # Start the Webserver:
-import webswitch  # noqa isort:skip
+from webswitch import main  # noqa isort:skip
+main()
