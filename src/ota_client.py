@@ -45,7 +45,7 @@ class OtaClient:
             print('\nwait for command...', end='')
             command = self.read_line_string()
             if not command:
-                print('Get empty command: Abort.')
+                self.server_socket.sendall(b'Get empty command: Abort.')
                 break
 
             print('Receive command:', command)
