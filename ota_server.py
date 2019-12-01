@@ -10,7 +10,6 @@
 import asyncio
 import hashlib
 import socket
-import sys
 import time
 from pathlib import Path
 
@@ -93,7 +92,7 @@ class OtaServer:
 
     async def update_device(self, reader, writer):
         peername = writer.get_extra_info('peername')
-        print('Send Updates to %s:%i' % peername)
+        print(f'Send Updates to {peername[0]}:{peername[1]}')
 
         await self.request_ping(reader, writer)
         self.client_chunk_size = await self.get_client_chunk_size(reader, writer)
@@ -127,7 +126,7 @@ class OtaServer:
 
         await self.request_exit(reader, writer)
         print('*' * 100)
-        print(f'*** Device {peername} update done:')
+        print(f'*** Device {peername[0]}:{peername[1]} update done:')
         print(f'*** {file_count} files')
         print(f'*** {up2date} files are up-to-date on device')
         print(f'*** {len(updated)} files updated on device:')
@@ -184,6 +183,8 @@ class OtaServer:
         return client_chunk_size
 
     async def request_files_info(self, reader, writer):
+        print('Request files info from device:')
+
         await writer.write_text_line('files_info')
         data = await self.receive_all(reader)
         data = data.rstrip('\r\n')
@@ -302,50 +303,10 @@ if __name__ == '__main__':
         src_path=Path(base_path, 'src'),  # Put these files on micropython device
         verbose=False,
     )
-    # while True:
-    print(ota_server.run(port=PORT))
-    # sys.exit()
-
-    # scanner = PortScanner()
-    #
-    # while True:
-    #     # print('\nScan alive IPs...')
-    #     # ips = scanner.get_alive_ips(exclude_own=False, timeout=0.5)
-    #     # if not ips:
-    #     #     print('No IP found?!?')
-    #     # else:
-    #     #     for ip, result in ips:
-    #     #         print(f' * {ip}')
-    #
-    #     print('\nDevice scan...')
-    #     ips = scanner.find_device_ip(port=PORT, exclude_own=True, timeout=0.5)
-    #     if not ips:
-    #         print('No device found!')
-    #         sys.exit()
-    #         for i in range(5, 1, -1):
-    #             print(f'Retry in {i} sec...')
-    #             time.sleep(1)
-    #     else:
-    #         for ip, result in ips:
-    #             print(f' * {ip}')
-    #
-    #             base_path = Path(__file__).parent
-    #             server = OtaServer(
-    #                 ip=ip,
-    #                 src_path=Path(base_path, 'src'),  # Put these files on micropython device
-    #                 verbose=False,
-    #             )
-    #             while True:
-    #                 print('Start Server (Abort with Control-C)')
-    #                 try:
-    #                     await server.run(*result)
-    #                 except (CommunicationError, socket.timeout) as err:
-    #                     print('Error:', err)
-    #                 except KeyboardInterrupt:
-    #                     sys.exit()
-    #
-    #                 sys.exit()
-    #
-    #                 for i in range(5, 1, -1):
-    #                     print(f'Restart server in {i} sec...')
-    #                     time.sleep(1)
+    while True:
+        clients = ota_server.run(port=PORT)
+        print('_'*100)
+        print(f'Update {len(clients)} device(s), ok.')
+        for i in range(5, 1, -1):
+            print(f'Restart server in {i} sec')
+            time.sleep(1)

@@ -11,22 +11,19 @@ rtc = machine.RTC()
 
 
 class WiFi:
-    verbose = True  # verbose while startup -> set to False after first start
     connected_time = 0
 
     not_connected_count = 0
     is_connected_count = 0
     last_refresh = None
 
-    def __init__(self):
+    def __init__(self, verbose):
+        self.verbose = verbose
+
         print('Setup WiFi interfaces')
         self.access_point = network.WLAN(network.AP_IF)  # access-point interface
         self.station = network.WLAN(network.STA_IF)  # WiFi station interface
         self.station.active(True)  # activate the interface
-
-        print('ensure connection on init')
-        self.ensure_connection()
-        self.verbose=False
 
     @property
     def is_connected(self):
@@ -103,16 +100,16 @@ class WiFi:
     def _connect(self, ssid, password):
         for no in range(0, 3):
             if self.verbose:
-                print('PHY mode:', network.phy_mode())
+                print('PHY mode: %s' % network.phy_mode())
             # print('Connect to Wifi access point:', ssid, repr(password))
             if self.verbose:
-                print('Connect to Wifi access point:', ssid)
+                print('Connect to Wifi access point: %s' % ssid)
             power_led.toggle()
             self.station.connect(ssid, password)
             for wait_sec in range(30, 1, -1):
                 status = self.station.status()
                 if status == network.STAT_GOT_IP:
-                    # print('MAC:', self.station.config('mac'))
+                    self.connected_time = time.time()
                     power_led.on()
                     return
                 elif status == network.STAT_WRONG_PASSWORD:
@@ -122,17 +119,12 @@ class WiFi:
                     print('wait %i...' % wait_sec)
                 power_led.flash(sleep=0.1, count=10)
 
-            if self.station.isconnected():
-                if self.verbose:
-                    print('Connected to:', ssid)
-                return
-            else:
-                if self.verbose:
-                    print('Try again...')
-                self.station.active(False)
-                power_led.flash(sleep=0.1, count=20)
-                power_led.off()
-                self.station.active(True)
+            if self.verbose:
+                print('Try again...')
+            self.station.active(False)
+            power_led.flash(sleep=0.1, count=20)
+            power_led.off()
+            self.station.active(True)
 
         print("ERROR: WiFi not connected! Password wrong?!?")
         power_led.flash(sleep=0.2, count=20)
@@ -143,7 +135,7 @@ class WiFi:
         )
 
 
-wifi = WiFi()
-
 if __name__ == '__main__':
-    print(wifi)
+    wifi = WiFi(verbose=True)
+    wifi.ensure_connection()
+    print('wifi:', wifi)

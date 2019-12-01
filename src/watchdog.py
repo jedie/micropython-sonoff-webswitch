@@ -7,7 +7,8 @@ import uerrno as errno
 import usocket as socket
 import utime as time
 from rtc_memory import rtc_memory
-from wifi import wifi
+
+_CHECK_PERIOD = const(50 * 1000)  # 50 sec
 
 rtc = machine.RTC()
 
@@ -59,13 +60,13 @@ class Watchdog:
 
     timer = machine.Timer(-1)
 
-    def __init__(self, check_period=None):
-        self.check_period = check_period or constants.WATCHDOG_CHECK_PERIOD
+    def __init__(self, wifi):
+        self.wifi = wifi
 
         print('Start Watchdog period timer')
         self.timer.deinit()
         self.timer.init(
-            period=self.check_period,
+            period=_CHECK_PERIOD,
             mode=machine.Timer.PERIODIC,
             callback=self._timer_callback
         )
@@ -73,10 +74,10 @@ class Watchdog:
     def _timer_callback(self, timer):
         gc.collect()
 
-        if not wifi.is_connected:
-            wifi.ensure_connection()
+        if not self.wifi.is_connected:
+            self.wifi.ensure_connection()
 
-        last_connection = time.time() - wifi.connected_time
+        last_connection = time.time() - self.wifi.connected_time
         if last_connection > constants.WIFI_TIMEOUT:
             reset('WiFi timeout')
 
@@ -100,13 +101,3 @@ class Watchdog:
             self.last_check, self.check_count,
             reset_count, reset_reason
         )
-
-
-watchdog = Watchdog()
-
-
-if __name__ == '__main__':
-    print('Create a shorter Watchdog...')
-    watchdog.deinit()
-    watchdog = Watchdog(check_period=10)
-    print(watchdog)

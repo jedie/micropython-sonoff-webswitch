@@ -1,23 +1,21 @@
 """
     OTA Client for micropython devices
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    Connect to OTA Server and run commands from him
+    Wait for OTA Server and run commands from him
     to update local files.
-
-    This script must be run on the micropython device.
 """
 import gc
 import sys
 
 import machine
-import network
 import uasyncio as asyncio
 import ubinascii as binascii
 import uhashlib as hashlib
 import uos as os
 import utime as time
 
-_SOCKET_TIMEOUT = const(10)
+_CONNECTION_TIMEOUT = const(30)
+_OTA_TIMEOUT = const(60)
 _PORT = const(8266)
 _CHUNK_SIZE = const(512)
 _BUFFER = bytearray(_CHUNK_SIZE)
@@ -26,15 +24,54 @@ _FILE_TYPE = const(0x8000)
 
 def reset(reason):
     print('Reset because: %s' % reason)
-    # for no in range(3, 1, -1):
-    #     print('Hard reset device in %i sec...' % no)
-    #     time.sleep(1)
     machine.reset()
     time.sleep(1)
     sys.exit(-1)
 
 
-class OtaClient:
+class Timeout:
+    def __init__(self, reason, timeout_sec):
+        self.reason = reason
+        self.satisfied = False
+        self.timer = machine.Timer(-1)
+        self.timer.init(
+            period=timeout_sec * 1000,
+            mode=machine.Timer.PERIODIC,
+            callback=self._timer_callback
+        )
+
+    def _timer_callback(self, timer):
+        gc.collect()
+        if not self.satisfied:
+            reset(self.reason)
+
+    def deinit(self):
+        self.timer.deinit()
+
+
+class OtaUpdate:
+    def __init__(self):
+        self.timeout = None  # Will be set in run() and __call__()
+
+    def run(self):
+        gc.collect()
+
+        loop = asyncio.get_event_loop()
+        loop.create_task(asyncio.start_server(self, '0.0.0.0', _PORT))
+
+        print('Wait %i sec for OTA connection on port %i' % (_CONNECTION_TIMEOUT, _PORT))
+        self.timeout = Timeout(reason='no connection', timeout_sec=_CONNECTION_TIMEOUT)
+
+        try:
+            loop.run_forever()
+        except Exception as e:
+            sys.print_exception(e)
+        except SystemExit as e:
+            if e.args[0] == 0:
+                reset('OTA Update complete successfully!')
+            reset('Unknown sys exit code.')
+        reset('OTA unknown error')
+
     async def read_line_string(self, reader):
         data = await reader.readline()
         return data.rstrip(b'\n').decode('utf-8')
@@ -48,36 +85,32 @@ class OtaClient:
         reset(text)
 
     async def __call__(self, reader, writer):
+        self.timeout.deinit()
+        gc.collect()
+        self.timeout = Timeout(reason='OTA timeout', timeout_sec=_OTA_TIMEOUT)
         address = writer.get_extra_info('peername')
         print('Accepted connection from %s:%s' % address)
         while True:
             command = await self.read_line_string(reader)
             print('Receive command:', command)
-            if not command:
-                reset('Empty command?!?')
-
-            command = 'command_%s' % command
-            if command == 'command_exit':
-                print('exit!')
-                await self.command_send_ok(reader, writer)
-                sys.exit(0)
 
             gc.collect()
             try:
-                func = getattr(self, command)
-            except AttributeError as e:
-                sys.print_exception(e)
+                await getattr(self, 'command_%s' % command)(reader, writer)
+            except AttributeError:
                 await self.error(writer, 'Command unknown')
-            else:
-                print('call:', command)
-                try:
-                    await func(reader, writer)
-                except Exception as e:
-                    sys.print_exception(e)
-                    await self.error(writer, 'Command error')
+            except Exception as e:
+                sys.print_exception(e)
+                await self.error(writer, 'Command error')
 
     async def command_send_ok(self, reader, writer):
         await self.write_line_string(writer, 'OK')
+
+    async def command_exit(self, reader, writer):
+        await self.command_send_ok(reader, writer)
+        self.timeout.deinit()
+        time.sleep(1)  # Don't close connection before server processed 'OK'
+        sys.exit(0)
 
     async def command_chunk_size(self, reader, writer):
         await self.write_line_string(writer, '%i' % _CHUNK_SIZE)
@@ -177,37 +210,5 @@ class OtaClient:
                 pass
 
 
-def assert_wlan_is_active():
-    for interface_type in (network.AP_IF, network.STA_IF):
-        wlan = network.WLAN(interface_type)
-        if wlan.active():
-            if wlan.isconnected():
-                print('Connected to station IP/netmask/gw/DNS addresses:', wlan.ifconfig())
-                return True
-
-    raise AssertionError('WiFi not active and connected!')
-
-
-def do_ota_update():
-    gc.collect()
-    print('Start web server on port:', _PORT)
-    assert_wlan_is_active()
-    gc.collect()
-
-    loop = asyncio.get_event_loop()
-    loop.create_task(asyncio.start_server(OtaClient(), '0.0.0.0', _PORT))
-    print('run forever...')
-    try:
-        loop.run_forever()
-    except Exception as e:
-        sys.print_exception(e)
-    except SystemExit as e:
-        if e.args[0] == 0:
-            print('OTA Update complete successfully')
-            sys.exit()
-        reset('Unknown sys exit code.')
-    reset('OTA unknown error')
-
-
 if __name__ == '__main__':
-    do_ota_update()
+    OtaUpdate().run()

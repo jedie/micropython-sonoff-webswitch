@@ -7,213 +7,179 @@ import uasyncio as asyncio
 import utime as time
 from leds import power_led, relay
 from rtc_memory import rtc_memory
-from watchdog import watchdog
-from wifi import wifi
 
 power_led.off()
 
 rtc = machine.RTC()
 
 button_pin = machine.Pin(0, machine.Pin.IN)
+HTTP_LINE_200 = b'HTTP/1.0 200 OK\r\n'
+HTTP_LINE_CACHE = b'Cache-Control: max-age=6000\r\n'
 
 
 def reset():
-    print('Hard reset device wait with flash LED...')
-    power_led.flash(sleep=0.2, count=20)
     print('Hard reset device...')
+    power_led.off()
     time.sleep(1)
     machine.reset()
     time.sleep(1)
     sys.exit()
 
 
-def schedule_reset(period=5000):
+def schedule_reset(period=2000):
     timer = machine.Timer(-1)
     timer.init(
         mode=machine.Timer.ONE_SHOT,
         period=period,
-        callback=reset()
+        callback=reset
     )
 
 
-async def send_web_page(writer, message=''):
-    await writer.awrite('HTTP/1.0 200 OK\r\n')
-    await writer.awrite('Content-type: text/html; charset=utf-8\r\n')
-    await writer.awrite('Connection: close\r\n\r\n')
+class WebServer:
+    def __init__(self, watchdog):
+        self.watchdog = watchdog
 
-    alloc = gc.mem_alloc() / 1024
-    free = gc.mem_free() / 1024
+    def run(self):
+        print('Start web server...')
+        loop = asyncio.get_event_loop()
+        loop.create_task(asyncio.start_server(self.request_handler, '0.0.0.0', 80))
 
-    # uname = os.uname()
+        gc.collect()
 
-    gc.collect()
+        power_led.on()
+        loop.run_forever()
 
-    context = {
-        'state': relay.state,
-        'message': message,
+    async def send_web_page(self, writer, message=''):
+        await writer.awrite(HTTP_LINE_200)
+        await writer.awrite(b'Content-type: text/html; charset=utf-8\r\n')
+        await writer.awrite(b'\r\n')
 
-        # 'wifi': wifi,
-        # 'ntp_sync': ntp_sync,
-        'watchdog': watchdog,
-        'rtc_memory': rtc_memory.d,
+        alloc = gc.mem_alloc() / 1024
+        free = gc.mem_free() / 1024
 
-        # 'nodename': uname.nodename,
-        # 'id': ':'.join(['%02x' % char for char in reversed(machine.unique_id())]),
-        # 'machine': uname.machine,
-        # 'release': uname.release,
-        # 'version': uname.version,
-        #
-        'total': alloc + free,
-        'alloc': alloc,
-        'free': free,
+        gc.collect()
 
-        'utc': rtc.datetime(),
-    }
-    gc.collect()
-    with open('webswitch.html', 'r') as f:
-        while True:
-            line = f.readline()
-            if not line:
-                break
-            gc.collect()
-            await writer.awrite(line.format(**context))
-            gc.collect()
-    gc.collect()
+        context = {
+            'state': relay.state,
+            'message': message,
 
+            'watchdog': self.watchdog,
+            'rtc_memory': rtc_memory.d,
 
-async def request_handler(reader, writer):
-    power_led.off()
+            'total': alloc + free,
+            'alloc': alloc,
+            'free': free,
 
-    print('\nWait for request on %s...' % wifi.station.ifconfig()[0])
-    gc.collect()
+            'utc': rtc.datetime(),
+        }
+        gc.collect()
+        with open('webswitch.html', 'r') as f:
+            while True:
+                line = f.readline()
+                if not line:
+                    break
+                gc.collect()
+                await writer.awrite(line.format(**context))
+                gc.collect()
+        gc.collect()
 
-    address = writer.get_extra_info('peername')
-    print('Accepted connection from %s:%s' % address)
+    async def request_handler(self, reader, writer):
+        power_led.off()
+        gc.collect()
 
-    request = await reader.read()
+        print('Accepted connection from:', writer.get_extra_info('peername'))
 
-    request, body = request.split(b'\r\n\r\n', 1)
-    request, headers = request.split(b'\r\n', 1)
-    request = request.decode('UTF-8')
-    print('request: %r' % request)
-    print('headers:', headers)
+        request = await reader.read()
 
-    body = body.decode('UTF-8')
-    print('body: %r' % body)
+        request, body = request.split(b'\r\n\r\n', 1)
+        request, headers = request.split(b'\r\n', 1)
+        request = request.decode('UTF-8')
+        print('request: %r' % request)
+        print('headers:', headers)
 
-    method, url, version = request.split(' ', 2)
-    print(method, url, version)
+        # body = body.decode('UTF-8')
+        # print('body: %r' % body)
 
-    not_found = True
+        method, url, version = request.split(' ', 2)
+        print(method, url, version)
 
-    gc.collect()
+        not_found = True
 
-    if method == 'GET':
-        if url == '/':
-            print('response root page')
-            await send_web_page(writer, message='')
-            not_found = False
+        gc.collect()
 
-        elif url == '/favicon.ico':
-            await writer.awrite('HTTP/1.0 200 OK\r\n')
-            await writer.awrite('Content-Type: image/x-icon\r\n')
-            await writer.awrite('Cache-Control: max-age=6000\r\n')
-            await writer.awrite('\r\n')
-            with open('favicon.ico', 'rb') as f:
-                await writer.awrite(f.read())
-            not_found = False
+        if method == 'GET':
+            if url == '/':
+                print('response root page')
+                await self.send_web_page(writer, message='')
+                not_found = False
 
-        elif url == '/webswitch.css':
-            await writer.awrite('HTTP/1.0 200 OK\r\n')
-            await writer.awrite('Content-Type: text/css\r\n')
-            await writer.awrite('Cache-Control: max-age=6000\r\n')
-            await writer.awrite('\r\n')
-            with open('webswitch.css', 'rb') as f:
-                await writer.awrite(f.read())
-            not_found = False
+            elif url == '/favicon.ico':
+                await writer.awrite(HTTP_LINE_200)
+                await writer.awrite(b'Content-Type: image/x-icon\r\n')
+                await writer.awrite(HTTP_LINE_CACHE)
+                await writer.awrite(b'\r\n')
+                with open('favicon.ico', 'rb') as f:
+                    await writer.awrite(f.read())
+                not_found = False
 
-        elif url == '/?power=on':
-            relay.on()
-            await send_web_page(writer, message='power on')
-            not_found = False
+            elif url == '/webswitch.css':
+                await writer.awrite(HTTP_LINE_200)
+                await writer.awrite(b'Content-Type: text/css\r\n')
+                await writer.awrite(HTTP_LINE_CACHE)
+                await writer.awrite(b'\r\n')
+                with open('webswitch.css', 'rb') as f:
+                    await writer.awrite(f.read())
+                not_found = False
 
-        elif url == '/?power=off':
-            relay.off()
-            await send_web_page(writer, message='power off')
-            not_found = False
+            elif url == '/?power=on':
+                relay.on()
+                await self.send_web_page(writer, message='power on')
+                not_found = False
 
-        elif url == '/?clear':
-            rtc_memory.clear()
-            await send_web_page(writer, message='RTC RAM cleared')
-            not_found = False
+            elif url == '/?power=off':
+                relay.off()
+                await self.send_web_page(writer, message='power off')
+                not_found = False
 
-        elif url == '/?check_fw':
-            import esp
-            check = esp.check_fw()
-            if check:
-                message = 'esp.check_fw(): OK'
-            else:
-                message = 'Firmware error! Please check: esp.check_fw() !'
-            await send_web_page(writer, message=message)
-            not_found = False
+            elif url == '/?clear':
+                rtc_memory.clear()
+                await self.send_web_page(writer, message='RTC RAM cleared')
+                not_found = False
 
-        elif url == '/?ota_update':
-            print('Set OTA update RTC RAM trigger...')
+            elif url == '/?ota_update':
+                print('Set OTA update RTC RAM trigger...')
 
-            # Save to RTC RAM:
-            rtc_memory.save(data={
-                constants.RTC_KEY_RESET_REASON: 'OTA Update via web page',
-                'run': 'ota-update',  # triggered in main.py
-            })
+                # Save to RTC RAM:
+                rtc_memory.save(data={
+                    constants.RTC_KEY_RESET_REASON: 'OTA Update via web page',
+                    'run': 'ota-update',  # triggered in main.py
+                })
 
-            await send_web_page(writer, message='Run OTA Update after device reset...')
-            schedule_reset()
-            not_found = False
+                await self.send_web_page(writer, message='Run OTA Update after device reset...')
+                schedule_reset()
+                not_found = False
 
-        elif url == '/?reset':
-            relay.off()
+            elif url == '/?reset':
+                relay.off()
 
-            # Save to RTC RAM:
-            rtc_memory.save(data={constants.RTC_KEY_RESET_REASON: 'Reset via web page'})
+                # Save to RTC RAM:
+                rtc_memory.save(data={constants.RTC_KEY_RESET_REASON: 'Reset via web page'})
 
-            await send_web_page(
-                writer,
-                message=(
-                    'Reset device...'
-                    ' Restart WebServer by pressing the Button on your device!'
-                ))
-            schedule_reset()
-            not_found = False
+                await self.send_web_page(
+                    writer,
+                    message=(
+                        'Reset device...'
+                        ' Restart WebServer by pressing the Button on your device!'
+                    ))
+                schedule_reset()
+                not_found = False
 
-    if not_found:
-        print('not found -> 404')
-        await writer.awrite('HTTP/1.0 404 Not Found\r\n\r\n')
+        if not_found:
+            print('not found -> 404')
+            await writer.awrite(b'HTTP/1.0 404 Not Found\r\n')
+            await writer.awrite(b'\r\n')
 
-    await writer.aclose()
-    gc.collect()
+        await writer.aclose()
+        gc.collect()
 
-    power_led.on()
-
-
-def main():
-    s = 1
-    while not wifi.is_connected:
-        print('Wait for WiFi connection %s sec.' % s)
-        time.sleep(s)
-        s += 5
-
-    print('Start webserver on %s...' % wifi.station.ifconfig()[0])
-    loop = asyncio.get_event_loop()
-
-    coro = asyncio.start_server(request_handler, '0.0.0.0', 80)
-    loop.create_task(coro)
-
-    gc.collect()
-
-    print('run forever...')
-    power_led.on()
-    loop.run_forever()
-
-
-if __name__ == '__main__':
-    main()
+        power_led.on()
