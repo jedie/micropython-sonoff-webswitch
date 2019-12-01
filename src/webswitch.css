@@ -17,3 +17,7 @@ small {
     font-family: "Courier New", Courier, monospace;
     font-size: 0.5em;
 }
+address {
+	font-family: Tahoma, Geneva, sans-serif;
+    font-size: 0.5em;
+}

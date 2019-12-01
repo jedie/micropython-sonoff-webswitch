@@ -10,10 +10,11 @@ HTTP_LINE_CACHE = b'Cache-Control: max-age=6000\r\n'
 
 
 class WebServer:
-    def __init__(self, pins, rtc, watchdog):
+    def __init__(self, pins, rtc, watchdog, version):
         self.pins = pins
         self.rtc = rtc
         self.watchdog = watchdog
+        self.version = version
         self.message = 'Web server started...'
 
     def run(self):
@@ -42,6 +43,7 @@ class WebServer:
         gc.collect()
 
         context = {
+            'version': self.version,
             'state': self.pins.relay.state,
             'message': self.message,
 
@@ -137,7 +139,7 @@ class WebServer:
                     ' Restart WebServer by pressing the Button on your device!'
                 )
                 await self.send_redirect(writer)
-                ResetDevice(rtc=self.rtc, reason='Reset via web page').schedule()
+                ResetDevice(rtc=self.rtc, reason='Reset via web page').schedule(period=5000)
                 not_found = False
 
         if not_found:

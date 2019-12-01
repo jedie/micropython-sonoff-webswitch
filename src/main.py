@@ -8,6 +8,8 @@ from rtc import Rtc
 from utils import ResetDevice
 from wifi import WiFi
 
+__version__ = 'v0.1.1'
+
 rtc = Rtc()
 pins = Pins()
 
@@ -31,7 +33,7 @@ if rtc.d.get(_RTC_KEY_RUN) == _RUN_WEB_SERVER:
 
     watchdog = Watchdog(wifi=wifi, rtc=rtc)
     gc.collect()
-    WebServer(pins=pins, rtc=rtc, watchdog=watchdog).run()
+    WebServer(pins=pins, rtc=rtc, watchdog=watchdog, version=__version__).run()
 else:
     print('start OTA')
     pins.power_led.off()
