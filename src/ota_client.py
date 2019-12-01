@@ -11,172 +11,139 @@ import sys
 
 import machine
 import network
+import uasyncio as asyncio
 import ubinascii as binascii
 import uhashlib as hashlib
 import uos as os
-import usocket as socket
 import utime as time
 
-SOCKET_TIMEOUT = const(10)
-PORT = const(8266)
-CHUNK_SIZE = const(512)
-ENCODING = 'utf-8'
-BUFFER = bytearray(CHUNK_SIZE)
-FILE_TYPE = const(0x8000)
+_SOCKET_TIMEOUT = const(10)
+_PORT = const(8266)
+_CHUNK_SIZE = const(512)
+_BUFFER = bytearray(_CHUNK_SIZE)
+_FILE_TYPE = const(0x8000)
 
 
-def reset():
-    for no in range(3, 1, -1):
-        print('Hard reset device in %i sec...' % no)
-        time.sleep(1)
+def reset(reason):
+    print('Reset because: %s' % reason)
+    # for no in range(3, 1, -1):
+    #     print('Hard reset device in %i sec...' % no)
+    #     time.sleep(1)
     machine.reset()
     time.sleep(1)
-    sys.exit()
+    sys.exit(-1)
 
 
 class OtaClient:
-    def __init__(self, server_socket):
-        self.server_socket = server_socket
+    async def read_line_string(self, reader):
+        data = await reader.readline()
+        return data.rstrip(b'\n').decode('utf-8')
 
-    def run(self):
-        self.server_socket.settimeout(SOCKET_TIMEOUT)
+    async def write_line_string(self, writer, text):
+        await writer.awrite(b'%s\n' % text.encode('utf-8'))
 
-        last_error = None
+    async def error(self, writer, text):
+        print('ERROR: %s' % text)
+        await self.write_line_string(writer, text)
+        reset(text)
+
+    async def __call__(self, reader, writer):
+        address = writer.get_extra_info('peername')
+        print('Accepted connection from %s:%s' % address)
         while True:
-            print('\nwait for command...', end='')
-            command = self.read_line_string()
-            if not command:
-                self.server_socket.sendall(b'Get empty command: Abort.')
-                break
-
+            command = await self.read_line_string(reader)
             print('Receive command:', command)
-            if command == 'exit':
+            if not command:
+                reset('Empty command?!?')
+
+            command = 'command_%s' % command
+            if command == 'command_exit':
                 print('exit!')
-                self.command_send_ok()
-                break
+                await self.command_send_ok(reader, writer)
+                sys.exit(0)
 
             gc.collect()
-
             try:
-                func = getattr(self, 'command_%s' % command)
-            except AttributeError:
-                self.server_socket.sendall(b'Command unknown!')
+                func = getattr(self, command)
+            except AttributeError as e:
+                sys.print_exception(e)
+                await self.error(writer, 'Command unknown')
             else:
+                print('call:', command)
                 try:
-                    func()
+                    await func(reader, writer)
                 except Exception as e:
-                    print('Error running command:')
                     sys.print_exception(e)
-                    last_error = str(e)
+                    await self.error(writer, 'Command error')
 
-            gc.collect()
-            print('Send new line: Command ends.')
-            self.server_socket.sendall(b'\n')
+    async def command_send_ok(self, reader, writer):
+        await self.write_line_string(writer, 'OK')
 
-        if last_error:
-            raise AssertionError(last_error)
+    async def command_chunk_size(self, reader, writer):
+        await self.write_line_string(writer, '%i' % _CHUNK_SIZE)
 
-        return 'OK'
-
-    def read_line_bytes(self):
-        gc.collect()
-        line_bytes = self.server_socket.readline()
-        if not line_bytes:
-            return b''
-        if not line_bytes.endswith(b'\n'):
-            raise AssertionError('Byte line not terminated:', repr(line_bytes))
-        return line_bytes[:-1]
-
-    def read_line_string(self):
-        return self.read_line_bytes().decode(ENCODING)
-
-    def command_send_ok(self, terminated=False):
-        self.server_socket.sendall(b'OK')
-        if terminated:
-            self.server_socket.sendall(b'\n')
-
-    def command_chunk_size(self):
-        """
-        Send our chunk size in bytes.
-        """
-        self.server_socket.sendall(b'%i' % CHUNK_SIZE)
-
-    def command_files_info(self):
+    async def command_files_info(self, reader, writer):
+        print('Send files info...')
         for name, file_type, inode, size in os.ilistdir():
-            if file_type != FILE_TYPE:
+            if file_type != _FILE_TYPE:
                 print(' *** Skip: %s' % name)
                 continue
 
-            self.server_socket.sendall(b'%s\r%i\r' % (name, size))
+            await writer.awrite(b'%s\r%i\r' % (name, size))
 
             sha256 = hashlib.sha256()
             with open(name, 'rb') as f:
                 while True:
-                    count = f.readinto(BUFFER, CHUNK_SIZE)
-                    if count < CHUNK_SIZE:
-                        sha256.update(BUFFER[:count])
+                    count = f.readinto(_BUFFER, _CHUNK_SIZE)
+                    if count < _CHUNK_SIZE:
+                        sha256.update(_BUFFER[:count])
                         break
                     else:
-                        sha256.update(BUFFER)
+                        sha256.update(_BUFFER)
 
-            self.server_socket.sendall(binascii.hexlify(sha256.digest()))
-            self.server_socket.sendall(b'\r\n')
-        self.server_socket.sendall(b'\n\n')
+            await writer.awrite(binascii.hexlify(sha256.digest()))
+            await writer.awrite(b'\r\n')
+        await writer.awrite(b'\n\n')
+        print('Files info sended, ok.')
 
-    def command_receive_file(self):
+    async def command_receive_file(self, reader, writer):
         """
         Store a new/updated file on local micropython device.
         """
         print('receive file', end=' ')
-        file_name = self.read_line_string()
-        print(file_name)
-        file_size = int(self.read_line_string())
-        print('%i Bytes' % file_size)
-        file_sha256 = self.read_line_string()
-        print('SHA256: %r' % file_sha256)
-        self.command_send_ok(terminated=True)
+        file_name = await self.read_line_string(reader)
+        file_size = int(await self.read_line_string(reader))
+        file_sha256 = await self.read_line_string(reader)
+        await self.command_send_ok(reader, writer)
+        print('%r %i Bytes SHA256: %s' % (file_name, file_size, file_sha256))
 
         temp_file_name = '%s.temp' % file_name
-        print('Create %s' % temp_file_name)
         try:
             with open(temp_file_name, 'wb') as f:
-                print('receive data', end='')
                 sha256 = hashlib.sha256()
                 received = 0
                 while True:
-                    if received + CHUNK_SIZE > file_size:
-                        size = file_size - received
-                        if size == 0:
-                            break
-                    else:
-                        size = CHUNK_SIZE
-
-                    count = self.server_socket.readinto(BUFFER, size)
                     print('.', end='')
+                    data = await reader.read(_CHUNK_SIZE)
+                    if not data:
+                        await self.error(writer, 'No file data')
 
-                    received += count
+                    f.write(data)
+                    sha256.update(data)
+                    received += len(data)
                     if received >= file_size:
-                        f.write(BUFFER[:count])
-                        sha256.update(BUFFER[:count])
-                        print('completed')
+                        print('completed!')
                         break
-
-                    f.write(BUFFER)
-                    sha256.update(BUFFER)
 
             print('Received %i Bytes' % received, end=' ')
 
             local_file_size = os.stat(temp_file_name)[6]
-            print('Written %i Bytes' % local_file_size)
             if local_file_size != file_size:
-                print('Size error!')
-                self.server_socket.sendall(b'Size error!\n')
-                raise AssertionError('Size error!')
+                await self.error(writer, 'Size error!')
 
-            hexdigest = binascii.hexlify(sha256.digest()).decode(ENCODING)
+            hexdigest = binascii.hexlify(sha256.digest()).decode('utf-8')
             if hexdigest == file_sha256:
                 print('Hash OK:', hexdigest)
-                print('Replace old file.')
                 try:
                     os.remove(file_name)
                 except OSError:
@@ -184,26 +151,24 @@ class OtaClient:
 
                 os.rename(temp_file_name, file_name)
 
-                print('Compare written file content...')
+                print('Compare written file content', end=' ')
                 sha256 = hashlib.sha256()
                 with open(file_name, 'rb') as f:
                     while True:
-                        count = f.readinto(BUFFER, CHUNK_SIZE)
-                        if count < CHUNK_SIZE:
-                            sha256.update(BUFFER[:count])
+                        count = f.readinto(_BUFFER, _CHUNK_SIZE)
+                        if count < _CHUNK_SIZE:
+                            sha256.update(_BUFFER[:count])
                             break
                         else:
-                            sha256.update(BUFFER)
+                            sha256.update(_BUFFER)
 
-                hexdigest = binascii.hexlify(sha256.digest()).decode(ENCODING)
+                hexdigest = binascii.hexlify(sha256.digest()).decode('utf-8')
                 if hexdigest == file_sha256:
                     print('Hash OK:', hexdigest)
-                    self.command_send_ok()
+                    await self.command_send_ok(reader, writer)
                     return
 
-            print('Hash Error:', hexdigest)
-            self.server_socket.sendall(b'Hash error!\n')
-            raise AssertionError('Hash error!')
+            await self.error(writer, 'Hash error: %s' % hexdigest)
         finally:
             print('Remove temp file')
             try:
@@ -212,52 +177,37 @@ class OtaClient:
                 pass
 
 
-def get_active_wlan():
+def assert_wlan_is_active():
     for interface_type in (network.AP_IF, network.STA_IF):
         wlan = network.WLAN(interface_type)
         if wlan.active():
-            return wlan
-    raise RuntimeError('WiFi not active!')
+            if wlan.isconnected():
+                print('Connected to station IP/netmask/gw/DNS addresses:', wlan.ifconfig())
+                return True
 
-
-def discovery_ota_server():
-    gc.collect()
-    own_ip = get_active_wlan().ifconfig()[0]
-    print('Own IP:', own_ip)
-    ip_prefix = own_ip.rsplit('.', 1)[0]
-
-    for timeout in (0.15, 0.3, 0.5):
-        print('\nScan: %s.X with timeout: %s' % (ip_prefix, timeout), end='')
-        for no in range(1, 255):
-            gc.collect()
-            server_address = ('%s.%i' % (ip_prefix, no), PORT)
-            print('.', end='')
-
-            sock = socket.socket()
-            sock.settimeout(timeout)
-            try:
-                sock.connect(server_address)
-            except OSError:
-                sock.close()
-            else:
-                print('\nFound OTA Server at: %s:%s' % server_address)
-                return sock
-
-    raise RuntimeError('OTA Server not found!')
+    raise AssertionError('WiFi not active and connected!')
 
 
 def do_ota_update():
-    server_socket = discovery_ota_server()
     gc.collect()
+    print('Start web server on port:', _PORT)
+    assert_wlan_is_active()
+    gc.collect()
+
+    loop = asyncio.get_event_loop()
+    loop.create_task(asyncio.start_server(OtaClient(), '0.0.0.0', _PORT))
+    print('run forever...')
     try:
-        return OtaClient(server_socket).run()
+        loop.run_forever()
     except Exception as e:
         sys.print_exception(e)
-        reset()
-    finally:
-        server_socket.close()
+    except SystemExit as e:
+        if e.args[0] == 0:
+            print('OTA Update complete successfully')
+            sys.exit()
+        reset('Unknown sys exit code.')
+    reset('OTA unknown error')
 
 
 if __name__ == '__main__':
-    print(do_ota_update())
-    reset()
+    do_ota_update()

@@ -7,7 +7,7 @@
     This OTA Server must be run on a host machine and
     not on the micropython device!
 """
-
+import asyncio
 import hashlib
 import socket
 import sys
@@ -36,9 +36,46 @@ class CommunicationError(RuntimeError):
     pass
 
 
+def ip_range_iterator(own_ip, exclude_own):
+    ip_prefix, own_no = own_ip.rsplit('.', 1)
+    print(f'Scan:.....: {ip_prefix}.X')
+
+    own_no = int(own_no)
+
+    for no in range(1, 255):
+        if exclude_own and no == own_no:
+            continue
+
+        yield f'{ip_prefix}.{no}'
+
+
+class OtaStreamWriter(asyncio.StreamWriter):
+    encoding = 'utf-8'
+
+    async def write_text_line(self, text):
+        self.write(b'%s\n' % text.encode('utf-8'))
+        await self.drain()
+
+    async def sendall(self, data):
+        self.write(data)
+        await self.drain()
+
+
+async def open_connection(host=None, port=None):
+    """A wrapper for create_connection() returning a (reader, writer) pair.
+
+    Similar as asyncio.open_connection() but we use own OtaStreamWriter()
+    """
+    loop = asyncio.get_event_loop()
+    reader = asyncio.StreamReader(limit=2 ** 16, loop=loop)
+    protocol = asyncio.StreamReaderProtocol(reader, loop=loop)
+    transport, _ = await loop.create_connection(lambda: protocol, host, port)
+    writer = OtaStreamWriter(transport, protocol, reader, loop)
+    return reader, writer
+
+
 class OtaServer:
-    def __init__(self, ip, src_path, verbose=False):
-        self.ip = ip
+    def __init__(self, src_path, verbose=False):
         self.src_path = src_path.resolve()
         self.verbose = verbose
 
@@ -47,69 +84,117 @@ class OtaServer:
 
         assert self.src_path.is_dir(), 'Directory not found: %s' % self.src_path
 
+        self.own_ip = get_ip_address()
+        print(f'Own IP....: {self.own_ip}')
+
         self.client_socket = None  # Client socked, created in self.run()
         self.client_chunk_size = None  # Change by client on connection in self.run()
         self.files_info = None  # Requested in self.run()
 
-    def run(self):
-        print(f'Start OTA server for: {self.src_path}')
+    async def update_device(self, reader, writer):
+        peername = writer.get_extra_info('peername')
+        print('Send Updates to %s:%i' % peername)
 
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
-            server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            server_socket.bind((self.ip, PORT))
-            server_socket.listen(1)
-            while True:
-                print('_' * 100)
-                print(f'wait for connection on {self.ip}:{PORT}...')
-                self.client_socket, addr = server_socket.accept()
-                print('Request from:', addr)
+        await self.request_ping(reader, writer)
+        self.client_chunk_size = await self.get_client_chunk_size(reader, writer)
 
-                self.client_socket.settimeout(SOCKET_TIMEOUT)
+        print('-' * 100)
+        self.files_info = await self.request_files_info(reader, writer)
+        print('-' * 100)
 
-                try:
-                    self.do_ping()
-                    self.client_chunk_size = self.get_client_chunk_size()
+        file_count = 0
+        updated = []
+        up2date = 0
+        for item in self.src_path.iterdir():
+            if item.is_dir():
+                print(f'Directories not supported, skip: %s' % item)
+                continue
+            elif not item.is_file():
+                print(f'Skip not file: %s' % item)
+                continue
 
-                    print('-' * 100)
-                    self.files_info = self.get_files_info()
-                    print('-' * 100)
+            file_count += 1
+            print(item.name, end=' ', flush=True)
 
-                    file_count = 0
-                    updated = []
-                    up2date = 0
-                    for item in self.src_path.iterdir():
-                        if item.is_dir():
-                            print(f'Directories not supported, skip: %s' % item)
-                            continue
-                        elif not item.is_file():
-                            print(f'Skip not file: %s' % item)
-                            continue
+            if not self.client_file_outdated(item):
+                # local <-> device file are the same -> skip
+                up2date += 1
+                continue
 
-                        file_count += 1
-                        print(item.name, end=' ', flush=True)
+            await self.send_file(item, reader, writer)
+            print('-' * 100)
+            updated.append(item)
 
-                        if not self.client_file_outdated(item):
-                            # local <-> device file are the same -> skip
-                            up2date += 1
-                            continue
+        await self.request_exit(reader, writer)
+        print('*' * 100)
+        print(f'*** Device {peername} update done:')
+        print(f'*** {file_count} files')
+        print(f'*** {up2date} files are up-to-date on device')
+        print(f'*** {len(updated)} files updated on device:')
+        for item in updated:
+            print(f'*** * {item.name}')
 
-                        self.send_file(item)
-                        print('-' * 100)
-                        updated.append(item)
+    async def receive_all(self, reader):
+        if self.verbose:
+            print('receive...', end='', flush=True)
+        data = b''
+        while True:
+            chunk = await reader.read(1024)
+            if self.verbose:
+                print(chunk, end='', flush=True)
+            if not chunk:
+                break
+            data += chunk
+            if data.endswith(b'\n\n'):
+                break
 
-                    self.send_exit()
-                    print('*' * 100)
-                    print(f'*** Device {addr} update done:')
-                    print(f'*** {file_count} files')
-                    print(f'*** {up2date} files are up-to-date on device')
-                    print(f'*** {len(updated)} files updated on device:')
-                    for item in updated:
-                        print(f'*** * {item.name}')
+        if self.verbose:
+            print()
+        data = data.decode(ENCODING)
+        data = data[:-2]  # remove last '\n\n' terminator
+        return data
 
-                except ConnectionResetError as err:
-                    print(err)
-                finally:
-                    self.client_socket.close()
+    async def readline(self, reader):
+        if self.verbose:
+            print('receive line...', end='', flush=True)
+
+        line = await reader.readline()
+        if self.verbose:
+            print(line.decode(ENCODING, errors='replace'), flush=True)
+
+        line = line.decode(ENCODING)
+        line = line[:-1]  # remove last '\n' terminator
+        return line
+
+    async def wait_for_ok(self, reader, error_text):
+        ok = await self.readline(reader)
+        if ok != 'OK':
+            raise CommunicationError(f'{error_text}: {ok!r}')
+
+    async def request_ping(self, reader, writer):
+        await writer.write_text_line('send_ok')
+        await self.wait_for_ok(reader, error_text='Wrong ping response')
+
+    async def get_client_chunk_size(self, reader, writer):
+        await writer.write_text_line('chunk_size')
+        client_chunk_size = await reader.readline()
+        print(repr(client_chunk_size))
+        client_chunk_size = int(client_chunk_size)
+        print(f'Client chunk size: {client_chunk_size!r} Bytes')
+        return client_chunk_size
+
+    async def request_files_info(self, reader, writer):
+        await writer.write_text_line('files_info')
+        data = await self.receive_all(reader)
+        data = data.rstrip('\r\n')
+
+        files_info = {}
+        for file_info in data.split('\r\n'):
+            name, size, hash = file_info.split('\r')
+            size = int(size)
+            print(f'{name:25s} {size:4} Bytes - SHA256: {hash}')
+            files_info[name] = (size, hash)
+        return files_info
 
     def client_file_outdated(self, file_path):
         try:
@@ -139,155 +224,128 @@ class OtaServer:
         print('Skip file: Size + SHA256 are same')
         return False
 
-    def send_line(self, line):
-        if not isinstance(line, bytes):
-            line = line.encode(ENCODING)
-
-        line += b'\n'
-        if self.verbose:
-            print('\nsend:', repr(line))
-        self.client_socket.sendall(line)
-
-    def readline(self):
-        if self.verbose:
-            print('receive line...', end='', flush=True)
-        line = b''
-        while True:
-            char = self.client_socket.recv(1)
-            if self.verbose:
-                print(char.decode(ENCODING, errors='replace'), end='', flush=True)
-            if not char or char == b'\n':
-                break
-            line += char
-
-        if self.verbose:
-            print()
-        return line.decode(ENCODING)
-
-    def receive_all(self):
-        if self.verbose:
-            print('receive...', end='', flush=True)
-        data = b''
-        while True:
-            chunk = self.client_socket.recv(1024)
-            if self.verbose:
-                print(chunk, end='', flush=True)
-            if not chunk:
-                break
-            data += chunk
-            if data.endswith(b'\n\n'):
-                break
-
-        if self.verbose:
-            print()
-        data = data.decode(ENCODING)
-        data = data.strip()
-        return data
-
-    def wait_for_ok(self, message='no OK received', raise_error=True):
-        print('Wait for OK...', end='', flush=True)
-        ok = self.readline()
-        print(ok)
-        if ok != "OK":
-            if raise_error:
-                raise CommunicationError(message)
-            return ok
-        return True
-
-    def do_ping(self):
-        self.send_line('send_ok')
-        self.wait_for_ok(message='Get no OK')
-
-    def get_files_info(self):
-        self.send_line('files_info')
-        data = self.receive_all()
-
-        files_info = {}
-        for file_info in data.split('\r\n'):
-            name, size, hash = file_info.split('\r')
-            size = int(size)
-            print(f'{name:25s} {size:4} Bytes - SHA256: {hash}')
-            files_info[name] = (size, hash)
-        return files_info
-
-    def get_client_chunk_size(self):
-        self.send_line('chunk_size')
-        client_chunk_size = int(self.readline())
-        print(f'Client chunk size: {client_chunk_size!r} Bytes')
-        return client_chunk_size
-
-    def send_exit(self):
-        self.send_line('exit')
-        self.wait_for_ok(message='No OK after exit!')
-
-    def send_file(self, file_path):
+    async def send_file(self, file_path, reader, writer):
         """
         Send file to micropython device
         """
         file_size = file_path.stat().st_size
-        print(f' *** send ({file_size}Bytes) {file_path} ')
+        print(f' *** send {file_path}', end=' ')
 
-        self.send_line('receive_file')
-        self.send_line(file_path.name)
-        self.send_line(str(file_size))
+        await writer.write_text_line('receive_file')
+        await writer.write_text_line(file_path.name)
+        await writer.write_text_line(str(file_size))
         with file_path.open('rb') as f:
             sha256 = hashlib.sha256(f.read()).hexdigest()
             f.seek(0)
 
-            print('sha256:', sha256)
-            self.send_line(sha256)
+            print('SHA256:', sha256)
+            await writer.write_text_line(sha256)
 
-            self.wait_for_ok(message='No OK after file info!')
+            await self.wait_for_ok(reader, error_text='No OK after file info')
 
+            print(f'send ({file_size}Bytes)', end='', flush=True)
             while True:
                 data = f.read(self.client_chunk_size)
                 if not data:
                     break
-                print(f'send {len(data)} Bytes...')
-                self.client_socket.sendall(data)
+                print('.', end='', flush=True)
+                await writer.sendall(data)
 
         print('Send file, completed.')
-        self.wait_for_ok(message='No OK after file send!')
+        await self.wait_for_ok(reader, error_text='No OK after file send')
 
-    def get_file_info(self, file_path):
-        """
-        Request file size, SHA256 hash from micropython device
-        """
-        print(f'Request file info for: {file_path.name}...', end='')
-        assert file_path.is_file(), 'File not found: %s' % file_path
+    async def request_exit(self, reader, writer):
+        await writer.write_text_line('exit')
+        await self.wait_for_ok(reader, error_text='Wrong exit response')
 
-        self.send_line('file_info')
-        self.send_line(file_path.name)
-        response = self.wait_for_ok(raise_error=False)
-        if response is not True:
-            raise FileNotFoundError
+    async def port_scan_and_serve(self, port):
+        ips = tuple(ip_range_iterator(self.own_ip, exclude_own=True))
 
-        stats = self.readline()
-        stats = tuple([int(no) for no in stats.split(',')])
-        # print('File stat:', stats)
-        file_size = stats[6]
-        print('File size: %i Bytes' % file_size)
-        sha256 = self.readline()
-        print('SHA256:', sha256)
-        return file_size, sha256
+        print(f'Wait vor devices on port: {port}', end=' ', flush=True)
+        clients = []
+        while True:
+            connections = [
+                asyncio.wait_for(open_connection(ip, port), timeout=0.5)
+                for ip in ips
+            ]
+            results = await asyncio.gather(*connections, return_exceptions=True)
+            for ip, result in zip(ips, results):
+                if isinstance(result, asyncio.TimeoutError):
+                    continue
+                elif not isinstance(result, tuple):
+                    continue
+
+                print('Connected to:', ip)
+                try:
+                    await self.update_device(*result)
+                except ConnectionResetError as e:
+                    print(e)
+                    continue
+                clients.append(ip)
+
+            if clients:
+                return clients
+
+            print('.', end='', flush=True)
+            time.sleep(2)
+
+    def run(self, port):
+        loop = asyncio.get_event_loop()
+        return loop.run_until_complete(
+            self.port_scan_and_serve(port=port)
+        )
 
 
 if __name__ == '__main__':
     base_path = Path(__file__).parent
-    server = OtaServer(
-        ip=get_ip_address(),
+    ota_server = OtaServer(
         src_path=Path(base_path, 'src'),  # Put these files on micropython device
         verbose=False,
     )
-    while True:
-        print('Start Server (Abort with Control-C)')
-        try:
-            server.run()
-        except (CommunicationError, socket.timeout) as err:
-            print('Error:', err)
-        except KeyboardInterrupt:
-            sys.exit()
+    # while True:
+    print(ota_server.run(port=PORT))
+    # sys.exit()
 
-        for i in range(5, 1, -1):
-            print(f'Restart server in {i} sec...')
-            time.sleep(1)
+    # scanner = PortScanner()
+    #
+    # while True:
+    #     # print('\nScan alive IPs...')
+    #     # ips = scanner.get_alive_ips(exclude_own=False, timeout=0.5)
+    #     # if not ips:
+    #     #     print('No IP found?!?')
+    #     # else:
+    #     #     for ip, result in ips:
+    #     #         print(f' * {ip}')
+    #
+    #     print('\nDevice scan...')
+    #     ips = scanner.find_device_ip(port=PORT, exclude_own=True, timeout=0.5)
+    #     if not ips:
+    #         print('No device found!')
+    #         sys.exit()
+    #         for i in range(5, 1, -1):
+    #             print(f'Retry in {i} sec...')
+    #             time.sleep(1)
+    #     else:
+    #         for ip, result in ips:
+    #             print(f' * {ip}')
+    #
+    #             base_path = Path(__file__).parent
+    #             server = OtaServer(
+    #                 ip=ip,
+    #                 src_path=Path(base_path, 'src'),  # Put these files on micropython device
+    #                 verbose=False,
+    #             )
+    #             while True:
+    #                 print('Start Server (Abort with Control-C)')
+    #                 try:
+    #                     await server.run(*result)
+    #                 except (CommunicationError, socket.timeout) as err:
+    #                     print('Error:', err)
+    #                 except KeyboardInterrupt:
+    #                     sys.exit()
+    #
+    #                 sys.exit()
+    #
+    #                 for i in range(5, 1, -1):
+    #                     print(f'Restart server in {i} sec...')
+    #                     time.sleep(1)
