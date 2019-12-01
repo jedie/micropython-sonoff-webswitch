@@ -1,75 +1,41 @@
 import gc
-import sys
 
-import machine
 import micropython
-import utime as time
 
 print('main.py')
-
-
 micropython.mem_info()
 
 # init own stuff:
 
-from leds import power_led, relay  # noqa isort:skip
-import button_handler  # noqa isort:skip
+from leds import power_led  # noqa isort:skip
+from button_handler import init_button_irq  # noqa isort:skip
 from rtc_memory import rtc_memory  # noqa isort:skip
-from wifi import wifi  # noqa isort:skip
+from wifi import WiFi  # noqa isort:skip
 
-print('wifi:', wifi)
-print('power_led:', power_led)
-print('relay:', relay)
-
-
-# from ota_client import do_ota_update
-# print(do_ota_update())
-# sys.exit()
-
-
-def ota_on_startup():
-    print('Check OTA on startup.')
-    do_ota = False
-    if rtc_memory.d.get('run') == 'ota-update':
-        print('OTA is requested')  # e.g.: via web page
-        del(rtc_memory.d['run'])
-        do_ota = True
-
-    if not do_ota and 'OTA-OK' not in rtc_memory.d:
-        print('Do on OTA on startup')
-        rtc_memory.save(data={'OTA-OK': 0})  # Only one at startup
-        do_ota = True
-
-    if not do_ota:
-        return
-
-    print('Run OTA Update on start')
-    try:
-        from ota_client import do_ota_update
-        ok = do_ota_update()
-        if ok == 'OK':
-            rtc_memory.incr_rtc_count(key='OTA-OK')
-    except Exception as e:
-        rtc_memory.incr_rtc_count(key='OTA-ERROR')
-        rtc_memory.save(data={'OTA last': str(e)})
-    finally:
-        print('Hard reset device after OTA update...')
-        time.sleep(1)
-        machine.reset()
-        time.sleep(1)
-        sys.exit()
-
+init_button_irq()
 
 power_led.off()
-ota_on_startup()
-power_led.on()
-gc.collect()
+wifi = WiFi(verbose=True)
+wifi.ensure_connection()
 
-from watchdog import watchdog  # noqa isort:skip
-print('watchdog:', watchdog)
+print('wifi: %s' % wifi)
 
-print('gc.collect()')
-gc.collect()
+_RTC_KEY_RUN = 'run'
+_RUN_OTA_UPDATE = 'ota-update'
+_RUN_WEB_SERVER = 'web-server'
 
-# Start the Webserver:
-import webswitch  # noqa isort:skip
+if rtc_memory.d.get(_RTC_KEY_RUN) == _RUN_WEB_SERVER:
+    rtc_memory.save(data={_RTC_KEY_RUN: _RUN_OTA_UPDATE})
+    power_led.on()
+    from webswitch import WebServer  # noqa isort:skip
+    from watchdog import Watchdog  # noqa isort:skip
+
+    watchdog = Watchdog(wifi=wifi)
+    gc.collect()
+    WebServer(watchdog).run()
+else:
+    power_led.off()
+    rtc_memory.save(data={_RTC_KEY_RUN: _RUN_WEB_SERVER})
+    from ota_client import OtaUpdate
+    gc.collect()
+    OtaUpdate().run()

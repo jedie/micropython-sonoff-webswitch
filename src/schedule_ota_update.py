@@ -11,6 +11,7 @@ def main():
     gc.collect()
     rtc_memory.save(data={'run': 'ota-update'})  # Save to RTC RAM for next boot
     print('Hard reset device...')
+    time.sleep(1)
     machine.reset()
     time.sleep(1)
     sys.exit()

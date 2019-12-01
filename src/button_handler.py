@@ -39,25 +39,22 @@ def get_debounced_value(pin):
 
 def ota_update(_):
     print('Set OTA update RTC RAM trigger...')
-    gc.collect()
     rtc_memory.save(data={'run': 'ota-update'})  # Save to RTC RAM for next boot
-    reset_device()
+    reset_device('Schedule OTA Update')
 
 
 def _start_webserver():
     print('Start Webserver...')
-    gc.collect()
     try:
         from webswitch import main  # noqa isort:skip
         main()
     except Exception as e:
         sys.print_exception(e)
-        reset_device()
+        reset_device('Restart web server error: %s' % e)
 
 
 def start_webserver(_):
     print('Create timer to start Webserver...')
-    gc.collect()
     timer = machine.Timer(-1)
     timer.init(
         mode=machine.Timer.ONE_SHOT,
@@ -70,9 +67,10 @@ class Button:
     down_start = None
 
     def irq_handler(self, pin):
+        gc.collect()
         power_led.off()
         button_value = get_debounced_value(pin)
-
+        gc.collect()
         print('button_value:', button_value)
         if button_value == 0:
             # button pressed
@@ -85,15 +83,11 @@ class Button:
             duration_ms = time.ticks_diff(time.ticks_ms(), self.down_start)
             print('duration_ms:', duration_ms)
             if duration_ms > 4000:
-                print('reset')
-                power_led.flash(sleep=0.1, count=20)
-                machine.reset()
-                time.sleep(1)
-                sys.exit()
+                reset_device('After button long press')
             elif duration_ms > 2000:
                 print('Schedule OTA Updates after long press...')
                 micropython.schedule(ota_update, None)
-                power_led.flash(sleep=0.1, count=20)
+                power_led.flash(sleep=0.3, count=10)
             else:
                 print('Schedule start webserver after button press...')
                 micropython.schedule(start_webserver, None)
@@ -105,4 +99,5 @@ class Button:
         gc.collect()
 
 
-button_pin.irq(Button().irq_handler)
+def init_button_irq():
+    button_pin.irq(Button().irq_handler)
