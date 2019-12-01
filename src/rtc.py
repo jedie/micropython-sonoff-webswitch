@@ -37,9 +37,8 @@ class Rtc:
         return count
 
     def isoformat(self, sep='T'):
-        # e.g.: 2019-12-1T6:19:44+00:00
         dt = self.rtc.datetime()
-        return '%i-%i-%i%s%i:%i:%i+00:00' % (dt[:3] + (sep,) + dt[3:6])
+        return '%i-%i-%i%s%i:%i:%i+00:00' % (dt[:3] + (sep,) + dt[4:7])
 
     def __str__(self):
         return '%r UTC: %s' % (self.d, self.isoformat())
