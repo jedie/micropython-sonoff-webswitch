@@ -38,7 +38,7 @@ class Rtc:
 
     def isoformat(self, sep='T'):
         dt = self.rtc.datetime()
-        return '%i-%i-%i%s%i:%i:%i+00:00' % (dt[:3] + (sep,) + dt[4:7])
+        return '%i-%02i-%02i%s%02i:%02i:%02i+00:00' % (dt[:3] + (sep,) + dt[4:7])
 
     def __str__(self):
         return '%r UTC: %s' % (self.d, self.isoformat())
