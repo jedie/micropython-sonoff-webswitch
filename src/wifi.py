@@ -1,13 +1,9 @@
 import gc
 
-import machine
 import network
 import utime as time
 
-from leds import power_led  # noqa isort:skip
-from ntp import ntp_sync  # noqa isort:skip
-
-rtc = machine.RTC()
+from ntp import NtpSync  # noqa isort:skip
 
 
 class WiFi:
@@ -17,8 +13,13 @@ class WiFi:
     is_connected_count = 0
     last_refresh = None
 
-    def __init__(self, verbose):
+    def __init__(self, rtc, power_led, verbose):
+        self.rtc = rtc
+        self.power_led = power_led
+        self.power_led.off()
         self.verbose = verbose
+
+        self.ntp_sync = NtpSync()
 
         print('Setup WiFi interfaces')
         self.access_point = network.WLAN(network.AP_IF)  # access-point interface
@@ -30,13 +31,13 @@ class WiFi:
         if not self.station.isconnected():
             if self.verbose:
                 print('Not connected to station!')
-            power_led.off()
+            self.power_led.off()
             return False
         else:
             self.connected_time = time.time()
             if self.verbose:
                 print('Connected to station IP/netmask/gw/DNS addresses:', self.station.ifconfig())
-            power_led.on()
+            self.power_led.on()
 
             if self.access_point.active():
                 if self.verbose:
@@ -52,13 +53,13 @@ class WiFi:
         gc.collect()
         if self.is_connected:
             self.is_connected_count += 1
-            self.last_refresh = rtc.datetime()
-            ntp_sync.sync()  # update RTC via NTP
+            self.last_refresh = self.rtc.isoformat()
+            self.ntp_sync.sync(rtc=self.rtc)  # update RTC via NTP
             return
 
         self.not_connected_count += 1
 
-        power_led.flash(sleep=0.1, count=5)
+        self.power_led.flash(sleep=0.1, count=5)
 
         if self.verbose:
             print('read WiFi config...')
@@ -80,7 +81,7 @@ class WiFi:
         known_ssid = None
         for no in range(3):
             for info in self.station.scan():
-                power_led.toggle()
+                self.power_led.toggle()
                 ssid, bssid, channel, RSSI, auth_mode, hidden = info
                 ssid = ssid.decode("UTF-8")
                 if self.verbose:
@@ -95,7 +96,7 @@ class WiFi:
                 return known_ssid
 
         print('ERROR: No known WiFi SSID found!')
-        power_led.flash(sleep=0.2, count=20)
+        self.power_led.flash(sleep=0.2, count=20)
 
     def _connect(self, ssid, password):
         for no in range(0, 3):
@@ -104,38 +105,32 @@ class WiFi:
             # print('Connect to Wifi access point:', ssid, repr(password))
             if self.verbose:
                 print('Connect to Wifi access point: %s' % ssid)
-            power_led.toggle()
+            self.power_led.toggle()
             self.station.connect(ssid, password)
             for wait_sec in range(30, 1, -1):
                 status = self.station.status()
                 if status == network.STAT_GOT_IP:
                     self.connected_time = time.time()
-                    power_led.on()
+                    self.power_led.on()
                     return
                 elif status == network.STAT_WRONG_PASSWORD:
                     print('Wrong password!')
                     return
                 if self.verbose:
                     print('wait %i...' % wait_sec)
-                power_led.flash(sleep=0.1, count=10)
+                self.power_led.flash(sleep=0.1, count=10)
 
             if self.verbose:
                 print('Try again...')
             self.station.active(False)
-            power_led.flash(sleep=0.1, count=20)
-            power_led.off()
+            self.power_led.flash(sleep=0.1, count=20)
+            self.power_led.off()
             self.station.active(True)
 
         print("ERROR: WiFi not connected! Password wrong?!?")
-        power_led.flash(sleep=0.2, count=20)
+        self.power_led.flash(sleep=0.2, count=20)
 
     def __str__(self):
         return 'WiFi last refresh: %s - connected: %i - not connected: %i' % (
             self.last_refresh, self.is_connected_count, self.not_connected_count
         )
-
-
-if __name__ == '__main__':
-    wifi = WiFi(verbose=True)
-    wifi.ensure_connection()
-    print('wifi:', wifi)

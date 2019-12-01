@@ -1,21 +1,19 @@
+print('main.py')  # noqa isort:skip
+
 import gc
 
-import micropython
+from button_handler import init_button_irq
+from pins import Pins
+from rtc import Rtc
+from utils import ResetDevice
+from wifi import WiFi
 
-print('main.py')
-micropython.mem_info()
+rtc = Rtc()
+pins = Pins()
 
-# init own stuff:
+init_button_irq(rtc, pins)
 
-from leds import power_led  # noqa isort:skip
-from button_handler import init_button_irq  # noqa isort:skip
-from rtc_memory import rtc_memory  # noqa isort:skip
-from wifi import WiFi  # noqa isort:skip
-
-init_button_irq()
-
-power_led.off()
-wifi = WiFi(verbose=True)
+wifi = WiFi(rtc=rtc, power_led=pins.power_led, verbose=True)
 wifi.ensure_connection()
 
 print('wifi: %s' % wifi)
@@ -24,18 +22,22 @@ _RTC_KEY_RUN = 'run'
 _RUN_OTA_UPDATE = 'ota-update'
 _RUN_WEB_SERVER = 'web-server'
 
-if rtc_memory.d.get(_RTC_KEY_RUN) == _RUN_WEB_SERVER:
-    rtc_memory.save(data={_RTC_KEY_RUN: _RUN_OTA_UPDATE})
-    power_led.on()
+
+if rtc.d.get(_RTC_KEY_RUN) == _RUN_WEB_SERVER:
+    rtc.save(data={_RTC_KEY_RUN: _RUN_OTA_UPDATE})
     from webswitch import WebServer  # noqa isort:skip
     from watchdog import Watchdog  # noqa isort:skip
 
-    watchdog = Watchdog(wifi=wifi)
+    watchdog = Watchdog(wifi=wifi, rtc=rtc)
     gc.collect()
-    WebServer(watchdog).run()
+    WebServer(pins=pins, rtc=rtc, watchdog=watchdog).run()
 else:
-    power_led.off()
-    rtc_memory.save(data={_RTC_KEY_RUN: _RUN_WEB_SERVER})
+    pins.power_led.off()
+    rtc.save(data={_RTC_KEY_RUN: _RUN_WEB_SERVER})
     from ota_client import OtaUpdate
+
     gc.collect()
     OtaUpdate().run()
+
+
+ResetDevice(rtc=rtc, reason='unknown').reset()

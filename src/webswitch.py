@@ -1,42 +1,17 @@
 import gc
-import sys
 
-import constants
 import machine
 import uasyncio as asyncio
-import utime as time
-from leds import power_led, relay
-from rtc_memory import rtc_memory
+from utils import ResetDevice
 
-power_led.off()
-
-rtc = machine.RTC()
-
-button_pin = machine.Pin(0, machine.Pin.IN)
 HTTP_LINE_200 = b'HTTP/1.0 200 OK\r\n'
 HTTP_LINE_CACHE = b'Cache-Control: max-age=6000\r\n'
 
 
-def reset():
-    print('Hard reset device...')
-    power_led.off()
-    time.sleep(1)
-    machine.reset()
-    time.sleep(1)
-    sys.exit()
-
-
-def schedule_reset(period=2000):
-    timer = machine.Timer(-1)
-    timer.init(
-        mode=machine.Timer.ONE_SHOT,
-        period=period,
-        callback=reset
-    )
-
-
 class WebServer:
-    def __init__(self, watchdog):
+    def __init__(self, pins, rtc, watchdog):
+        self.pins = pins
+        self.rtc = rtc
         self.watchdog = watchdog
 
     def run(self):
@@ -46,7 +21,7 @@ class WebServer:
 
         gc.collect()
 
-        power_led.on()
+        self.pins.power_led.on()
         loop.run_forever()
 
     async def send_web_page(self, writer, message=''):
@@ -60,17 +35,17 @@ class WebServer:
         gc.collect()
 
         context = {
-            'state': relay.state,
+            'state': self.pins.relay.state,
             'message': message,
 
             'watchdog': self.watchdog,
-            'rtc_memory': rtc_memory.d,
+            'rtc_memory': repr(self.rtc.d),
 
             'total': alloc + free,
             'alloc': alloc,
             'free': free,
 
-            'utc': rtc.datetime(),
+            'utc': self.rtc.isoformat(sep=' '),
         }
         gc.collect()
         with open('webswitch.html', 'r') as f:
@@ -84,7 +59,7 @@ class WebServer:
         gc.collect()
 
     async def request_handler(self, reader, writer):
-        power_led.off()
+        self.pins.power_led.off()
         gc.collect()
 
         print('Accepted connection from:', writer.get_extra_info('peername'))
@@ -132,46 +107,28 @@ class WebServer:
                 not_found = False
 
             elif url == '/?power=on':
-                relay.on()
+                self.pins.relay.on()
                 await self.send_web_page(writer, message='power on')
                 not_found = False
 
             elif url == '/?power=off':
-                relay.off()
+                self.pins.relay.off()
                 await self.send_web_page(writer, message='power off')
                 not_found = False
 
             elif url == '/?clear':
-                rtc_memory.clear()
+                self.rtc.clear()
                 await self.send_web_page(writer, message='RTC RAM cleared')
                 not_found = False
 
-            elif url == '/?ota_update':
-                print('Set OTA update RTC RAM trigger...')
-
-                # Save to RTC RAM:
-                rtc_memory.save(data={
-                    constants.RTC_KEY_RESET_REASON: 'OTA Update via web page',
-                    'run': 'ota-update',  # triggered in main.py
-                })
-
-                await self.send_web_page(writer, message='Run OTA Update after device reset...')
-                schedule_reset()
-                not_found = False
-
             elif url == '/?reset':
-                relay.off()
-
-                # Save to RTC RAM:
-                rtc_memory.save(data={constants.RTC_KEY_RESET_REASON: 'Reset via web page'})
-
                 await self.send_web_page(
                     writer,
                     message=(
                         'Reset device...'
                         ' Restart WebServer by pressing the Button on your device!'
                     ))
-                schedule_reset()
+                ResetDevice(rtc=self.rtc, reason='Reset via web page').schedule()
                 not_found = False
 
         if not_found:
@@ -182,4 +139,4 @@ class WebServer:
         await writer.aclose()
         gc.collect()
 
-        power_led.on()
+        self.pins.power_led.on()

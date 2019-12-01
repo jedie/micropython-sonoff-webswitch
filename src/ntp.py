@@ -1,12 +1,9 @@
 import gc
 
-import machine
 import ntptime
 import utime as time
 
-rtc = machine.RTC()
-
-PERIOD = const(15 * 60 * 1000)  # 15 min
+_PERIOD = const(15 * 60 * 1000)  # 15 min
 
 
 class NtpSync:
@@ -15,17 +12,17 @@ class NtpSync:
     last_refresh = None
     _next_refresh = 0
 
-    def sync(self):
+    def sync(self, rtc):
         gc.collect()
 
         if time.time() < self._next_refresh:
             # Last sync wasn't too long ago -> do nothing
             return
 
-        self._next_refresh = time.time() + PERIOD
+        self._next_refresh = time.time() + _PERIOD
 
         print('Synchronize time from %r ...' % ntptime.host)
-        print('old UTC:', rtc.datetime())
+        print('old UTC:', rtc.isoformat())
         s = 1
         while True:
             try:
@@ -37,8 +34,8 @@ class NtpSync:
                 s += 5
             else:
                 self.success_count += 1
-                self.last_refresh = rtc.datetime()
-                print('new UTC:', rtc.datetime())
+                self.last_refresh = rtc.isoformat()
+                print('new UTC:', self.last_refresh)
                 gc.collect()
                 return
 
@@ -48,8 +45,8 @@ class NtpSync:
         )
 
 
-ntp_sync = NtpSync()
-
-
 if __name__ == '__main__':
+    from rtc import Rtc
+    ntp_sync = NtpSync()
+    ntp_sync.sync(rtc=Rtc())
     print(ntp_sync)

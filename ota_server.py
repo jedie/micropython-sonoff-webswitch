@@ -305,8 +305,5 @@ if __name__ == '__main__':
     )
     while True:
         clients = ota_server.run(port=PORT)
-        print('_'*100)
+        print('_' * 100)
         print(f'Update {len(clients)} device(s), ok.')
-        for i in range(5, 1, -1):
-            print(f'Restart server in {i} sec')
-            time.sleep(1)
