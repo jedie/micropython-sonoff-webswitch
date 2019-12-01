@@ -260,6 +260,7 @@ class OtaServer:
         await self.wait_for_ok(reader, error_text='Wrong exit response')
 
     async def port_scan_and_serve(self, port):
+        print()
         ips = tuple(ip_range_iterator(self.own_ip, exclude_own=True))
 
         print(f'Wait vor devices on port: {port}', end=' ', flush=True)
@@ -305,8 +306,6 @@ if __name__ == '__main__':
     )
     while True:
         clients = ota_server.run(port=PORT)
-        print('_'*100)
+        print('_' * 100)
         print(f'Update {len(clients)} device(s), ok.')
-        for i in range(5, 1, -1):
-            print(f'Restart server in {i} sec')
-            time.sleep(1)
+        time.sleep(2)

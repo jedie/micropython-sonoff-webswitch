@@ -39,8 +39,8 @@ Reset the device by long pressing the button.
 
 The Web Page looks like this:
 
-![Screenshot_2019-11-15 Sonoff S20 - ESP Web Server.png](
-https://raw.githubusercontent.com/jedie/micropython-sonoff-webswitch/master/Screenshot_2019-11-15%20Sonoff%20S20%20-%20ESP%20Web%20Server.png)
+![Screenshot_2019-12-02 Sonoff S20.png](
+https://raw.githubusercontent.com/jedie/micropython-sonoff-webswitch/master/Screenshot_2019-12-02%20Sonoff%20S20png)
 
 
 ## References

@@ -1,38 +1,19 @@
 import gc
-import sys
 
 import constants
 import machine
 import uerrno as errno
 import usocket as socket
 import utime as time
-from rtc_memory import rtc_memory
+from utils import ResetDevice
 
 _CHECK_PERIOD = const(50 * 1000)  # 50 sec
 
-rtc = machine.RTC()
 
-# get reset info form RTC RAM:
-reset_count = rtc_memory.d.get(constants.RTC_KEY_WATCHDOG_COUNT, 0)
-reset_reason = rtc_memory.d.get(constants.RTC_KEY_RESET_REASON)
-
-
-def reset(reason):
+def reset(rtc, reason):
     print('Watchdog reset reason: %s' % reason)
-
-    # Save reason in RTC RAM:
-    rtc_memory.save(data={constants.RTC_KEY_RESET_REASON: reason})
-
-    for no in range(5, 1, -1):
-        print('Watchdog: Hard reset device in %i sec...' % no)
-        time.sleep(1)
-
-    # Save reset count in RTC RAM:
-    rtc_memory.incr_rtc_count(key=constants.RTC_KEY_WATCHDOG_COUNT)
-
-    machine.reset()
-    time.sleep(1)
-    sys.exit()
+    rtc.incr_rtc_count(key=constants.RTC_KEY_WATCHDOG_COUNT)
+    ResetDevice(rtc=rtc, reason=reason).reset()
 
 
 def can_bind_web_server_port():
@@ -60,8 +41,9 @@ class Watchdog:
 
     timer = machine.Timer(-1)
 
-    def __init__(self, wifi):
+    def __init__(self, wifi, rtc):
         self.wifi = wifi
+        self.rtc = rtc
 
         print('Start Watchdog period timer')
         self.timer.deinit()
@@ -79,18 +61,21 @@ class Watchdog:
 
         last_connection = time.time() - self.wifi.connected_time
         if last_connection > constants.WIFI_TIMEOUT:
-            reset('WiFi timeout')
+            reset(rtc=self.rtc, reason='WiFi timeout')
 
         if can_bind_web_server_port():
-            reset('Web Server down')
+            reset(rtc=self.rtc, reason='Web Server down')
 
         self.check_count += 1
-        self.last_check = rtc.datetime()
+        self.last_check = self.rtc.isoformat()
 
     def deinit(self):
         self.timer.deinit()
 
     def __str__(self):
+        # get reset info form RTC RAM:
+        reset_count = self.rtc.d.get(constants.RTC_KEY_WATCHDOG_COUNT, 0)
+        reset_reason = self.rtc.d.get(constants.RTC_KEY_RESET_REASON)
         return (
             'Watchdog -'
             ' last check: %s,'
