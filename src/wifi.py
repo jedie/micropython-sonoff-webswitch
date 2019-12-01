@@ -12,12 +12,12 @@ class WiFi:
     not_connected_count = 0
     is_connected_count = 0
     last_refresh = None
+    verbose = True
 
-    def __init__(self, rtc, power_led, verbose):
+    def __init__(self, rtc, power_led):
         self.rtc = rtc
         self.power_led = power_led
         self.power_led.off()
-        self.verbose = verbose
 
         self.ntp_sync = NtpSync()
 
@@ -44,6 +44,7 @@ class WiFi:
                     print('deactivate access-point interface...')
                 self.access_point.active(False)
 
+            self.verbose = False
             return True
 
     def ensure_connection(self):

@@ -13,7 +13,7 @@ pins = Pins()
 
 init_button_irq(rtc, pins)
 
-wifi = WiFi(rtc=rtc, power_led=pins.power_led, verbose=True)
+wifi = WiFi(rtc=rtc, power_led=pins.power_led)
 wifi.ensure_connection()
 
 print('wifi: %s' % wifi)
