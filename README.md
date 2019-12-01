@@ -34,13 +34,21 @@ Point you Webserver to the IP from the device.
 You can turn the switch on/off by the web page or the device button.
 Reset the device by long pressing the button.
 
+## OTA
+
+The device will update the source codes `over the air` on startup.
+You must start the server on your host. Just run:
+```bash
+.../micropython-sonoff-webswitch$ python3 ./ota_server.py 
+```
+After server start: Start the device.
+
 
 ## Screenshot
 
 The Web Page looks like this:
 
-![Screenshot_2019-12-02 Sonoff S20.png](
-https://raw.githubusercontent.com/jedie/micropython-sonoff-webswitch/master/Screenshot_2019-12-02%20Sonoff%20S20png)
+![Screenshot_2019-12-02 Sonoff S20.png](https://raw.githubusercontent.com/jedie/micropython-sonoff-webswitch/master/Screenshot_2019-12-02%20Sonoff%20S20.png)
 
 
 ## References
