@@ -67,7 +67,7 @@ class Watchdog:
             reset(rtc=self.rtc, reason='Web Server down')
 
         self.check_count += 1
-        self.last_check = machine.RTC().datetime()
+        self.last_check = self.rtc.isoformat()
 
     def deinit(self):
         self.timer.deinit()
