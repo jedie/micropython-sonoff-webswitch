@@ -24,6 +24,7 @@ _RUN_WEB_SERVER = 'web-server'
 
 
 if rtc.d.get(_RTC_KEY_RUN) == _RUN_WEB_SERVER:
+    print('start webserver')
     rtc.save(data={_RTC_KEY_RUN: _RUN_OTA_UPDATE})
     from webswitch import WebServer  # noqa isort:skip
     from watchdog import Watchdog  # noqa isort:skip
@@ -32,6 +33,7 @@ if rtc.d.get(_RTC_KEY_RUN) == _RUN_WEB_SERVER:
     gc.collect()
     WebServer(pins=pins, rtc=rtc, watchdog=watchdog).run()
 else:
+    print('start OTA')
     pins.power_led.off()
     rtc.save(data={_RTC_KEY_RUN: _RUN_WEB_SERVER})
     from ota_client import OtaUpdate
