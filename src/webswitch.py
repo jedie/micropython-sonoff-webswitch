@@ -1,10 +1,11 @@
 import gc
 
-import machine
 import uasyncio as asyncio
 from utils import ResetDevice
 
 HTTP_LINE_200 = b'HTTP/1.0 200 OK\r\n'
+HTTP_LINE_303 = b'HTTP/1.1 303 Moved\r\n'
+HTTP_LINE_LOCATION = b'Location: /\r\n'
 HTTP_LINE_CACHE = b'Cache-Control: max-age=6000\r\n'
 
 
@@ -13,6 +14,7 @@ class WebServer:
         self.pins = pins
         self.rtc = rtc
         self.watchdog = watchdog
+        self.message = 'Web server started...'
 
     def run(self):
         print('Start web server...')
@@ -24,7 +26,12 @@ class WebServer:
         self.pins.power_led.on()
         loop.run_forever()
 
-    async def send_web_page(self, writer, message=''):
+    async def send_redirect(self, writer):
+        await writer.awrite(HTTP_LINE_303)
+        await writer.awrite(HTTP_LINE_LOCATION)
+        await writer.awrite(b'\r\n')
+
+    async def send_web_page(self, writer):
         await writer.awrite(HTTP_LINE_200)
         await writer.awrite(b'Content-type: text/html; charset=utf-8\r\n')
         await writer.awrite(b'\r\n')
@@ -36,7 +43,7 @@ class WebServer:
 
         context = {
             'state': self.pins.relay.state,
-            'message': message,
+            'message': self.message,
 
             'watchdog': self.watchdog,
             'rtc_memory': repr(self.rtc.d),
@@ -85,7 +92,7 @@ class WebServer:
         if method == 'GET':
             if url == '/':
                 print('response root page')
-                await self.send_web_page(writer, message='')
+                await self.send_web_page(writer)
                 not_found = False
 
             elif url == '/favicon.ico':
@@ -108,26 +115,28 @@ class WebServer:
 
             elif url == '/?power=on':
                 self.pins.relay.on()
-                await self.send_web_page(writer, message='power on')
+                self.message = 'power on'
+                await self.send_redirect(writer)
                 not_found = False
 
             elif url == '/?power=off':
                 self.pins.relay.off()
-                await self.send_web_page(writer, message='power off')
+                self.message = 'power off'
+                await self.send_redirect(writer)
                 not_found = False
 
             elif url == '/?clear':
                 self.rtc.clear()
-                await self.send_web_page(writer, message='RTC RAM cleared')
+                self.message = 'RTC RAM cleared'
+                await self.send_redirect(writer)
                 not_found = False
 
             elif url == '/?reset':
-                await self.send_web_page(
-                    writer,
-                    message=(
-                        'Reset device...'
-                        ' Restart WebServer by pressing the Button on your device!'
-                    ))
+                self.message = (
+                    'Reset device...'
+                    ' Restart WebServer by pressing the Button on your device!'
+                )
+                await self.send_redirect(writer)
                 ResetDevice(rtc=self.rtc, reason='Reset via web page').schedule()
                 not_found = False
 
