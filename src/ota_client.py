@@ -23,7 +23,9 @@ _FILE_TYPE = const(0x8000)
 
 
 def reset(reason):
-    print('Reset because: %s' % reason)
+    for no in range(3, 0, -1):
+        print('%i Reset because: %s' % (no, reason))
+        time.sleep(1)
     machine.reset()
     time.sleep(1)
     sys.exit(-1)

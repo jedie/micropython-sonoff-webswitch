@@ -1,63 +1,44 @@
 import gc
+import sys
 
 import uasyncio as asyncio
-from utils import ResetDevice
-
-HTTP_LINE_200 = b'HTTP/1.0 200 OK\r\n'
-HTTP_LINE_303 = b'HTTP/1.1 303 Moved\r\n'
-HTTP_LINE_LOCATION = b'Location: /\r\n'
-HTTP_LINE_CACHE = b'Cache-Control: max-age=6000\r\n'
+from http_send_file import send_file
+from http_utils import (HTTP_LINE_200, querystring2dict, send_error,
+                        send_redirect)
 
 
 class WebServer:
-    def __init__(self, pins, rtc, watchdog, version):
+    def __init__(self, pins, rtc, watchdog, auto_timer, version):
         self.pins = pins
         self.rtc = rtc
         self.watchdog = watchdog
+        self.auto_timer = auto_timer
         self.version = version
         self.message = 'Web server started...'
 
-    def run(self):
-        print('Start web server...')
-        loop = asyncio.get_event_loop()
-        loop.create_task(asyncio.start_server(self.request_handler, '0.0.0.0', 80))
+    async def error_redirect(self, writer, message):
+        self.message = message
+        await send_redirect(writer)
 
-        gc.collect()
-
-        self.pins.power_led.on()
-        loop.run_forever()
-
-    async def send_redirect(self, writer):
-        await writer.awrite(HTTP_LINE_303)
-        await writer.awrite(HTTP_LINE_LOCATION)
-        await writer.awrite(b'\r\n')
-
-    async def send_web_page(self, writer):
+    async def send_html_page(self, writer, filename, context):
         await writer.awrite(HTTP_LINE_200)
-        await writer.awrite(b'Content-type: text/html; charset=utf-8\r\n')
-        await writer.awrite(b'\r\n')
+        await writer.awrite(b'Content-type: text/html; charset=utf-8\r\n\r\n')
 
         alloc = gc.mem_alloc() / 1024
         free = gc.mem_free() / 1024
 
         gc.collect()
 
-        context = {
+        context.update({
             'version': self.version,
-            'state': self.pins.relay.state,
             'message': self.message,
-
-            'watchdog': self.watchdog,
-            'rtc_memory': repr(self.rtc.d),
-
             'total': alloc + free,
             'alloc': alloc,
             'free': free,
-
             'utc': self.rtc.isoformat(sep=' '),
-        }
+        })
         gc.collect()
-        with open('webswitch.html', 'r') as f:
+        with open(filename, 'r') as f:
             while True:
                 line = f.readline()
                 if not line:
@@ -67,11 +48,32 @@ class WebServer:
                 gc.collect()
         gc.collect()
 
-    async def request_handler(self, reader, writer):
-        self.pins.power_led.off()
-        gc.collect()
+    async def call_module_func(self, url, method, get_parameters, reader, writer):
+        url = url.strip('/')
+        try:
+            module_name, func_name = url.split('/')
+        except ValueError:
+            await send_error(writer, 'URL unknown')
+            return
+        module_name = 'http_%s' % module_name
+        func_name = '%s_%s' % (method.lower(), func_name)
+        print('func: %s.%s' % (module_name, func_name))
+        try:
+            module = __import__(module_name)
+        except ImportError:
+            await send_error(writer, '%s.py not found' % module_name)
+            return
 
-        print('Accepted connection from:', writer.get_extra_info('peername'))
+        func = getattr(module, func_name, None)
+        if func is None:
+            await send_error(writer, 'Not found: %s.%s' % (module_name, func_name))
+            return
+
+        await func(self, reader, writer, get_parameters)
+        del sys.modules[module_name]
+
+    async def send_response(self, reader, writer):
+        print('\nAccepted connection from:', writer.get_extra_info('peername'))
 
         request = await reader.read()
 
@@ -87,67 +89,44 @@ class WebServer:
         method, url, version = request.split(' ', 2)
         print(method, url, version)
 
-        not_found = True
+        if '?' not in url:
+            get_parameters = None
+        else:
+            url, get_parameters = url.split('?', 1)
+            get_parameters = querystring2dict(get_parameters)
 
         gc.collect()
+        if url == '/':
+            print('response root page')
+            await send_redirect(writer)
+        elif '.' in url:
+            await send_file(self, reader, writer, url)
+        else:
+            try:
+                await self.call_module_func(url, method, get_parameters, reader, writer)
+            except Exception as e:
+                sys.print_exception(e)
+                await self.error_redirect(writer, message='Command error: %s' % e)
+        gc.collect()
 
-        if method == 'GET':
-            if url == '/':
-                print('response root page')
-                await self.send_web_page(writer)
-                not_found = False
-
-            elif url == '/favicon.ico':
-                await writer.awrite(HTTP_LINE_200)
-                await writer.awrite(b'Content-Type: image/x-icon\r\n')
-                await writer.awrite(HTTP_LINE_CACHE)
-                await writer.awrite(b'\r\n')
-                with open('favicon.ico', 'rb') as f:
-                    await writer.awrite(f.read())
-                not_found = False
-
-            elif url == '/webswitch.css':
-                await writer.awrite(HTTP_LINE_200)
-                await writer.awrite(b'Content-Type: text/css\r\n')
-                await writer.awrite(HTTP_LINE_CACHE)
-                await writer.awrite(b'\r\n')
-                with open('webswitch.css', 'rb') as f:
-                    await writer.awrite(f.read())
-                not_found = False
-
-            elif url == '/?power=on':
-                self.pins.relay.on()
-                self.message = 'power on'
-                await self.send_redirect(writer)
-                not_found = False
-
-            elif url == '/?power=off':
-                self.pins.relay.off()
-                self.message = 'power off'
-                await self.send_redirect(writer)
-                not_found = False
-
-            elif url == '/?clear':
-                self.rtc.clear()
-                self.message = 'RTC RAM cleared'
-                await self.send_redirect(writer)
-                not_found = False
-
-            elif url == '/?reset':
-                self.message = (
-                    'Reset device...'
-                    ' Restart WebServer by pressing the Button on your device!'
-                )
-                await self.send_redirect(writer)
-                ResetDevice(rtc=self.rtc, reason='Reset via web page').schedule(period=5000)
-                not_found = False
-
-        if not_found:
-            print('not found -> 404')
-            await writer.awrite(b'HTTP/1.0 404 Not Found\r\n')
-            await writer.awrite(b'\r\n')
-
+    async def request_handler(self, reader, writer):
+        self.pins.power_led.off()
+        gc.collect()
+        try:
+            await self.send_response(reader, writer)
+        except Exception as e:
+            sys.print_exception(e)
+            await send_error(writer, reason=e, http_code=500)
         await writer.aclose()
+        gc.collect()
+        self.pins.power_led.on()
+
+    def run(self):
+        print('Start web server...')
+        loop = asyncio.get_event_loop()
+        loop.create_task(asyncio.start_server(self.request_handler, '0.0.0.0', 80))
+
         gc.collect()
 
         self.pins.power_led.on()
+        loop.run_forever()

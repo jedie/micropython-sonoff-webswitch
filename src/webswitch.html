@@ -2,24 +2,30 @@
 <head>
     <title>Sonoff S20</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="webswitch.css" type="text/css">
+    <link rel="stylesheet" href="/webswitch.css" type="text/css">
 </head>
 <body>
     <h1>Sonoff S20 - Web Server {version}</h1>
     <p>state: <strong>{state}</strong></p>
     <p>{message}</p>
+    <fieldset><legend>Automatic timer:</legend>
+        <form action="/set_timer/submit/">
+            Turn ON: <input type="time" name="on" value="{on_value}"><br>
+            Turn OFF: <input type="time" name="off" value="{off_value}"><br>
+            <small>You can set no, one or both times. (Always <strong>in UTC</strong>!)</small><br>
+            Timer is: <select name="active">
+                <option value="on" {on_selected}>ON</option>
+                <option value="off" {off_selected}>OFF</option>
+            </select><br>
+        <input type="submit">
+    </form></fieldset>
     <p>
-        <a href="/?power=on"><button class="button">ON</button></a>
-        <a href="/?power=off"><button class="button button2">OFF</button></a>
+        <a href="/base/on/"><button class="button">ON</button></a>
+        <a href="/base/off/"><button class="button button2">OFF</button></a>
     </p>
     <p>
-        <a href="/?clear"><button class="button">Clear RTC RAM</button></a>
-        <a href="/?reset"><button class="button">Reset Device</button></a>
+        <a href="/internals/show/"><button class="button">sys internals</button></a>
     </p>
-    <p><small>
-        {watchdog}<br>
-        RTC RAM: {rtc_memory}
-    </small></p>
     <p><small>
         RAM total: {total:.2f} KB, used: {alloc:.2f} KB, free: {free:.2f} KB<br>
         Server time in UTC: {utc}
