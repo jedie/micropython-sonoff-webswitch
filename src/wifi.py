@@ -54,8 +54,8 @@ class WiFi:
         gc.collect()
         if self.is_connected:
             self.is_connected_count += 1
-            self.last_refresh = self.rtc.isoformat()
             self.ntp_sync.sync(rtc=self.rtc)  # update RTC via NTP
+            self.last_refresh = self.rtc.isoformat()
             return
 
         self.not_connected_count += 1

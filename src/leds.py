@@ -15,7 +15,7 @@ class Led:
         self.pin.value(self._off)
 
     def toggle(self):
-        if self.pin.value() == self._on:
+        if self.is_on:
             self.off()
         else:
             self.on()
@@ -28,8 +28,12 @@ class Led:
         self.pin.value(old_value)
 
     @property
+    def is_on(self):
+        return self.pin.value() == self._on
+
+    @property
     def state(self):
-        return 'ON' if self.pin.value() == self._on else 'OFF'
+        return 'ON' if self.is_on else 'OFF'
 
     def __str__(self):
         return '%s %s: %s' % (self.name, self.pin, self.state)

@@ -1,6 +1,10 @@
-print('main.py')  # noqa isort:skip
+print('main.py')
+
+import sys
+sys.modules.clear()
 
 import gc
+gc.collect()
 
 from button_handler import init_button_irq
 from pins import Pins
@@ -8,7 +12,7 @@ from rtc import Rtc
 from utils import ResetDevice
 from wifi import WiFi
 
-__version__ = 'v0.1.1'
+__version__ = 'v0.3.1'
 
 rtc = Rtc()
 pins = Pins()
@@ -30,10 +34,15 @@ if rtc.d.get(_RTC_KEY_RUN) == _RUN_WEB_SERVER:
     rtc.save(data={_RTC_KEY_RUN: _RUN_OTA_UPDATE})
     from webswitch import WebServer  # noqa isort:skip
     from watchdog import Watchdog  # noqa isort:skip
+    from power_timer import AutomaticTimer  # noqa isort:skip
 
-    watchdog = Watchdog(wifi=wifi, rtc=rtc)
     gc.collect()
-    WebServer(pins=pins, rtc=rtc, watchdog=watchdog, version=__version__).run()
+    WebServer(
+        pins=pins, rtc=rtc,
+        watchdog=Watchdog(wifi=wifi, rtc=rtc),
+        auto_timer=AutomaticTimer(rtc=rtc, pins=pins),
+        version=__version__
+    ).run()
 else:
     print('start OTA')
     pins.power_led.off()
