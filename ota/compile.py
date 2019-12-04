@@ -1,4 +1,5 @@
 import shutil
+import sys
 from pathlib import Path
 
 import mpy_cross
@@ -50,4 +51,7 @@ def create_bdist(src_path, dst_path, copy_files, copy_file_pattern):
         file_path = file_path.resolve().relative_to(cwd)
         output_path = Path(dst_path, file_path.name).relative_to(cwd)
         print(f' + {file_path} -> {output_path}')
-        shutil.copyfile(file_path, output_path)
+        try:
+            shutil.copyfile(file_path, output_path)
+        except FileNotFoundError as e:
+            print(f'ERROR: {e}', file=sys.stderr)

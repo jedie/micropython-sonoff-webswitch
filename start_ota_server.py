@@ -1,4 +1,4 @@
-import time
+
 from pathlib import Path
 
 from ota.compile import create_bdist
@@ -15,27 +15,23 @@ if __name__ == '__main__':
         verbose=False,
     )
 
-    while True:
-
-        # Compile via mpy_cross
-        create_bdist(
-            src_path=src_path,
-            dst_path=bdist_path,
-            copy_files=(
-                # Theses files will be not compiled.
-                # They are just copied from src to bdist.
-                'boot.py', 'main.py',
-                'delete_py_files.py',
-            ),
-            copy_file_pattern=(
-                # Copy all these files from src to bdist:
-                '*.html', '*.css', '*.js'
-            )
+    # Compile via mpy_cross
+    create_bdist(
+        src_path=src_path,
+        dst_path=bdist_path,
+        copy_files=(
+            # Theses files will be not compiled.
+            # They are just copied from src to bdist.
+            'boot.py', 'main.py',
+        ),
+        copy_file_pattern=(
+            # Copy all these files from src to bdist:
+            '*.html', '*.css', '*.js'
         )
+    )
 
-        # Send 'bdist' files to devices:
-        clients = ota_server.run(port=PORT)
+    # Send 'bdist' files to devices:
+    clients = ota_server.run(port=PORT)
 
-        print('_' * 100)
-        print(f'Update {len(clients)} device(s), ok.')
-        time.sleep(2)
+    print('_' * 100)
+    print(f'Update {len(clients)} device(s), ok.')
