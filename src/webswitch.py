@@ -16,6 +16,7 @@ class WebServer:
         self.auto_timer = auto_timer
         self.version = version
         self.message = 'Web server started...'
+        self.minimal_modules = tuple(sys.modules.keys())
 
     async def error_redirect(self, writer, message):
         self.message = str(message)
@@ -68,7 +69,10 @@ class WebServer:
             raise AttributeError('Not found: %s.%s' % (module_name, func_name))
 
         await func(self, reader, writer, get_parameters)
+        del func
+        del module
         del sys.modules[module_name]
+        gc.collect()
 
     async def send_response(self, reader, writer):
         print('\nAccepted connection from:', writer.get_extra_info('peername'))
@@ -96,6 +100,11 @@ class WebServer:
             await send_file(self, reader, writer, url)
         else:
             await self.call_module_func(url, method, get_parameters, reader, writer)
+            for module_name in [
+                    name for name in sys.modules.keys() if name not in self.minimal_modules]:
+                print('remove obsolete module: %r' % module_name)
+                del sys.modules[module_name]
+
         gc.collect()
 
     async def request_handler(self, reader, writer):
@@ -107,6 +116,9 @@ class WebServer:
             sys.print_exception(e)
             await self.error_redirect(writer, message=e)
             await asyncio.sleep(3)
+            gc.collect()
+            if isinstance(e, MemoryError):
+                ResetDevice(rtc=self.rtc, reason='MemoryError: %s' % e).schedule(period=5000)
         await writer.aclose()
         gc.collect()
         self.pins.power_led.on()

@@ -9,7 +9,6 @@ gc.collect()
 from button_handler import init_button_irq
 from pins import Pins
 from rtc import Rtc
-from utils import ResetDevice
 from wifi import WiFi
 
 __version__ = 'v0.3.1'
@@ -52,5 +51,5 @@ else:
     gc.collect()
     OtaUpdate().run()
 
-
+from reset import ResetDevice
 ResetDevice(rtc=rtc, reason='unknown').reset()
