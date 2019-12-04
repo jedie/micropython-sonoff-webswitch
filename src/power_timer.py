@@ -1,6 +1,7 @@
 import gc
 
 from pins import Pins
+from rtc import get_rtc_value, rtc_in_time_range, rtc_isoformat, rtc_later, update_rtc_dict
 
 
 def parse_get_time(raw):
@@ -11,16 +12,16 @@ def parse_get_time(raw):
         return hours, minutes
 
 
-def set_timer_from_web(rtc, get_parameters):
-    rtc.save(data={
+def set_timer_from_web(get_parameters):
+    update_rtc_dict(data={
         'on': parse_get_time(get_parameters['on']),
         'off': parse_get_time(get_parameters['off']),
         'active': get_parameters['active'] == 'on'
     })
 
 
-def get_timer_form_value(rtc, key):
-    value = rtc.d.get(key)
+def get_timer_form_value(key):
+    value = get_rtc_value(key)
     if not value:
         return ''
     return '%02i:%02i' % (value[0], value[1])
@@ -31,33 +32,30 @@ class AutomaticTimer:
     check_count = 0
     last_action = None
 
-    def __init__(self, rtc):
-        self.rtc = rtc
-
     @property
     def on_time(self):
-        return self.rtc.d.get('on')
+        return get_rtc_value('on')
 
     @property
     def off_time(self):
-        return self.rtc.d.get('off')
+        return get_rtc_value('off')
 
     @property
     def active(self):
-        return self.rtc.d.get('active', False)
+        return get_rtc_value('active', False)
 
     def _turn_on(self):
         Pins.relay.on()
-        self.last_action = 'Turn ON at: %s' % self.rtc.isoformat()
+        self.last_action = 'Turn ON at: %s' % rtc_isoformat()
 
     def _turn_off(self):
         Pins.relay.off()
-        self.last_action = 'Turn OFF at: %s' % self.rtc.isoformat()
+        self.last_action = 'Turn OFF at: %s' % rtc_isoformat()
 
     def timer_callback(self):
         gc.collect()
         self.check_count += 1
-        self.last_check = self.rtc.isoformat()
+        self.last_check = rtc_isoformat()
         if not self.active:
             self.last_action = 'timer not active'
             return
@@ -67,11 +65,11 @@ class AutomaticTimer:
             self.last_action = 'no timer set'
             return
 
-        if self.off_time is None and self.rtc.later(self.on_time):
+        if self.off_time is None and rtc_later(self.on_time):
             self._turn_on()
-        elif self.on_time is None and self.rtc.later(self.off_time):
+        elif self.on_time is None and rtc_later(self.off_time):
             self._turn_off()
-        elif self.rtc.in_time_range(self.on_time, self.off_time):
+        elif rtc_in_time_range(self.on_time, self.off_time):
             self._turn_on()
         else:
             self._turn_off()

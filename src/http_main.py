@@ -8,8 +8,8 @@ async def get_menu(server, reader, writer, url):
         filename='webswitch.html',
         context={
             'state': Pins.relay.state,
-            'on_value': get_timer_form_value(server.rtc, key='on'),
-            'off_value': get_timer_form_value(server.rtc, key='off'),
+            'on_value': get_timer_form_value(key='on'),
+            'off_value': get_timer_form_value(key='off'),
             'on_selected': 'selected' if server.watchdog.auto_timer.active else '',
             'off_selected': '' if server.watchdog.auto_timer.active else 'selected',
         }

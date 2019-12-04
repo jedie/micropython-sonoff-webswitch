@@ -5,12 +5,12 @@ import uasyncio as asyncio
 from http_send_file import send_file
 from http_utils import HTTP_LINE_200, querystring2dict, send_redirect
 from pins import Pins
+from rtc import rtc_isoformat
 from watchdog import WATCHDOG_TIMEOUT
 
 
 class WebServer:
-    def __init__(self, rtc, watchdog, version):
-        self.rtc = rtc
+    def __init__(self, watchdog, version):
         self.watchdog = watchdog
         self.version = version
         self.message = 'Web server started...'
@@ -35,7 +35,7 @@ class WebServer:
             'total': alloc + free,
             'alloc': alloc,
             'free': free,
-            'utc': self.rtc.isoformat(sep=' '),
+            'utc': rtc_isoformat(sep=' '),
         })
         gc.collect()
         with open(filename, 'r') as f:
@@ -120,7 +120,7 @@ class WebServer:
             gc.collect()
             if isinstance(e, MemoryError):
                 from reset import ResetDevice
-                ResetDevice(rtc=self.rtc, reason='MemoryError: %s' % e).schedule(period=5000)
+                ResetDevice(reason='MemoryError: %s' % e).schedule(period=5000)
         await writer.aclose()
         gc.collect()
         Pins.power_led.on()

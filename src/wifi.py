@@ -3,6 +3,8 @@ import sys
 
 import network
 import utime as time
+from pins import Pins
+from rtc import rtc_isoformat
 
 
 class WiFi:
@@ -14,10 +16,8 @@ class WiFi:
     last_refresh = None
     verbose = True
 
-    def __init__(self, rtc, power_led):
-        self.rtc = rtc
-        self.power_led = power_led
-        self.power_led.off()
+    def __init__(self):
+        Pins.power_led.off()
 
         print('Setup WiFi interfaces')
         self.access_point = network.WLAN(network.AP_IF)  # access-point interface
@@ -29,13 +29,13 @@ class WiFi:
         if not self.station.isconnected():
             if self.verbose:
                 print('Not connected to station!')
-            self.power_led.off()
+            Pins.power_led.off()
             return False
         else:
             self.connected_time = time.time()
             if self.verbose:
                 print('Connected to station IP/netmask/gw/DNS addresses:', self.station.ifconfig())
-            self.power_led.on()
+            Pins.power_led.on()
 
             if self.access_point.active():
                 if self.verbose:
@@ -55,17 +55,17 @@ class WiFi:
 
             if time.time() > self.last_ntp_sync:
                 from ntp import ntp_sync
-                ntp_sync(rtc=self.rtc)  # update RTC via NTP
+                ntp_sync()  # update RTC via NTP
                 del ntp_sync
                 del sys.modules['ntp']
                 self.last_ntp_sync = time.time()
 
-            self.last_refresh = self.rtc.isoformat()
+            self.last_refresh = rtc_isoformat()
             return
 
         self.not_connected_count += 1
 
-        self.power_led.flash(sleep=0.1, count=5)
+        Pins.power_led.flash(sleep=0.1, count=5)
 
         if self.verbose:
             print('read WiFi config...')
@@ -87,7 +87,7 @@ class WiFi:
         known_ssid = None
         for no in range(3):
             for info in self.station.scan():
-                self.power_led.toggle()
+                Pins.power_led.toggle()
                 ssid, bssid, channel, RSSI, auth_mode, hidden = info
                 ssid = ssid.decode("UTF-8")
                 if self.verbose:
@@ -102,7 +102,7 @@ class WiFi:
                 return known_ssid
 
         print('ERROR: No known WiFi SSID found!')
-        self.power_led.flash(sleep=0.2, count=20)
+        Pins.power_led.flash(sleep=0.2, count=20)
 
     def _connect(self, ssid, password):
         for no in range(0, 3):
@@ -111,30 +111,30 @@ class WiFi:
             # print('Connect to Wifi access point:', ssid, repr(password))
             if self.verbose:
                 print('Connect to Wifi access point: %s' % ssid)
-            self.power_led.toggle()
+            Pins.power_led.toggle()
             self.station.connect(ssid, password)
             for wait_sec in range(30, 1, -1):
                 status = self.station.status()
                 if status == network.STAT_GOT_IP:
                     self.connected_time = time.time()
-                    self.power_led.on()
+                    Pins.power_led.on()
                     return
                 elif status == network.STAT_WRONG_PASSWORD:
                     print('Wrong password!')
                     return
                 if self.verbose:
                     print('wait %i...' % wait_sec)
-                self.power_led.flash(sleep=0.1, count=10)
+                Pins.power_led.flash(sleep=0.1, count=10)
 
             if self.verbose:
                 print('Try again...')
             self.station.active(False)
-            self.power_led.flash(sleep=0.1, count=20)
-            self.power_led.off()
+            Pins.power_led.flash(sleep=0.1, count=20)
+            Pins.power_led.off()
             self.station.active(True)
 
         print("ERROR: WiFi not connected! Password wrong?!?")
-        self.power_led.flash(sleep=0.2, count=20)
+        Pins.power_led.flash(sleep=0.2, count=20)
 
     def __str__(self):
         return 'WiFi last refresh: %s - connected: %i - not connected: %i' % (

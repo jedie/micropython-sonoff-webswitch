@@ -4,31 +4,29 @@ import utime as time
 from pins import Pins
 
 
+def get_debounced_value(pin):
+    """
+    get debounced value by waiting for stable value
+    """
+    cur_value = pin.value()
+    stable = 0
+    while stable < 40:
+        if pin.value() == cur_value:
+            stable += 1
+        else:
+            stable = 0
+            cur_value = pin.value()
+        time.sleep_ms(1)
+    return cur_value
+
+
 class Button:
     down_start = None
-
-    def __init__(self, rtc):
-        self.rtc = rtc
-
-    def get_debounced_value(self, pin):
-        """
-        get debounced value by waiting for stable value
-        """
-        cur_value = pin.value()
-        stable = 0
-        while stable < 40:
-            if pin.value() == cur_value:
-                stable += 1
-            else:
-                stable = 0
-                cur_value = pin.value()
-            time.sleep_ms(1)
-        return cur_value
 
     def irq_handler(self, pin):
         gc.collect()
         Pins.power_led.off()
-        button_value = self.get_debounced_value(pin)
+        button_value = get_debounced_value(pin)
         gc.collect()
         print('button_value:', button_value)
         if button_value == 0:
@@ -43,7 +41,7 @@ class Button:
             print('duration_ms:', duration_ms)
             if duration_ms > 2000:
                 from reset import ResetDevice
-                ResetDevice(self.rtc, 'After button long press')
+                ResetDevice('After button long press')
 
             print('old state:', Pins.relay)
             Pins.relay.toggle()

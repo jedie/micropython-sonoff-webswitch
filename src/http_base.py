@@ -22,6 +22,6 @@ async def get_off(server, reader, writer, get_parameters):
 
 
 async def get_set_timer(server, reader, writer, get_parameters):
-    set_timer_from_web(server.rtc, get_parameters)
+    set_timer_from_web(get_parameters)
     server.message = 'Timer set'
     await send_redirect(writer)

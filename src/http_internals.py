@@ -3,6 +3,7 @@ import sys
 import machine
 import uos as os
 from http_utils import send_redirect
+from rtc import get_dict_from_rtc
 
 
 async def get_show(server, reader, writer, url):
@@ -13,7 +14,7 @@ async def get_show(server, reader, writer, url):
         context={
             'watchdog': server.watchdog,
             'auto_timer': server.watchdog.auto_timer,
-            'rtc_memory': repr(server.rtc.d),
+            'rtc_memory': repr(get_dict_from_rtc()),
 
             'nodename': uname.nodename,
             'id': ':'.join(['%02x' % char for char in reversed(machine.unique_id())]),
@@ -38,5 +39,5 @@ async def get_reset(server, reader, writer, get_parameters):
         ' Restart WebServer by pressing the Button on your device!'
     )
     from reset import ResetDevice
-    ResetDevice(rtc=server.rtc, reason='Reset via web page').schedule(period=5000)
+    ResetDevice(reason='Reset via web page').schedule(period=5000)
     await send_redirect(writer)

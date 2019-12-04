@@ -6,6 +6,7 @@ import uerrno as errno
 import usocket as socket
 import utime as time
 from micropython import const
+from rtc import incr_rtc_count, rtc_isoformat, get_rtc_value
 
 WATCHDOG_TIMEOUT = const(30)
 
@@ -13,11 +14,11 @@ _CHECK_PERIOD = const(50 * 1000)  # 50 sec
 _MIN_FREE = const(2 * 1024)
 
 
-def reset(rtc, reason):
+def reset(reason):
     print('Watchdog reset reason: %s' % reason)
-    rtc.incr_rtc_count(key=constants.RTC_KEY_WATCHDOG_COUNT)
+    incr_rtc_count(key=constants.RTC_KEY_WATCHDOG_COUNT)
     from reset import ResetDevice
-    ResetDevice(rtc=rtc, reason=reason).reset()
+    ResetDevice(reason=reason).reset()
 
 
 def can_bind_web_server_port():
@@ -46,9 +47,9 @@ class Watchdog:
 
     timer = machine.Timer(-1)
 
-    def __init__(self, wifi, rtc, auto_timer):
+    def __init__(self, wifi, auto_timer):
         self.wifi = wifi
-        self.rtc = rtc
+
         self.auto_timer = auto_timer
 
         print('Start Watchdog period timer')
@@ -63,23 +64,23 @@ class Watchdog:
         gc.collect()
 
         if gc.mem_free() < _MIN_FREE:
-            reset(rtc=self.rtc, reason='RAM full')
+            reset(reason='RAM full')
 
         if not self.wifi.is_connected:
             self.wifi.ensure_connection()
 
         last_connection = time.time() - self.wifi.connected_time
         if last_connection > constants.WIFI_TIMEOUT:
-            reset(rtc=self.rtc, reason='WiFi timeout')
+            reset(reason='WiFi timeout')
 
         if can_bind_web_server_port():
-            reset(rtc=self.rtc, reason='Web Server down')
+            reset(reason='Web Server down')
 
         if time.time() - self.last_feed > WATCHDOG_TIMEOUT:
-            reset(rtc=self.rtc, reason='Feed timeout')
+            reset(reason='Feed timeout')
 
         self.check_count += 1
-        self.last_check = self.rtc.isoformat()
+        self.last_check = rtc_isoformat()
 
         self.auto_timer.timer_callback()
 
@@ -91,8 +92,8 @@ class Watchdog:
 
     def __str__(self):
         # get reset info form RTC RAM:
-        reset_count = self.rtc.d.get(constants.RTC_KEY_WATCHDOG_COUNT, 0)
-        reset_reason = self.rtc.d.get(constants.RTC_KEY_RESET_REASON)
+        reset_count = get_rtc_value(constants.RTC_KEY_WATCHDOG_COUNT, 0)
+        reset_reason = get_rtc_value(constants.RTC_KEY_RESET_REASON)
         return (
             'Watchdog -'
             ' last check: %s,'

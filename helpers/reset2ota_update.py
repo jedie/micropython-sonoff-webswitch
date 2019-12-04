@@ -8,13 +8,14 @@ import sys
 
 import machine
 import utime as time
-from rtc import Rtc
+from rtc import update_rtc_dict
 
 if __name__ == '__main__':
     print('Schedule OTA update via RTC RAM')
     gc.collect()
-    rtc = Rtc()
-    rtc.save(data={'run': None})  # Save to RTC RAM for next boot
+
+    update_rtc_dict(data={'run': None})  # Save to RTC RAM for next boot
+
     print('Hard reset device...')
     time.sleep(1)
     machine.reset()

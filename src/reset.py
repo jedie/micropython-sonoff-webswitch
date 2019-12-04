@@ -3,14 +3,15 @@ import sys
 import constants
 import machine
 import utime as time
+from rtc import update_rtc_dict
 
 
 class ResetDevice:
-    def __init__(self, rtc, reason):
+    def __init__(self, reason):
         print('Reset reason: %r' % reason)
 
         # Save reason in RTC RAM:
-        rtc.save(data={constants.RTC_KEY_RESET_REASON: reason})
+        update_rtc_dict(data={constants.RTC_KEY_RESET_REASON: reason})
 
     def reset(self):
         time.sleep(1)
