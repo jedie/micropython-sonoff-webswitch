@@ -1,3 +1,4 @@
+from pins import Pins
 from power_timer import get_timer_form_value
 
 
@@ -6,7 +7,7 @@ async def get_menu(server, reader, writer, url):
         writer,
         filename='webswitch.html',
         context={
-            'state': server.pins.relay.state,
+            'state': Pins.relay.state,
             'on_value': get_timer_form_value(server.rtc, key='on'),
             'off_value': get_timer_form_value(server.rtc, key='off'),
             'on_selected': 'selected' if server.watchdog.auto_timer.active else '',

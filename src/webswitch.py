@@ -4,12 +4,12 @@ import sys
 import uasyncio as asyncio
 from http_send_file import send_file
 from http_utils import HTTP_LINE_200, querystring2dict, send_redirect
+from pins import Pins
 from watchdog import WATCHDOG_TIMEOUT
 
 
 class WebServer:
-    def __init__(self, pins, rtc, watchdog, version):
-        self.pins = pins
+    def __init__(self, rtc, watchdog, version):
         self.rtc = rtc
         self.watchdog = watchdog
         self.version = version
@@ -109,7 +109,7 @@ class WebServer:
         gc.collect()
 
     async def request_handler(self, reader, writer):
-        self.pins.power_led.off()
+        Pins.power_led.off()
         gc.collect()
         try:
             await self.send_response(reader, writer)
@@ -123,7 +123,7 @@ class WebServer:
                 ResetDevice(rtc=self.rtc, reason='MemoryError: %s' % e).schedule(period=5000)
         await writer.aclose()
         gc.collect()
-        self.pins.power_led.on()
+        Pins.power_led.on()
 
     async def feed_watchdog(self):
         while True:
@@ -137,6 +137,6 @@ class WebServer:
 
         gc.collect()
 
-        self.pins.power_led.on()
+        Pins.power_led.on()
         print(self.message)
         loop.run_forever()

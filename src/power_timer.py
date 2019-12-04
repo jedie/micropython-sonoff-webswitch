@@ -1,5 +1,7 @@
 import gc
 
+from pins import Pins
+
 
 def parse_get_time(raw):
     if raw:
@@ -29,9 +31,8 @@ class AutomaticTimer:
     check_count = 0
     last_action = None
 
-    def __init__(self, rtc, pins):
+    def __init__(self, rtc):
         self.rtc = rtc
-        self.pins = pins
 
     @property
     def on_time(self):
@@ -46,11 +47,11 @@ class AutomaticTimer:
         return self.rtc.d.get('active', False)
 
     def _turn_on(self):
-        self.pins.relay.on()
+        Pins.relay.on()
         self.last_action = 'Turn ON at: %s' % self.rtc.isoformat()
 
     def _turn_off(self):
-        self.pins.relay.off()
+        Pins.relay.off()
         self.last_action = 'Turn OFF at: %s' % self.rtc.isoformat()
 
     def timer_callback(self):

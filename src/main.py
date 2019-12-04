@@ -9,7 +9,7 @@ sys.modules.clear()
 import gc
 gc.collect()
 
-from button_handler import init_button_irq
+from button_handler import Button
 from pins import Pins
 from rtc import Rtc
 from wifi import WiFi
@@ -18,11 +18,11 @@ from wifi import WiFi
 __version__ = 'v0.4.1'
 
 rtc = Rtc()
-pins = Pins()
 
-init_button_irq(rtc, pins)
+# Init device button IRQ:
+Pins.button_pin.irq(Button(rtc).irq_handler)
 
-wifi = WiFi(rtc=rtc, power_led=pins.power_led)
+wifi = WiFi(rtc=rtc, power_led=Pins.power_led)
 wifi.ensure_connection()
 print('wifi: %s' % wifi)
 
@@ -39,13 +39,13 @@ if rtc.d.get(_RTC_KEY_RUN) == _RUN_WEB_SERVER:
 
     gc.collect()
     WebServer(
-        pins=pins, rtc=rtc,
-        watchdog=Watchdog(wifi=wifi, rtc=rtc, auto_timer=AutomaticTimer(rtc=rtc, pins=pins)),
+        rtc=rtc,
+        watchdog=Watchdog(wifi=wifi, rtc=rtc, auto_timer=AutomaticTimer(rtc=rtc)),
         version=__version__
     ).run()
 else:
     print('start OTA')
-    pins.power_led.off()
+    Pins.power_led.off()
     rtc.save(data={_RTC_KEY_RUN: _RUN_WEB_SERVER})  # run web server on next boot
     from ota_client import OtaUpdate
 

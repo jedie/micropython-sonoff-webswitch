@@ -1,14 +1,14 @@
 import gc
 
 import utime as time
+from pins import Pins
 
 
 class Button:
     down_start = None
 
-    def __init__(self, rtc, pins):
+    def __init__(self, rtc):
         self.rtc = rtc
-        self.pins = pins
 
     def get_debounced_value(self, pin):
         """
@@ -27,7 +27,7 @@ class Button:
 
     def irq_handler(self, pin):
         gc.collect()
-        self.pins.power_led.off()
+        Pins.power_led.off()
         button_value = self.get_debounced_value(pin)
         gc.collect()
         print('button_value:', button_value)
@@ -37,7 +37,7 @@ class Button:
 
         elif button_value == 1:
             # button released
-            self.pins.power_led.on()
+            Pins.power_led.on()
 
             duration_ms = time.ticks_diff(time.ticks_ms(), self.down_start)
             print('duration_ms:', duration_ms)
@@ -45,12 +45,8 @@ class Button:
                 from reset import ResetDevice
                 ResetDevice(self.rtc, 'After button long press')
 
-            print('old state:', self.pins.relay)
-            self.pins.relay.toggle()
-            print('new state:', self.pins.relay)
+            print('old state:', Pins.relay)
+            Pins.relay.toggle()
+            print('new state:', Pins.relay)
 
         gc.collect()
-
-
-def init_button_irq(rtc, pins):
-    pins.button_pin.irq(Button(rtc, pins).irq_handler)
