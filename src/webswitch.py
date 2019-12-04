@@ -18,7 +18,7 @@ class WebServer:
         self.message = 'Web server started...'
 
     async def error_redirect(self, writer, message):
-        self.message = message
+        self.message = str(message)
         await send_redirect(writer)
 
     async def send_html_page(self, writer, filename, context):
@@ -54,21 +54,18 @@ class WebServer:
         try:
             module_name, func_name = url.split('/')
         except ValueError:
-            await send_error(writer, 'URL unknown')
-            return
+            raise ValueError('URL unknown')
+
         module_name = 'http_%s' % module_name
-        func_name = '%s_%s' % (method.lower(), func_name)
-        print('func: %s.%s' % (module_name, func_name))
         try:
             module = __import__(module_name)
         except ImportError:
-            await send_error(writer, '%s.py not found' % module_name)
-            return
+            raise ImportError('%s.py not found' % module_name)
 
+        func_name = '%s_%s' % (method.lower(), func_name)
         func = getattr(module, func_name, None)
         if func is None:
-            await send_error(writer, 'Not found: %s.%s' % (module_name, func_name))
-            return
+            raise AttributeError('Not found: %s.%s' % (module_name, func_name))
 
         await func(self, reader, writer, get_parameters)
         del sys.modules[module_name]
@@ -84,11 +81,7 @@ class WebServer:
         print('request: %r' % request)
         print('headers:', headers)
 
-        # body = body.decode('UTF-8')
-        # print('body: %r' % body)
-
         method, url, version = request.split(' ', 2)
-        print(method, url, version)
 
         if '?' not in url:
             get_parameters = None
@@ -98,16 +91,11 @@ class WebServer:
 
         gc.collect()
         if url == '/':
-            print('response root page')
             await send_redirect(writer)
         elif '.' in url:
             await send_file(self, reader, writer, url)
         else:
-            try:
-                await self.call_module_func(url, method, get_parameters, reader, writer)
-            except Exception as e:
-                sys.print_exception(e)
-                await self.error_redirect(writer, message='Command error: %s' % e)
+            await self.call_module_func(url, method, get_parameters, reader, writer)
         gc.collect()
 
     async def request_handler(self, reader, writer):
@@ -117,7 +105,8 @@ class WebServer:
             await self.send_response(reader, writer)
         except Exception as e:
             sys.print_exception(e)
-            await send_error(writer, reason=e, http_code=500)
+            await self.error_redirect(writer, message=e)
+            await asyncio.sleep(3)
         await writer.aclose()
         gc.collect()
         self.pins.power_led.on()
