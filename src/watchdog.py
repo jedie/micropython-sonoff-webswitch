@@ -45,9 +45,10 @@ class Watchdog:
 
     timer = machine.Timer(-1)
 
-    def __init__(self, wifi, rtc):
+    def __init__(self, wifi, rtc, auto_timer):
         self.wifi = wifi
         self.rtc = rtc
+        self.auto_timer = auto_timer
 
         print('Start Watchdog period timer')
         self.timer.deinit()
@@ -78,6 +79,8 @@ class Watchdog:
 
         self.check_count += 1
         self.last_check = self.rtc.isoformat()
+
+        self.auto_timer.timer_callback()
 
     def deinit(self):
         self.timer.deinit()

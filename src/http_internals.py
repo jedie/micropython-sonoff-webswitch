@@ -13,7 +13,7 @@ async def get_show(server, reader, writer, url):
         filename='sys_internals.html',
         context={
             'watchdog': server.watchdog,
-            'auto_timer': server.auto_timer,
+            'auto_timer': server.watchdog.auto_timer,
             'rtc_memory': repr(server.rtc.d),
 
             'nodename': uname.nodename,

@@ -3,18 +3,16 @@ import sys
 
 import uasyncio as asyncio
 from http_send_file import send_file
-from http_utils import (HTTP_LINE_200, querystring2dict, send_error,
-                        send_redirect)
+from http_utils import HTTP_LINE_200, querystring2dict, send_redirect
 from reset import ResetDevice
 from watchdog import WATCHDOG_TIMEOUT
 
 
 class WebServer:
-    def __init__(self, pins, rtc, watchdog, auto_timer, version):
+    def __init__(self, pins, rtc, watchdog, version):
         self.pins = pins
         self.rtc = rtc
         self.watchdog = watchdog
-        self.auto_timer = auto_timer
         self.version = version
         self.message = 'Web server started...'
         self.minimal_modules = tuple(sys.modules.keys())
@@ -75,11 +73,7 @@ class WebServer:
         del sys.modules[module_name]
         gc.collect()
 
-    async def send_response(self, reader, writer):
-        print('\nAccepted connection from:', writer.get_extra_info('peername'))
-
-        request = await reader.read()
-
+    def parse_request(self, request):
         request, body = request.split(b'\r\n\r\n', 1)
         request, headers = request.split(b'\r\n', 1)
         request = request.decode('UTF-8')
@@ -94,7 +88,14 @@ class WebServer:
             url, get_parameters = url.split('?', 1)
             get_parameters = querystring2dict(get_parameters)
 
+        return method, url, get_parameters
+
+    async def send_response(self, reader, writer):
+        print('\nAccepted connection from:', writer.get_extra_info('peername'))
+
+        method, url, get_parameters = self.parse_request(request=await reader.read())
         gc.collect()
+
         if url == '/':
             await send_redirect(writer)
         elif '.' in url:

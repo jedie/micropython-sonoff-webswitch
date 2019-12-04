@@ -3,7 +3,7 @@ from power_timer import set_timer_from_web
 
 
 async def get_on(server, reader, writer, get_parameters):
-    if server.auto_timer.active:
+    if server.watchdog.auto_timer.active:
         server.message = 'Deactivate automatic timer, first!'
     else:
         server.pins.relay.on()
@@ -12,7 +12,7 @@ async def get_on(server, reader, writer, get_parameters):
 
 
 async def get_off(server, reader, writer, get_parameters):
-    if server.auto_timer.active:
+    if server.watchdog.auto_timer.active:
         server.message = 'Deactivate automatic timer, first!'
     else:
         server.pins.relay.off()

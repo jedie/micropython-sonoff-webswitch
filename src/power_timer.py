@@ -1,9 +1,5 @@
 import gc
 
-import machine
-
-_CHECK_PERIOD = const(20 * 1000)  # 20 sec
-
 
 def parse_get_time(raw):
     if raw:
@@ -33,19 +29,9 @@ class AutomaticTimer:
     check_count = 0
     last_action = None
 
-    timer = machine.Timer(-1)
-
     def __init__(self, rtc, pins):
         self.rtc = rtc
         self.pins = pins
-
-        print('Start Automatic Timer')
-        self.timer.deinit()
-        self.timer.init(
-            period=_CHECK_PERIOD,
-            mode=machine.Timer.PERIODIC,
-            callback=self._timer_callback
-        )
 
     @property
     def on_time(self):
@@ -67,7 +53,7 @@ class AutomaticTimer:
         self.pins.relay.off()
         self.last_action = 'Turn OFF at: %s' % self.rtc.isoformat()
 
-    def _timer_callback(self, timer):
+    def timer_callback(self):
         gc.collect()
         self.check_count += 1
         self.last_check = self.rtc.isoformat()
@@ -88,9 +74,6 @@ class AutomaticTimer:
             self._turn_on()
         else:
             self._turn_off()
-
-    def deinit(self):
-        self.timer.deinit()
 
     def __str__(self):
         return (
