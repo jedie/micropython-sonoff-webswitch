@@ -6,6 +6,7 @@ import uerrno as errno
 import usocket as socket
 import utime as time
 from reset import ResetDevice
+from micropython import const
 
 WATCHDOG_TIMEOUT = const(30)
 

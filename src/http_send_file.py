@@ -1,5 +1,6 @@
 import uos as os
 from http_utils import HTTP_LINE_200, HTTP_LINE_CACHE
+from micropython import const
 
 _MIME_TYPES = {
     'ico': b'image/x-icon',

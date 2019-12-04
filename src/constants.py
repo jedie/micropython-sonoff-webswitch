@@ -1,3 +1,5 @@
+from micropython import const
+
 RTC_KEY_RESET_REASON = 'reset-reason'
 RTC_KEY_WATCHDOG_COUNT = 'watchdog-reset'
 

@@ -1,5 +1,6 @@
 import machine
 from leds import Led
+from micropython import const
 
 _PIN_NO_POWER_LED = const(13)
 _PIN_NO_RELAY = const(12)  # relay + red led
