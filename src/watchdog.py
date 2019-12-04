@@ -5,7 +5,6 @@ import machine
 import uerrno as errno
 import usocket as socket
 import utime as time
-from reset import ResetDevice
 from micropython import const
 
 WATCHDOG_TIMEOUT = const(30)
@@ -17,6 +16,7 @@ _MIN_FREE = const(2 * 1024)
 def reset(rtc, reason):
     print('Watchdog reset reason: %s' % reason)
     rtc.incr_rtc_count(key=constants.RTC_KEY_WATCHDOG_COUNT)
+    from reset import ResetDevice
     ResetDevice(rtc=rtc, reason=reason).reset()
 
 

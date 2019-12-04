@@ -4,7 +4,6 @@ import sys
 import uasyncio as asyncio
 from http_send_file import send_file
 from http_utils import HTTP_LINE_200, querystring2dict, send_redirect
-from reset import ResetDevice
 from watchdog import WATCHDOG_TIMEOUT
 
 
@@ -120,6 +119,7 @@ class WebServer:
             await asyncio.sleep(3)
             gc.collect()
             if isinstance(e, MemoryError):
+                from reset import ResetDevice
                 ResetDevice(rtc=self.rtc, reason='MemoryError: %s' % e).schedule(period=5000)
         await writer.aclose()
         gc.collect()

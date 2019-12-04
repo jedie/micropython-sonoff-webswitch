@@ -3,7 +3,6 @@ import sys
 import machine
 import uos as os
 from http_utils import send_redirect
-from reset import ResetDevice
 
 
 async def get_show(server, reader, writer, url):
@@ -38,5 +37,6 @@ async def get_reset(server, reader, writer, get_parameters):
         'Reset device...'
         ' Restart WebServer by pressing the Button on your device!'
     )
+    from reset import ResetDevice
     ResetDevice(rtc=server.rtc, reason='Reset via web page').schedule(period=5000)
     await send_redirect(writer)
