@@ -11,7 +11,7 @@ import utime as time
 from rtc import Rtc
 
 if __name__ == '__main__':
-    print('Schedule OTA via RTC RAM')
+    print('Schedule web server start via RTC RAM')
     gc.collect()
     rtc = Rtc()
     rtc.save(data={'run': 'web-server'})  # Save to RTC RAM for next boot
