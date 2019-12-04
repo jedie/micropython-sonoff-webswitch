@@ -5,6 +5,7 @@ import uasyncio as asyncio
 from http_send_file import send_file
 from http_utils import (HTTP_LINE_200, querystring2dict, send_error,
                         send_redirect)
+from watchdog import WATCHDOG_TIMEOUT
 
 
 class WebServer:
@@ -121,12 +122,18 @@ class WebServer:
         gc.collect()
         self.pins.power_led.on()
 
+    async def feed_watchdog(self):
+        while True:
+            await asyncio.sleep(int(WATCHDOG_TIMEOUT / 2))
+            self.watchdog.feed()
+
     def run(self):
-        print('Start web server...')
         loop = asyncio.get_event_loop()
         loop.create_task(asyncio.start_server(self.request_handler, '0.0.0.0', 80))
+        loop.create_task(self.feed_watchdog())
 
         gc.collect()
 
         self.pins.power_led.on()
+        print(self.message)
         loop.run_forever()
