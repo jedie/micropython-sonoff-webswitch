@@ -1,5 +1,8 @@
 print('main.py')
 
+import time
+time.sleep(1)
+
 import sys
 sys.modules.clear()
 
