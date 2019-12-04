@@ -1,3 +1,8 @@
+"""
+    Force start OTA update client.
+    This is normally not needed, see main.py
+"""
+
 import gc
 import sys
 
