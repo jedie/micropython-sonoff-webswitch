@@ -5,6 +5,7 @@ import uasyncio as asyncio
 from http_send_file import send_file
 from http_utils import (HTTP_LINE_200, querystring2dict, send_error,
                         send_redirect)
+from reset import ResetDevice
 from watchdog import WATCHDOG_TIMEOUT
 
 

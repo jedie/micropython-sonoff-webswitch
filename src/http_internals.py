@@ -3,7 +3,7 @@ import sys
 import machine
 import uos as os
 from http_utils import send_redirect
-from utils import ResetDevice
+from reset import ResetDevice
 
 
 async def get_show(server, reader, writer, url):
