@@ -5,9 +5,12 @@ import machine
 import uerrno as errno
 import usocket as socket
 import utime as time
-from utils import ResetDevice
+from reset import ResetDevice
+
+WATCHDOG_TIMEOUT = const(30)
 
 _CHECK_PERIOD = const(50 * 1000)  # 50 sec
+_MIN_FREE = const(2 * 1024)
 
 
 def reset(rtc, reason):
@@ -36,14 +39,16 @@ def can_bind_web_server_port():
 
 
 class Watchdog:
+    last_feed = 0
     last_check = 0
     check_count = 0
 
     timer = machine.Timer(-1)
 
-    def __init__(self, wifi, rtc):
+    def __init__(self, wifi, rtc, auto_timer):
         self.wifi = wifi
         self.rtc = rtc
+        self.auto_timer = auto_timer
 
         print('Start Watchdog period timer')
         self.timer.deinit()
@@ -56,6 +61,9 @@ class Watchdog:
     def _timer_callback(self, timer):
         gc.collect()
 
+        if gc.mem_free() < _MIN_FREE:
+            reset(rtc=self.rtc, reason='RAM full')
+
         if not self.wifi.is_connected:
             self.wifi.ensure_connection()
 
@@ -66,11 +74,19 @@ class Watchdog:
         if can_bind_web_server_port():
             reset(rtc=self.rtc, reason='Web Server down')
 
+        if time.time() - self.last_feed > WATCHDOG_TIMEOUT:
+            reset(rtc=self.rtc, reason='Feed timeout')
+
         self.check_count += 1
         self.last_check = self.rtc.isoformat()
 
+        self.auto_timer.timer_callback()
+
     def deinit(self):
         self.timer.deinit()
+
+    def feed(self):
+        self.last_feed = time.time()
 
     def __str__(self):
         # get reset info form RTC RAM:
@@ -80,9 +96,11 @@ class Watchdog:
             'Watchdog -'
             ' last check: %s,'
             ' check count: %s,'
+            ' feed since: %i,'
             ' reset count: %s,'
             ' last reset reason: %s'
         ) % (
             self.last_check, self.check_count,
-            reset_count, reset_reason
+            (time.time() - self.last_feed),
+            reset_count, reset_reason,
         )

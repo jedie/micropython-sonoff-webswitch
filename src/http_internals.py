@@ -3,7 +3,7 @@ import sys
 import machine
 import uos as os
 from http_utils import send_redirect
-from utils import ResetDevice
+from reset import ResetDevice
 
 
 async def get_show(server, reader, writer, url):
@@ -13,7 +13,7 @@ async def get_show(server, reader, writer, url):
         filename='sys_internals.html',
         context={
             'watchdog': server.watchdog,
-            'auto_timer': server.auto_timer,
+            'auto_timer': server.watchdog.auto_timer,
             'rtc_memory': repr(server.rtc.d),
 
             'nodename': uname.nodename,

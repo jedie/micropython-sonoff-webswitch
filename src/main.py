@@ -1,5 +1,8 @@
 print('main.py')
 
+import time
+time.sleep(1)
+
 import sys
 sys.modules.clear()
 
@@ -9,10 +12,9 @@ gc.collect()
 from button_handler import init_button_irq
 from pins import Pins
 from rtc import Rtc
-from utils import ResetDevice
 from wifi import WiFi
 
-__version__ = 'v0.3.1'
+__version__ = 'v0.3.2'
 
 rtc = Rtc()
 pins = Pins()
@@ -39,8 +41,7 @@ if rtc.d.get(_RTC_KEY_RUN) == _RUN_WEB_SERVER:
     gc.collect()
     WebServer(
         pins=pins, rtc=rtc,
-        watchdog=Watchdog(wifi=wifi, rtc=rtc),
-        auto_timer=AutomaticTimer(rtc=rtc, pins=pins),
+        watchdog=Watchdog(wifi=wifi, rtc=rtc, auto_timer=AutomaticTimer(rtc=rtc, pins=pins)),
         version=__version__
     ).run()
 else:
@@ -52,5 +53,5 @@ else:
     gc.collect()
     OtaUpdate().run()
 
-
+from reset import ResetDevice
 ResetDevice(rtc=rtc, reason='unknown').reset()

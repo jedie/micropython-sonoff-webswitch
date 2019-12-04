@@ -9,7 +9,7 @@ async def get_menu(server, reader, writer, url):
             'state': server.pins.relay.state,
             'on_value': get_timer_form_value(server.rtc, key='on'),
             'off_value': get_timer_form_value(server.rtc, key='off'),
-            'on_selected': 'selected' if server.auto_timer.active else '',
-            'off_selected': '' if server.auto_timer.active else 'selected',
+            'on_selected': 'selected' if server.watchdog.auto_timer.active else '',
+            'off_selected': '' if server.watchdog.auto_timer.active else 'selected',
         }
     )

@@ -3,21 +3,22 @@ import sys
 
 import uasyncio as asyncio
 from http_send_file import send_file
-from http_utils import (HTTP_LINE_200, querystring2dict, send_error,
-                        send_redirect)
+from http_utils import HTTP_LINE_200, querystring2dict, send_redirect
+from reset import ResetDevice
+from watchdog import WATCHDOG_TIMEOUT
 
 
 class WebServer:
-    def __init__(self, pins, rtc, watchdog, auto_timer, version):
+    def __init__(self, pins, rtc, watchdog, version):
         self.pins = pins
         self.rtc = rtc
         self.watchdog = watchdog
-        self.auto_timer = auto_timer
         self.version = version
         self.message = 'Web server started...'
+        self.minimal_modules = tuple(sys.modules.keys())
 
     async def error_redirect(self, writer, message):
-        self.message = message
+        self.message = str(message)
         await send_redirect(writer)
 
     async def send_html_page(self, writer, filename, context):
@@ -53,41 +54,33 @@ class WebServer:
         try:
             module_name, func_name = url.split('/')
         except ValueError:
-            await send_error(writer, 'URL unknown')
-            return
+            raise ValueError('URL unknown')
+
         module_name = 'http_%s' % module_name
-        func_name = '%s_%s' % (method.lower(), func_name)
-        print('func: %s.%s' % (module_name, func_name))
         try:
             module = __import__(module_name)
         except ImportError:
-            await send_error(writer, '%s.py not found' % module_name)
-            return
+            raise ImportError('%s.py not found' % module_name)
 
+        func_name = '%s_%s' % (method.lower(), func_name)
         func = getattr(module, func_name, None)
         if func is None:
-            await send_error(writer, 'Not found: %s.%s' % (module_name, func_name))
-            return
+            raise AttributeError('Not found: %s.%s' % (module_name, func_name))
 
         await func(self, reader, writer, get_parameters)
+        del func
+        del module
         del sys.modules[module_name]
+        gc.collect()
 
-    async def send_response(self, reader, writer):
-        print('\nAccepted connection from:', writer.get_extra_info('peername'))
-
-        request = await reader.read()
-
+    def parse_request(self, request):
         request, body = request.split(b'\r\n\r\n', 1)
         request, headers = request.split(b'\r\n', 1)
         request = request.decode('UTF-8')
         print('request: %r' % request)
         print('headers:', headers)
 
-        # body = body.decode('UTF-8')
-        # print('body: %r' % body)
-
         method, url, version = request.split(' ', 2)
-        print(method, url, version)
 
         if '?' not in url:
             get_parameters = None
@@ -95,18 +88,25 @@ class WebServer:
             url, get_parameters = url.split('?', 1)
             get_parameters = querystring2dict(get_parameters)
 
+        return method, url, get_parameters
+
+    async def send_response(self, reader, writer):
+        print('\nAccepted connection from:', writer.get_extra_info('peername'))
+
+        method, url, get_parameters = self.parse_request(request=await reader.read())
         gc.collect()
+
         if url == '/':
-            print('response root page')
             await send_redirect(writer)
         elif '.' in url:
             await send_file(self, reader, writer, url)
         else:
-            try:
-                await self.call_module_func(url, method, get_parameters, reader, writer)
-            except Exception as e:
-                sys.print_exception(e)
-                await self.error_redirect(writer, message='Command error: %s' % e)
+            await self.call_module_func(url, method, get_parameters, reader, writer)
+            for module_name in [
+                    name for name in sys.modules.keys() if name not in self.minimal_modules]:
+                print('remove obsolete module: %r' % module_name)
+                del sys.modules[module_name]
+
         gc.collect()
 
     async def request_handler(self, reader, writer):
@@ -116,17 +116,27 @@ class WebServer:
             await self.send_response(reader, writer)
         except Exception as e:
             sys.print_exception(e)
-            await send_error(writer, reason=e, http_code=500)
+            await self.error_redirect(writer, message=e)
+            await asyncio.sleep(3)
+            gc.collect()
+            if isinstance(e, MemoryError):
+                ResetDevice(rtc=self.rtc, reason='MemoryError: %s' % e).schedule(period=5000)
         await writer.aclose()
         gc.collect()
         self.pins.power_led.on()
 
+    async def feed_watchdog(self):
+        while True:
+            await asyncio.sleep(int(WATCHDOG_TIMEOUT / 2))
+            self.watchdog.feed()
+
     def run(self):
-        print('Start web server...')
         loop = asyncio.get_event_loop()
         loop.create_task(asyncio.start_server(self.request_handler, '0.0.0.0', 80))
+        loop.create_task(self.feed_watchdog())
 
         gc.collect()
 
         self.pins.power_led.on()
+        print(self.message)
         loop.run_forever()
