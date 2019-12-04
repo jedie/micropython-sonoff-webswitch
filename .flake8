@@ -1,0 +1,4 @@
+[flake8]
+exclude = bdist
+ignore = E402
+max-line-length = 100
