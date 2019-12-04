@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "8f288dae108e1617cda171a490492816b1af054f8cecf00ac1e2d43edafec157"
+            "sha256": "fbfe8d9a60930ffe8af52e333f94dad310da1f4bdf7caf059dae1b470f6cac11"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -16,9 +16,16 @@
         ]
     },
     "default": {
-        "adafruit-ampy": {
-            "git": "https://github.com/scientifichackers/ampy.git",
-            "ref": "c0b568cf12b017bd9dfd7d61a7132b7d760278a0"
+        "mpy-cross": {
+            "hashes": [
+                "sha256:048a8e5fc2e7eba38afebcdcbcf8378774d01a9ad8dbc29237a89fe6e2e61647",
+                "sha256:7a25a9905e8bec37dfb26c7307fb93aa247ffd4ba4ba1169d057d1e31cc48d5b",
+                "sha256:a991edb4eec01aa83f65ee30c9eb8658d9edf571ce1f9c6a29479177b0bd41d8",
+                "sha256:c854684c9c3cd4d0667bccafb19321221b2e3784b90c5090bb158eb6c1aee010",
+                "sha256:d4a900b785b66fdeacbd79020dfe41a7cf8fd7e0ca039d912b3f6c04a7cb9042"
+            ],
+            "index": "pypi",
+            "version": "==1.11"
         }
     },
     "develop": {}

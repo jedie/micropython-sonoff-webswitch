@@ -1,2 +1,4 @@
 src/config.json
 .idea
+/bdist/
+__pycache__
