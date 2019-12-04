@@ -1,7 +1,7 @@
 import gc
 
-import utils
 import utime as time
+from reset import ResetDevice
 
 
 class Button:
@@ -43,7 +43,7 @@ class Button:
             duration_ms = time.ticks_diff(time.ticks_ms(), self.down_start)
             print('duration_ms:', duration_ms)
             if duration_ms > 2000:
-                utils.ResetDevice(self.rtc, 'After button long press')
+                ResetDevice(self.rtc, 'After button long press')
 
             print('old state:', self.pins.relay)
             self.pins.relay.toggle()

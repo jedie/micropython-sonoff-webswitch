@@ -11,10 +11,9 @@ import asyncio
 import hashlib
 import socket
 import time
-from pathlib import Path
 
 SOCKET_TIMEOUT = 10
-PORT = 8266
+
 DNS_SERVER = '8.8.8.8'  # Google DNS Server ot get own IP
 ENCODING = 'utf-8'
 
@@ -296,16 +295,3 @@ class OtaServer:
         return loop.run_until_complete(
             self.port_scan_and_serve(port=port)
         )
-
-
-if __name__ == '__main__':
-    base_path = Path(__file__).parent
-    ota_server = OtaServer(
-        src_path=Path(base_path, 'src'),  # Put these files on micropython device
-        verbose=False,
-    )
-    while True:
-        clients = ota_server.run(port=PORT)
-        print('_' * 100)
-        print(f'Update {len(clients)} device(s), ok.')
-        time.sleep(2)
