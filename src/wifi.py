@@ -1,13 +1,13 @@
 import gc
+import sys
 
 import network
 import utime as time
 
-from ntp import NtpSync  # noqa isort:skip
-
 
 class WiFi:
     connected_time = 0
+    last_ntp_sync = 0
 
     not_connected_count = 0
     is_connected_count = 0
@@ -18,8 +18,6 @@ class WiFi:
         self.rtc = rtc
         self.power_led = power_led
         self.power_led.off()
-
-        self.ntp_sync = NtpSync()
 
         print('Setup WiFi interfaces')
         self.access_point = network.WLAN(network.AP_IF)  # access-point interface
@@ -54,7 +52,14 @@ class WiFi:
         gc.collect()
         if self.is_connected:
             self.is_connected_count += 1
-            self.ntp_sync.sync(rtc=self.rtc)  # update RTC via NTP
+
+            if time.time() > self.last_ntp_sync:
+                from ntp import ntp_sync
+                ntp_sync(rtc=self.rtc)  # update RTC via NTP
+                del ntp_sync
+                del sys.modules['ntp']
+                self.last_ntp_sync = time.time()
+
             self.last_refresh = self.rtc.isoformat()
             return
 
@@ -65,14 +70,14 @@ class WiFi:
         if self.verbose:
             print('read WiFi config...')
 
-        from get_config import config
-        wifi_configs = config['wifi']
+        from get_config import get_config
+        wifi_configs = get_config(key='wifi')
 
         known_ssid = self.get_known_ssid(wifi_configs)
         if known_ssid is None:
             print('Skip Wifi connection.')
         else:
-            self._connect(known_ssid, password=config['wifi'][known_ssid])
+            self._connect(known_ssid, password=get_config(key='wifi')[known_ssid])
 
         gc.collect()
 

@@ -14,7 +14,7 @@ from pins import Pins
 from rtc import Rtc
 from wifi import WiFi
 
-__version__ = 'v0.3.2'
+__version__ = 'v0.4.0'
 
 rtc = Rtc()
 pins = Pins()
