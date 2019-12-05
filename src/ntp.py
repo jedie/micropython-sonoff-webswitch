@@ -9,16 +9,17 @@ def ntp_sync():
 
     print('Synchronize time from %r ...' % ntptime.host)
     print('old UTC:', rtc_isoformat())
-    s = 1
-    while True:
+    for s in range(5):
         try:
             ntptime.settime()
         except Exception as e:
-            print('Error syncing time: %s, retry in %s sec.' % (e, s))
-            time.sleep(s)
-            s += 5
+            print('Error syncing time: %s, retry in %s sec.' % (e, s * 5))
+            time.sleep(s * 5)
         else:
             print('new UTC:', rtc_isoformat())
             del ntptime
             del sys.modules['ntptime']
             return
+
+    from reset import ResetDevice
+    ResetDevice(reason='Failed NTP sync').reset()
