@@ -1,18 +1,10 @@
 <fieldset><legend>Automatic timer:</legend>
-    <form action="/set_timer/submit/">
-        Turn ON: <input type="time" name="on" value="{on_value}"><br>
-        Turn OFF: <input type="time" name="off" value="{off_value}"><br>
-        <small>You can set no, one or both times. (Always <strong>in UTC</strong>!)</small><br>
-        Timer is: <select name="active">
-            <option value="on" {on_selected}>ON</option>
-            <option value="off" {off_selected}>OFF</option>
-        </select><br>
-    <input type="submit">
-</form></fieldset>
-<p>
+    <a href="/set_timer/form/"><button class="button">Change Timers</button></a>
+</fieldset>
+<fieldset><legend>Manual overwrite:</legend>
     <a href="/base/on/"><button class="button">ON</button></a>
     <a href="/base/off/"><button class="button button2">OFF</button></a>
-</p>
+</fieldset>
 <p>
     <a href="/internals/show/"><button class="button">sys internals</button></a>
 </p>

@@ -16,7 +16,7 @@ from rtc import get_rtc_value, update_rtc_dict
 from wifi import WiFi
 
 
-__version__ = 'v0.4.2'
+__version__ = 'v0.5.0'
 
 
 # Init device button IRQ:
