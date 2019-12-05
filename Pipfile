@@ -8,6 +8,8 @@ verify_ssl = true
 [packages]
 mpy-cross = "*"
 flake8 = "*"
+pytest-cov = "*"
+pytest = "*"
 
 [requires]
 python_version = "3.6"
