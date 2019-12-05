@@ -12,14 +12,14 @@ if __name__ == '__main__':
     import gc
     gc.collect()
 
+    from rtc import update_rtc_dict
+    update_rtc_dict(data={'run': 'web-server'})  # run web server on next boot
+
+    import sys
+    sys.modules.clear()
+
+    import gc
+    gc.collect()
+
     from ota_client import OtaUpdate
-
     OtaUpdate().run()
-
-    print('Hard reset device...')
-    import machine
-    import utime as time
-    time.sleep(1)
-    machine.reset()
-    time.sleep(1)
-    sys.exit()
