@@ -3,7 +3,7 @@ import sys
 
 import uasyncio as asyncio
 from http_send_file import send_file
-from http_utils import HTTP_LINE_200, querystring2dict, send_redirect
+from http_utils import HTTP_LINE_200, send_redirect
 from pins import Pins
 from rtc import rtc_isoformat
 from template import render
@@ -47,7 +47,7 @@ class WebServer:
             await writer.awrite(line)
         gc.collect()
 
-    async def call_module_func(self, url, method, get_parameters, reader, writer):
+    async def call_module_func(self, url, method, querystring, reader, writer):
         url = url.strip('/')
         try:
             module_name, func_name = url.split('/')
@@ -65,7 +65,7 @@ class WebServer:
         if func is None:
             raise AttributeError('Not found: %s.%s' % (module_name, func_name))
 
-        await func(self, reader, writer, get_parameters)
+        await func(self, reader, writer, querystring)
         del func
         del module
         del sys.modules[module_name]
@@ -81,17 +81,16 @@ class WebServer:
         method, url, version = request.split(' ', 2)
 
         if '?' not in url:
-            get_parameters = None
+            querystring = None
         else:
-            url, get_parameters = url.split('?', 1)
-            get_parameters = querystring2dict(get_parameters)
+            url, querystring = url.split('?', 1)
 
-        return method, url, get_parameters
+        return method, url, querystring
 
     async def send_response(self, reader, writer):
         print('\nAccepted connection from:', writer.get_extra_info('peername'))
 
-        method, url, get_parameters = self.parse_request(request=await reader.read())
+        method, url, querystring = self.parse_request(request=await reader.read())
         gc.collect()
 
         if url == '/':
@@ -99,7 +98,7 @@ class WebServer:
         elif '.' in url:
             await send_file(self, reader, writer, url)
         else:
-            await self.call_module_func(url, method, get_parameters, reader, writer)
+            await self.call_module_func(url, method, querystring, reader, writer)
             for module_name in [
                     name for name in sys.modules.keys() if name not in self.minimal_modules]:
                 print('remove obsolete module: %r' % module_name)

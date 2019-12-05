@@ -33,13 +33,13 @@ async def get_show(server, reader, writer, url):
     )
 
 
-async def get_clear(server, reader, writer, get_parameters):
+async def get_clear(server, reader, writer, querystring):
     server.rtc.clear()
     server.message = 'RTC RAM cleared'
     await send_redirect(writer)
 
 
-async def get_reset(server, reader, writer, get_parameters):
+async def get_reset(server, reader, writer, querystring):
     server.message = (
         'Reset device...'
         ' Restart WebServer by pressing the Button on your device!'

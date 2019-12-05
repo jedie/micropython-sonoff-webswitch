@@ -3,7 +3,7 @@ from pins import Pins
 from power_timer import set_timer_from_web
 
 
-async def get_on(server, reader, writer, get_parameters):
+async def get_on(server, reader, writer, querystring):
     if server.watchdog.auto_timer.active:
         server.message = 'Deactivate automatic timer, first!'
     else:
@@ -12,7 +12,7 @@ async def get_on(server, reader, writer, get_parameters):
     await send_redirect(writer)
 
 
-async def get_off(server, reader, writer, get_parameters):
+async def get_off(server, reader, writer, querystring):
     if server.watchdog.auto_timer.active:
         server.message = 'Deactivate automatic timer, first!'
     else:
