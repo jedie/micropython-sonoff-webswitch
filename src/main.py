@@ -11,7 +11,7 @@ gc.collect()
 
 from button_handler import Button
 from pins import Pins
-from reset import ResetDevice
+
 from rtc import get_rtc_value, update_rtc_dict
 from wifi import WiFi
 
@@ -35,11 +35,10 @@ if get_rtc_value(_RTC_KEY_RUN) == _RUN_WEB_SERVER:
     update_rtc_dict(data={_RTC_KEY_RUN: None})  # run OTA client on next boot
     from webswitch import WebServer  # noqa isort:skip
     from watchdog import Watchdog  # noqa isort:skip
-    from power_timer import AutomaticTimer  # noqa isort:skip
 
     gc.collect()
     WebServer(
-        watchdog=Watchdog(wifi=wifi, auto_timer=AutomaticTimer()),
+        watchdog=Watchdog(wifi=wifi),
         version=__version__
     ).run()
 else:
@@ -51,5 +50,5 @@ else:
     gc.collect()
     OtaUpdate().run()
 
-
+from reset import ResetDevice
 ResetDevice(reason='unknown').reset()

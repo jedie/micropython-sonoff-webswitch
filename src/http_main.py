@@ -1,5 +1,5 @@
 
-from power_timer import get_timer_form_value
+
 from template import render
 
 
@@ -10,10 +10,7 @@ async def get_menu(server, reader, writer, url):
         content_iterator=render(
             filename='http_main_menu.html',
             context={
-                'on_value': get_timer_form_value(key='on'),
-                'off_value': get_timer_form_value(key='off'),
-                'on_selected': 'selected' if server.watchdog.auto_timer.active else '',
-                'off_selected': '' if server.watchdog.auto_timer.active else 'selected',
+                'timers': 'TODO'
             },
             content_iterator=None
         ),
