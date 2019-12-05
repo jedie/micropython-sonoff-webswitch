@@ -6,6 +6,7 @@ from http_send_file import send_file
 from http_utils import HTTP_LINE_200, querystring2dict, send_redirect
 from pins import Pins
 from rtc import rtc_isoformat
+from template import render
 from watchdog import WATCHDOG_TIMEOUT
 
 
@@ -20,7 +21,7 @@ class WebServer:
         self.message = str(message)
         await send_redirect(writer)
 
-    async def send_html_page(self, writer, filename, context):
+    async def send_html_page(self, writer, filename, content_iterator=None):
         await writer.awrite(HTTP_LINE_200)
         await writer.awrite(b'Content-type: text/html; charset=utf-8\r\n\r\n')
 
@@ -29,23 +30,21 @@ class WebServer:
 
         gc.collect()
 
-        context.update({
-            'version': self.version,
-            'message': self.message,
-            'total': alloc + free,
-            'alloc': alloc,
-            'free': free,
-            'utc': rtc_isoformat(sep=' '),
-        })
-        gc.collect()
-        with open(filename, 'r') as f:
-            while True:
-                line = f.readline()
-                if not line:
-                    break
-                gc.collect()
-                await writer.awrite(line.format(**context))
-                gc.collect()
+        content = render(
+            filename=filename,
+            context={
+                'version': self.version,
+                'state': Pins.relay.state,
+                'message': self.message,
+                'total': alloc + free,
+                'alloc': alloc,
+                'free': free,
+                'utc': rtc_isoformat(sep=' '),
+            },
+            content_iterator=content_iterator
+        )
+        for line in content:
+            await writer.awrite(line)
         gc.collect()
 
     async def call_module_func(self, url, method, get_parameters, reader, writer):

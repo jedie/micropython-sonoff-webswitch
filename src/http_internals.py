@@ -4,26 +4,32 @@ import machine
 import uos as os
 from http_utils import send_redirect
 from rtc import get_dict_from_rtc
+from template import render
 
 
 async def get_show(server, reader, writer, url):
     uname = os.uname()
+
     await server.send_html_page(
         writer,
-        filename='sys_internals.html',
-        context={
-            'watchdog': server.watchdog,
-            'auto_timer': server.watchdog.auto_timer,
-            'rtc_memory': repr(get_dict_from_rtc()),
+        filename='webswitch.html',
+        content_iterator=render(
+            filename='http_internals.html',
+            context={
+                'watchdog': server.watchdog,
+                'auto_timer': server.watchdog.auto_timer,
+                'rtc_memory': repr(get_dict_from_rtc()),
 
-            'nodename': uname.nodename,
-            'id': ':'.join(['%02x' % char for char in reversed(machine.unique_id())]),
-            'machine': uname.machine,
-            'release': uname.release,
-            'mpy_version': uname.version,
+                'nodename': uname.nodename,
+                'id': ':'.join(['%02x' % char for char in reversed(machine.unique_id())]),
+                'machine': uname.machine,
+                'release': uname.release,
+                'mpy_version': uname.version,
 
-            'sys_modules': ', '.join(sys.modules.keys())
-        }
+                'sys_modules': ', '.join(sys.modules.keys())
+            },
+            content_iterator=None
+        ),
     )
 
 
