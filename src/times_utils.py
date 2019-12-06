@@ -1,4 +1,3 @@
-
 try:
     import ure as re
 except ImportError:
@@ -58,7 +57,7 @@ def pformat_timers(times):
 
 
 def save_timers(times):
-    if restore_timers() == times:
+    if tuple(restore_timers()) == times:
         # Don't save if the same timers already exists
         return
 
@@ -70,7 +69,48 @@ def save_timers(times):
 def restore_timers():
     try:
         with open(_TIMERS_FILENAME, 'r') as f:
-            return tuple(parse_timers(f.read()))
+            yield from parse_timers(f.read())
     except OSError:
         print('File not exists: %r' % _TIMERS_FILENAME)
         return ()
+
+
+def get_next_timer(current_time):
+    """
+    return next next switching point
+
+    :param current_time: machine.RTC().datetime()[4:6]
+    :return: (bool, (hour, minute))
+    """
+    first_time = None
+    for no, time in enumerate(iter_times(restore_timers())):
+        if no == 0:
+            first_time = time
+
+        if time > current_time:
+            return (not bool(no % 2)), time
+
+    if first_time:
+        # After the last switching point,
+        # the next day is switched on again
+        # at the first switching point.
+        return True, first_time
+
+    return None, None
+
+
+def get_ms_until_next_timer(current_time):
+    """
+    return time in ms until the next switching point.
+
+    :param current_time: machine.RTC().datetime()[4:6]
+    :return: (bool, ms)
+    """
+    turn_on, next_time = get_next_timer(current_time)
+    if turn_on is None:
+        return None, None, None
+
+    current_time_sec = (current_time[0] * 60) + current_time[1]
+    next_time_sec = (next_time[0] * 60) + next_time[1]
+
+    return turn_on, next_time, (next_time_sec - current_time_sec) * 1000

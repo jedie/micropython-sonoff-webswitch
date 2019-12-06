@@ -16,10 +16,11 @@ async def get_show(server, reader, writer, url):
         content_iterator=render(
             filename='http_internals.html',
             context={
+                'wifi': server.watchdog.wifi,
                 'watchdog': server.watchdog,
-                'auto_timer': server.watchdog.auto_timer,
                 'rtc_memory': repr(get_dict_from_rtc()),
 
+                'sysname': uname.sysname,
                 'nodename': uname.nodename,
                 'id': ':'.join(['%02x' % char for char in reversed(machine.unique_id())]),
                 'machine': uname.machine,

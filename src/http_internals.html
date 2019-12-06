@@ -1,16 +1,14 @@
-<p>
-    <a href="/internals/clear"><button class="button">Clear RTC RAM</button></a>
-    <a href="/internals/reset"><button class="button">Reset Device</button></a>
-</p>
-<p>
+<fieldset><legend>{sysname}:</legend>
     {nodename} <strong>{id}</strong><br>
     {machine} v{release}<br>
     MicroPython {mpy_version}
-</p>
-<p>
-    {watchdog}<br>
-    {auto_timer}<br>
-</p>
+</fieldset>
+<fieldset><legend>WiFi:</legend>
+    {wifi}
+</fieldset>
+<fieldset><legend>Watchdog:</legend>
+    {watchdog}
+</fieldset>
 <fieldset><legend>RTC RAM:</legend>
     {rtc_memory}
 </fieldset>
@@ -19,4 +17,6 @@
 </fieldset>
 <p>
     <a href="/main/menu"><button class="button">Main Menu</button></a>
+    <a href="/internals/clear"><button class="button">Clear RTC RAM</button></a>
+    <a href="/internals/reset"><button class="button">Reset Device</button></a>
 </p>

@@ -7,7 +7,6 @@ import utime as time
 from micropython import const
 from rtc import incr_rtc_count
 
-WATCHDOG_TIMEOUT = const(30)
 _MIN_FREE = const(2 * 1024)
 
 
@@ -37,7 +36,7 @@ def can_bind_web_server_port():
         sock.close()
 
 
-def check(last_feed, wifi):
+def check(last_feed, wifi, check_callback):
     if gc.mem_free() < _MIN_FREE:
         reset(reason='RAM full')
 
@@ -51,5 +50,7 @@ def check(last_feed, wifi):
     if can_bind_web_server_port():
         reset(reason='Web Server down')
 
-    if time.time() - last_feed > WATCHDOG_TIMEOUT:
+    if time.time() - last_feed > constants.WATCHDOG_TIMEOUT:
         reset(reason='Feed timeout')
+
+    check_callback()

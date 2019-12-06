@@ -1,17 +1,18 @@
 import gc
 import sys
 
+import constants
 import uasyncio as asyncio
 from http_send_file import send_file
 from http_utils import HTTP_LINE_200, send_redirect
 from pins import Pins
 from rtc import rtc_isoformat
 from template import render
-from watchdog import WATCHDOG_TIMEOUT
 
 
 class WebServer:
-    def __init__(self, watchdog, version):
+    def __init__(self, power_timer, watchdog, version):
+        self.power_timer = power_timer
         self.watchdog = watchdog
         self.version = version
         self.message = 'Web server started...'
@@ -35,6 +36,7 @@ class WebServer:
             context={
                 'version': self.version,
                 'state': Pins.relay.state,
+                'next_switch': str(self.power_timer),
                 'message': self.message,
                 'total': alloc + free,
                 'alloc': alloc,
@@ -125,7 +127,7 @@ class WebServer:
 
     async def feed_watchdog(self):
         while True:
-            await asyncio.sleep(int(WATCHDOG_TIMEOUT / 2))
+            await asyncio.sleep(int(constants.WATCHDOG_TIMEOUT / 2))
             self.watchdog.feed()
 
     def run(self):

@@ -7,6 +7,8 @@ WEBSERVER_HOST = '0.0.0.0'
 WEBSERVER_PORT = const(80)
 
 WATCHDOG_CHECK_PERIOD = const(50 * 1000)  # 50 sec
-
+WATCHDOG_TIMEOUT = const(30)
 
 WIFI_TIMEOUT = const(20 * 1000)  # 20 sec
+
+POWER_TIMER_ACTIVE_KEY = 'active'

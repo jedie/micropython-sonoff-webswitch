@@ -5,6 +5,7 @@ HTTP_LINE_CACHE = b'Cache-Control: max-age=6000\r\n'
 
 
 async def send_redirect(writer, url='/main/menu/'):
+    print('redirect to: %r' % url)
     await writer.awrite(HTTP_LINE_303)
     await writer.awrite(HTTP_LINE_LOCATION.format(url=url))
     await writer.awrite(b'\r\n')

@@ -3,10 +3,7 @@ import gc
 import constants
 import machine
 import utime as time
-from micropython import const
 from rtc import get_rtc_value, rtc_isoformat
-
-_CHECK_PERIOD = const(50 * 1000)  # 50 sec
 
 
 class Watchdog:
@@ -16,28 +13,26 @@ class Watchdog:
 
     timer = machine.Timer(-1)
 
-    def __init__(self, wifi):
+    def __init__(self, wifi, check_callback):
         self.wifi = wifi
+        self.check_callback = check_callback
 
         print('Start Watchdog period timer')
         self.timer.deinit()
         self.timer.init(
-            period=_CHECK_PERIOD,
+            period=constants.WATCHDOG_CHECK_PERIOD,
             mode=machine.Timer.PERIODIC,
             callback=self._timer_callback
         )
 
     def _timer_callback(self, timer):
         from watchdog_checks import check
-        check(last_feed=self.last_feed, wifi=self.wifi)
+        check(last_feed=self.last_feed, wifi=self.wifi, check_callback=self.check_callback)
         del check
         gc.collect()
 
         self.check_count += 1
         self.last_check = rtc_isoformat()
-
-    def deinit(self):
-        self.timer.deinit()
 
     def feed(self):
         self.last_feed = time.time()
@@ -47,8 +42,7 @@ class Watchdog:
         reset_count = get_rtc_value(constants.RTC_KEY_WATCHDOG_COUNT, 0)
         reset_reason = get_rtc_value(constants.RTC_KEY_RESET_REASON)
         return (
-            'Watchdog -'
-            ' last check: %s,'
+            'last check: %s,'
             ' check count: %s,'
             ' feed since: %i,'
             ' reset count: %s,'
