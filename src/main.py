@@ -1,57 +1,64 @@
-print('main.py')
 
-import time
-time.sleep(1)
-
-import sys
-sys.modules.clear()
 
 import gc
-gc.collect()
+import sys
+import time
 
-from button_handler import init_button_irq
+from button_handler import Button
 from pins import Pins
-from rtc import Rtc
+from reset import ResetDevice
+from rtc import get_rtc_value, update_rtc_dict
 from wifi import WiFi
 
-__version__ = 'v0.4.0'
+print('main.py')
 
-rtc = Rtc()
-pins = Pins()
+time.sleep(1)
 
-init_button_irq(rtc, pins)
+sys.modules.clear()
 
-wifi = WiFi(rtc=rtc, power_led=pins.power_led)
+gc.collect()
+
+
+__version__ = 'v0.5.0'
+
+
+# Init device button IRQ:
+Pins.button_pin.irq(Button().irq_handler)
+
+wifi = WiFi()
 wifi.ensure_connection()
-
 print('wifi: %s' % wifi)
 
 _RTC_KEY_RUN = 'run'
-_RUN_OTA_UPDATE = 'ota-update'
 _RUN_WEB_SERVER = 'web-server'
 
 
-if rtc.d.get(_RTC_KEY_RUN) == _RUN_WEB_SERVER:
+if get_rtc_value(_RTC_KEY_RUN) == _RUN_WEB_SERVER:
     print('start webserver')
-    rtc.save(data={_RTC_KEY_RUN: _RUN_OTA_UPDATE})
+    update_rtc_dict(data={_RTC_KEY_RUN: None})  # run OTA client on next boot
     from webswitch import WebServer  # noqa isort:skip
     from watchdog import Watchdog  # noqa isort:skip
-    from power_timer import AutomaticTimer  # noqa isort:skip
+    from power_timer import PowerTimer  # noqa isort:skip
+
+    power_timer = PowerTimer()
+    power_timer.schedule_next_switch()
 
     gc.collect()
     WebServer(
-        pins=pins, rtc=rtc,
-        watchdog=Watchdog(wifi=wifi, rtc=rtc, auto_timer=AutomaticTimer(rtc=rtc, pins=pins)),
+        power_timer=power_timer,
+        watchdog=Watchdog(
+            wifi=wifi,
+            check_callback=power_timer.schedule_next_switch
+        ),
         version=__version__
     ).run()
 else:
     print('start OTA')
-    pins.power_led.off()
-    rtc.save(data={_RTC_KEY_RUN: _RUN_WEB_SERVER})
+    Pins.power_led.off()
+    update_rtc_dict(data={_RTC_KEY_RUN: _RUN_WEB_SERVER})  # run web server on next boot
     from ota_client import OtaUpdate
 
     gc.collect()
     OtaUpdate().run()
 
-from reset import ResetDevice
-ResetDevice(rtc=rtc, reason='unknown').reset()
+ResetDevice(reason='unknown').reset()

@@ -1,8 +1,7 @@
-
 from pathlib import Path
 
-from ota.compile import create_bdist
 from ota.ota_server import OtaServer
+from utils.main import lint_and_compile
 
 PORT = 8266
 
@@ -10,24 +9,14 @@ if __name__ == '__main__':
     src_path = Path('src')
     bdist_path = Path('bdist')
 
+    lint_and_compile(src_path, bdist_path)
+
+    print('_' * 100)
+    print('Start OTA Server\n')
+
     ota_server = OtaServer(
         src_path=bdist_path,  # Put these files on micropython device
         verbose=False,
-    )
-
-    # Compile via mpy_cross
-    create_bdist(
-        src_path=src_path,
-        dst_path=bdist_path,
-        copy_files=(
-            # Theses files will be not compiled.
-            # They are just copied from src to bdist.
-            'boot.py', 'main.py',
-        ),
-        copy_file_pattern=(
-            # Copy all these files from src to bdist:
-            '*.html', '*.css', '*.js'
-        )
     )
 
     # Send 'bdist' files to devices:

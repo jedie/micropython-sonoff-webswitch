@@ -13,6 +13,7 @@ import ubinascii as binascii
 import uhashlib as hashlib
 import uos as os
 import utime as time
+from micropython import const
 
 _CONNECTION_TIMEOUT = const(30)
 _OTA_TIMEOUT = const(60)

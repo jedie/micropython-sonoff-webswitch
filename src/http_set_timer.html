@@ -1,0 +1,21 @@
+<fieldset><legend>Automatic timer:</legend>
+    <form action="/set_timer/submit/">
+        <textarea name="timers" rows="6" cols="13">{timers}</textarea>
+        <p><small>(All times must be <strong>in UTC</strong>!)</small></p>
+        Timer is: <select name="active">
+            <option value="on" {on_selected}>ON</option>
+            <option value="off" {off_selected}>OFF</option>
+        </select><br>
+        <input type="submit">
+    </form>
+    <a href="/main/menu"><button class="button">Cancel</button></a>
+</fieldset>
+<fieldset><legend>Example:</legend>
+<textarea rows="2" cols="13" disabled>
+6:00 - 8:00
+19:00 - 20:00
+</textarea>
+<p>
+    <small>The power will be goes between 6:00-8:00 and 19:00-20:00 on.</small>
+</p>
+</fieldset>

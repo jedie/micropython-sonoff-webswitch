@@ -1,17 +1,18 @@
 import gc
 import sys
 
+import constants
 import uasyncio as asyncio
 from http_send_file import send_file
-from http_utils import HTTP_LINE_200, querystring2dict, send_redirect
-from reset import ResetDevice
-from watchdog import WATCHDOG_TIMEOUT
+from http_utils import HTTP_LINE_200, send_redirect
+from pins import Pins
+from rtc import rtc_isoformat
+from template import render
 
 
 class WebServer:
-    def __init__(self, pins, rtc, watchdog, version):
-        self.pins = pins
-        self.rtc = rtc
+    def __init__(self, power_timer, watchdog, version):
+        self.power_timer = power_timer
         self.watchdog = watchdog
         self.version = version
         self.message = 'Web server started...'
@@ -21,7 +22,7 @@ class WebServer:
         self.message = str(message)
         await send_redirect(writer)
 
-    async def send_html_page(self, writer, filename, context):
+    async def send_html_page(self, writer, filename, content_iterator=None):
         await writer.awrite(HTTP_LINE_200)
         await writer.awrite(b'Content-type: text/html; charset=utf-8\r\n\r\n')
 
@@ -30,26 +31,25 @@ class WebServer:
 
         gc.collect()
 
-        context.update({
-            'version': self.version,
-            'message': self.message,
-            'total': alloc + free,
-            'alloc': alloc,
-            'free': free,
-            'utc': self.rtc.isoformat(sep=' '),
-        })
-        gc.collect()
-        with open(filename, 'r') as f:
-            while True:
-                line = f.readline()
-                if not line:
-                    break
-                gc.collect()
-                await writer.awrite(line.format(**context))
-                gc.collect()
+        content = render(
+            filename=filename,
+            context={
+                'version': self.version,
+                'state': Pins.relay.state,
+                'next_switch': str(self.power_timer),
+                'message': self.message,
+                'total': alloc + free,
+                'alloc': alloc,
+                'free': free,
+                'utc': rtc_isoformat(sep=' '),
+            },
+            content_iterator=content_iterator
+        )
+        for line in content:
+            await writer.awrite(line)
         gc.collect()
 
-    async def call_module_func(self, url, method, get_parameters, reader, writer):
+    async def call_module_func(self, url, method, querystring, reader, writer):
         url = url.strip('/')
         try:
             module_name, func_name = url.split('/')
@@ -67,7 +67,7 @@ class WebServer:
         if func is None:
             raise AttributeError('Not found: %s.%s' % (module_name, func_name))
 
-        await func(self, reader, writer, get_parameters)
+        await func(self, reader, writer, querystring)
         del func
         del module
         del sys.modules[module_name]
@@ -83,17 +83,16 @@ class WebServer:
         method, url, version = request.split(' ', 2)
 
         if '?' not in url:
-            get_parameters = None
+            querystring = None
         else:
-            url, get_parameters = url.split('?', 1)
-            get_parameters = querystring2dict(get_parameters)
+            url, querystring = url.split('?', 1)
 
-        return method, url, get_parameters
+        return method, url, querystring
 
     async def send_response(self, reader, writer):
         print('\nAccepted connection from:', writer.get_extra_info('peername'))
 
-        method, url, get_parameters = self.parse_request(request=await reader.read())
+        method, url, querystring = self.parse_request(request=await reader.read())
         gc.collect()
 
         if url == '/':
@@ -101,7 +100,7 @@ class WebServer:
         elif '.' in url:
             await send_file(self, reader, writer, url)
         else:
-            await self.call_module_func(url, method, get_parameters, reader, writer)
+            await self.call_module_func(url, method, querystring, reader, writer)
             for module_name in [
                     name for name in sys.modules.keys() if name not in self.minimal_modules]:
                 print('remove obsolete module: %r' % module_name)
@@ -110,7 +109,7 @@ class WebServer:
         gc.collect()
 
     async def request_handler(self, reader, writer):
-        self.pins.power_led.off()
+        Pins.power_led.off()
         gc.collect()
         try:
             await self.send_response(reader, writer)
@@ -120,14 +119,15 @@ class WebServer:
             await asyncio.sleep(3)
             gc.collect()
             if isinstance(e, MemoryError):
-                ResetDevice(rtc=self.rtc, reason='MemoryError: %s' % e).schedule(period=5000)
+                from reset import ResetDevice
+                ResetDevice(reason='MemoryError: %s' % e).schedule(period=5000)
         await writer.aclose()
         gc.collect()
-        self.pins.power_led.on()
+        Pins.power_led.on()
 
     async def feed_watchdog(self):
         while True:
-            await asyncio.sleep(int(WATCHDOG_TIMEOUT / 2))
+            await asyncio.sleep(int(constants.WATCHDOG_TIMEOUT / 2))
             self.watchdog.feed()
 
     def run(self):
@@ -137,6 +137,6 @@ class WebServer:
 
         gc.collect()
 
-        self.pins.power_led.on()
+        Pins.power_led.on()
         print(self.message)
         loop.run_forever()

@@ -1,86 +1,55 @@
 import gc
+import sys
+
+import machine
+from pins import Pins
 
 
-def parse_get_time(raw):
-    if raw:
-        hours, minutes = raw.split('%3A')
-        hours = int(hours)
-        minutes = int(minutes)
-        return hours, minutes
+class PowerTimer:
+    last_update = None
+    next_time = None
+    next_time_ms = None
+    turn_on = None  # turn power switch next time on or off ?
+    active = None  # are timers activated ?
+    timer = machine.Timer(-1)
 
+    def schedule_next_switch(self):
+        from power_timer_schedule import update_power_timer
 
-def set_timer_from_web(rtc, get_parameters):
-    rtc.save(data={
-        'on': parse_get_time(get_parameters['on']),
-        'off': parse_get_time(get_parameters['off']),
-        'active': get_parameters['active'] == 'on'
-    })
+        update_power_timer(power_timer=self)
 
-
-def get_timer_form_value(rtc, key):
-    value = rtc.d.get(key)
-    if not value:
-        return ''
-    return '%02i:%02i' % (value[0], value[1])
-
-
-class AutomaticTimer:
-    last_check = 0
-    check_count = 0
-    last_action = None
-
-    def __init__(self, rtc, pins):
-        self.rtc = rtc
-        self.pins = pins
-
-    @property
-    def on_time(self):
-        return self.rtc.d.get('on')
-
-    @property
-    def off_time(self):
-        return self.rtc.d.get('off')
-
-    @property
-    def active(self):
-        return self.rtc.d.get('active', False)
-
-    def _turn_on(self):
-        self.pins.relay.on()
-        self.last_action = 'Turn ON at: %s' % self.rtc.isoformat()
-
-    def _turn_off(self):
-        self.pins.relay.off()
-        self.last_action = 'Turn OFF at: %s' % self.rtc.isoformat()
-
-    def timer_callback(self):
-        gc.collect()
-        self.check_count += 1
-        self.last_check = self.rtc.isoformat()
-        if not self.active:
-            self.last_action = 'timer not active'
-            return
+        del update_power_timer
+        del sys.modules['power_timer_schedule']
         gc.collect()
 
-        if self.on_time is None and self.off_time is None:
-            self.last_action = 'no timer set'
-            return
-
-        if self.off_time is None and self.rtc.later(self.on_time):
-            self._turn_on()
-        elif self.on_time is None and self.rtc.later(self.off_time):
-            self._turn_off()
-        elif self.rtc.in_time_range(self.on_time, self.off_time):
-            self._turn_on()
+    def _timer_callback(self, timer):
+        assert self.active is True
+        if self.turn_on:
+            Pins.relay.on()
         else:
-            self._turn_off()
+            Pins.relay.off()
+
+    def reset(self):
+        self.timer.deinit()
+        self.next_time = None
+        self.next_time_ms = None
+        self.turn_on = None
+        self.active = False
 
     def __str__(self):
-        return (
-            'AutomaticTimer -'
-            ' last check: %s,'
-            ' check count: %s,'
-            ' last action: %s'
-        ) % (
-            self.last_check, self.check_count, self.last_action
-        )
+        if not self.active:
+            return 'Power timer is not active.'
+
+        if self.next_time < 0:
+            self.reset()
+            return 'missed timer'
+
+        if self.turn_on is None:
+            return 'No switch scheduled. (Last update: %s)' % self.last_update
+        else:
+            return 'Switch %s in %i sec. at %02i:%02i h. (Last update: %s)' % (
+                'on' if self.turn_on else 'off',
+                (self.next_time_ms / 1000),
+                self.next_time[0], self.next_time[1],
+                self.last_update
+            )
