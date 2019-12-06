@@ -10,6 +10,8 @@ mpy-cross = "*"
 flake8 = "*"
 pytest-cov = "*"
 pytest = "*"
+esptool = "*"
+mpycntrl = "*"
 
 [requires]
 python_version = "3.6"

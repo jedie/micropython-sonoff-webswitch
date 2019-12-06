@@ -87,7 +87,7 @@ class OtaServer:
 
         self.client_socket = None  # Client socked, created in self.run()
         self.client_chunk_size = None  # Change by client on connection in self.run()
-        self.files_info = None  # Requested in self.run()
+        self.files_info = None  # Requested in self.update_device()
 
     async def update_device(self, reader, writer):
         peername = writer.get_extra_info('peername')
