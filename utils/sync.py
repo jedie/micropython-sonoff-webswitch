@@ -1,5 +1,7 @@
+import binascii
 import hashlib
 import json
+import time
 from json import JSONDecodeError
 from pprint import pprint
 
@@ -46,7 +48,10 @@ class MyControl(MPyControl):
             raise
         return files
 
+
 class SyncToDevice:
+    send_file_timeout = 1
+
     def __init__(self, src_path, verbose=False):
         self.src_path = src_path.resolve()
         self.verbose = verbose
@@ -64,7 +69,7 @@ class SyncToDevice:
         bytesize = 8
         parity = 'N'
         stopbits = 1
-        timeout = .35
+        timeout = 0.35
 
         with serial.Serial(port=port, baudrate=baud,
                            bytesize=bytesize, parity=parity, stopbits=stopbits,
@@ -104,7 +109,8 @@ class SyncToDevice:
                     continue
 
                 with item.open('rb') as f:
-                    mpyc.cmd_put(fnam=item.name, content=f.read())
+                    with mpyc.timeout(timeout=self.send_file_timeout):
+                        mpyc.cmd_put(fnam=item.name, content=f.read())
                 print('-' * 100)
                 updated.append(item)
 
