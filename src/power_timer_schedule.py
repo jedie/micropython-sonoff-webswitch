@@ -1,13 +1,14 @@
 import constants
 import machine
-from rtc import get_rtc_value, rtc_isoformat
-from times_utils import get_ms_until_next_timer
 
 
 def update_power_timer(power_timer):
     """
     Plan next switching point.
     """
+    from rtc import get_rtc_value, rtc_isoformat
+    from times_utils import get_ms_until_next_timer
+
     power_timer.timer.deinit()
 
     if power_timer.active is None:

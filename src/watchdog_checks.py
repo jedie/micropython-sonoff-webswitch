@@ -5,13 +5,13 @@ import uerrno as errno
 import usocket as socket
 import utime as time
 from micropython import const
-from rtc import incr_rtc_count
 
 _MIN_FREE = const(2 * 1024)
 
 
 def reset(reason):
     print('Watchdog reset reason: %s' % reason)
+    from rtc import incr_rtc_count
     incr_rtc_count(key=constants.RTC_KEY_WATCHDOG_COUNT)
     from reset import ResetDevice
     ResetDevice(reason=reason).reset()
