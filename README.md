@@ -29,7 +29,11 @@ The device will do this on every boot:
 
 The Web Page looks like this:
 
-![Screenshot_2019-12-02 Sonoff S20.png](https://raw.githubusercontent.com/jedie/micropython-sonoff-webswitch/master/Screenshot_2019-12-02%20Sonoff%20S20.png)
+![screenshot 1](https://raw.githubusercontent.com/jedie/jedie.github.io/master/screenshots/WebSwitch/2019-12-07%20Sonoff%20S20%20WebServer%20v0.5.1a.png)
+
+![screenshot 2](https://raw.githubusercontent.com/jedie/jedie.github.io/master/screenshots/WebSwitch/2019-12-07%20Sonoff%20S20%20WebServer%20v0.5.1b.png)
+
+![screenshot 3](https://raw.githubusercontent.com/jedie/jedie.github.io/master/screenshots/WebSwitch/2019-12-07%20Sonoff%20S20%20WebServer%20v0.5.1c.png)
 
 
 ## prepare
