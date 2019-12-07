@@ -40,7 +40,7 @@ class PowerTimer:
         if not self.active:
             return 'Power timer is not active.'
 
-        if self.next_time is not None and self.next_time < 0:
+        if self.next_time is not None and self.next_time_ms < 1:
             self.reset()
             return 'missed timer'
 
