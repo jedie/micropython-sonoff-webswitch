@@ -72,7 +72,7 @@ def restore_timers():
             yield from parse_timers(f.read())
     except OSError:
         print('File not exists: %r' % _TIMERS_FILENAME)
-        return ()
+        yield ()
 
 
 def get_next_timer(current_time):
