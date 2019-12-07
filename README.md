@@ -13,6 +13,7 @@ Tested devices:
 * schedule multiple timers
 * OTA updates (currently without directory support)
 * turn the switch on/off by the web page or the device button
+* checkbox for each day of the week where timers are active (Currently only stored in RTC RAM!)
 * Reset the device by long pressing the button
 * supports multiple WIFI credentials
 
@@ -28,7 +29,7 @@ The device will do this on every boot:
 
 Things that will be implement in the near feature:
 
-* checkbox for each day of the week where timers are active
+* Store 'active weekdays' in filesystem and not only in RTC RAM
 * timer toggle flag to reverse: power is switched off during the specified periods
 * display local time to UTC offset via JavaScript
 * recalculate UTC timestamp on the page into local time via JavaScript

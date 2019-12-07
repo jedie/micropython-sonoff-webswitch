@@ -2,6 +2,15 @@
     <form action="/set_timer/submit/">
         <textarea name="timers" rows="6" cols="13">{timers}</textarea>
         <p><small>(All times must be <strong>in UTC</strong>!)</small></p>
+        <p>
+            <input type="checkbox" id="d0" name="d0" {d0}><label for="d0">Monday</label>
+            <input type="checkbox" id="d1" name="d1" {d1}><label for="d1">Tuesday</label>
+            <input type="checkbox" id="d2" name="d2" {d2}><label for="d2">Wednesday</label>
+            <input type="checkbox" id="d3" name="d3" {d3}><label for="d3">Thursday</label>
+            <input type="checkbox" id="d4" name="d4" {d4}><label for="d4">Friday</label><br>
+            <input type="checkbox" id="d5" name="d5" {d5}><label for="d5">Saturday</label>
+            <input type="checkbox" id="d6" name="d6" {d6}><label for="d6">Sunday</label>
+        </p>
         Timer is: <select name="active">
             <option value="on" {on_selected}>ON</option>
             <option value="off" {off_selected}>OFF</option>

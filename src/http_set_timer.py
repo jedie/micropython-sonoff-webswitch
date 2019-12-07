@@ -12,19 +12,27 @@ async def get_form(server, reader, writer, querystring, timers=None):
         del restore_timers
         del sys.modules['times_utils']
 
+    context = {
+        'timers': timers,
+        'on_selected': 'selected' if server.power_timer.active else '',
+        'off_selected': '' if server.power_timer.active else 'selected',
+    }
+    from power_timer_schedule import get_active_days
+    active_days = get_active_days()
+    del get_active_days
+    del sys.modules['power_timer_schedule']
     gc.collect()
-    from template import render
 
+    for day_no in range(7):
+        context['d%i' % day_no] = 'checked' if day_no in active_days else ''
+
+    from template import render
     await server.send_html_page(
         writer,
         filename='webswitch.html',
         content_iterator=render(
             filename='http_set_timer.html',
-            context={
-                'timers': timers,
-                'on_selected': 'selected' if server.power_timer.active else '',
-                'off_selected': '' if server.power_timer.active else 'selected',
-            },
+            context=context,
             content_iterator=None
         ),
     )
@@ -45,25 +53,36 @@ async def get_submit(server, reader, writer, querystring):
         del save_timers
 
         power_timer_active = get_parameters['active'] == 'on'
-        if power_timer_active:
-            server.power_timer.active = True
-        else:
-            server.power_timer.active = False
 
         from rtc import update_rtc_dict
         update_rtc_dict(data={
-            constants.POWER_TIMER_ACTIVE_KEY: power_timer_active
+            constants.POWER_TIMER_ACTIVE_KEY: power_timer_active,
+            constants.POWER_TIMER_WEEKDAYS_KEY: [
+                no for no in range(7)
+                if 'd%i' % no in get_parameters
+            ]
         })
         del update_rtc_dict
     except ValueError as e:
         server.message = 'Timers error: %s' % e
         await get_form(server, reader, writer, querystring, timers=get_parameters['timers'])
+        return
 
     del get_parameters
     del sys.modules['rtc']
     gc.collect()
 
     server.message = 'Timers saved.'
+
+    # Update power timer:
+    if power_timer_active:
+        server.power_timer.active = True
+    else:
+        server.power_timer.active = False
+
+    # Force set 'today_active' by schedule_next_switch() in update_power_timer():
+    server.power_timer.today_active = None
+
     server.power_timer.schedule_next_switch()
 
     del sys.modules['times_utils']  # used in schedule_next_switch

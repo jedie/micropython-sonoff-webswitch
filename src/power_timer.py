@@ -11,6 +11,7 @@ class PowerTimer:
     next_time_ms = None
     turn_on = None  # turn power switch next time on or off ?
     active = None  # are timers activated ?
+    today_active = None  # Is the timer active this weekday ?
     timer = machine.Timer(-1)
 
     def schedule_next_switch(self):
@@ -38,11 +39,14 @@ class PowerTimer:
 
     def __str__(self):
         if not self.active:
-            return 'Power timer is not active.'
+            return 'Power timer is deactivated.'
 
         if self.next_time is not None and self.next_time_ms < 1:
             self.reset()
             return 'missed timer'
+
+        if not self.today_active:
+            return 'Power timer is not active today.'
 
         if self.turn_on is None:
             return 'No switch scheduled. (Last update: %s)' % self.last_update
