@@ -27,7 +27,8 @@ async def get_show(server, reader, writer, url):
                 'release': uname.release,
                 'mpy_version': uname.version,
 
-                'sys_modules': ', '.join(sys.modules.keys())
+                'sys_modules': ', '.join(sorted(sys.modules.keys())),
+                'minimal_modules': ', '.join(server.minimal_modules)
             },
             content_iterator=None
         ),

@@ -1,7 +1,4 @@
-try:
-    import ure as re
-except ImportError:
-    import re
+
 
 _TIMERS_FILENAME = 'timers.txt'
 
@@ -31,6 +28,10 @@ def validate_times(times):
 
 
 def parse_timers(data):
+    try:
+        import ure as re
+    except ImportError:
+        import re
     regex = re.compile(r'^\D*(\d+:\d+)\D+(\d+:\d+)\D*$')
     data = data.strip()
 

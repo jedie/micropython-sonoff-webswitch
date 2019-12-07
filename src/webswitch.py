@@ -3,11 +3,7 @@ import sys
 
 import constants
 import uasyncio as asyncio
-from http_send_file import send_file
-from http_utils import HTTP_LINE_200, send_redirect
 from pins import Pins
-from rtc import rtc_isoformat
-from template import render
 
 
 class WebServer:
@@ -16,13 +12,15 @@ class WebServer:
         self.watchdog = watchdog
         self.version = version
         self.message = 'Web server started...'
-        self.minimal_modules = tuple(sys.modules.keys())
+        self.minimal_modules = tuple(sorted(sys.modules.keys()))
 
     async def error_redirect(self, writer, message):
         self.message = str(message)
+        from http_utils import send_redirect
         await send_redirect(writer)
 
     async def send_html_page(self, writer, filename, content_iterator=None):
+        from http_utils import HTTP_LINE_200
         await writer.awrite(HTTP_LINE_200)
         await writer.awrite(b'Content-type: text/html; charset=utf-8\r\n\r\n')
 
@@ -31,6 +29,8 @@ class WebServer:
 
         gc.collect()
 
+        from template import render
+        from rtc import rtc_isoformat
         content = render(
             filename=filename,
             context={
@@ -96,8 +96,10 @@ class WebServer:
         gc.collect()
 
         if url == '/':
+            from http_utils import send_redirect
             await send_redirect(writer)
         elif '.' in url:
+            from http_send_file import send_file
             await send_file(self, reader, writer, url)
         else:
             await self.call_module_func(url, method, querystring, reader, writer)
