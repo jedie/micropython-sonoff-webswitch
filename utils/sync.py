@@ -1,5 +1,7 @@
+import binascii
 import hashlib
 import json
+import time
 from json import JSONDecodeError
 from pprint import pprint
 
@@ -67,7 +69,7 @@ class SyncToDevice:
         bytesize = 8
         parity = 'N'
         stopbits = 1
-        timeout = .35
+        timeout = 0.35
 
         with serial.Serial(port=port, baudrate=baud,
                            bytesize=bytesize, parity=parity, stopbits=stopbits,
