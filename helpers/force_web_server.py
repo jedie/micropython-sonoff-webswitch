@@ -6,8 +6,6 @@
 import gc
 import sys
 
-import machine
-import utime as time
 from rtc import update_rtc_dict
 
 if __name__ == '__main__':
@@ -16,8 +14,5 @@ if __name__ == '__main__':
 
     update_rtc_dict(data={'run': 'web-server'})  # Save to RTC RAM for next boot
 
-    print('Hard reset device...')
-    time.sleep(1)
-    machine.reset()
-    time.sleep(1)
+    print('reset your device by pressing Ctrl-D to start web server ;)')
     sys.exit()
