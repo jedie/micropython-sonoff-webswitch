@@ -21,6 +21,6 @@ def lint_and_compile(src_path, bdist_path):
         ),
         copy_file_pattern=(
             # Copy all these files from src to bdist:
-            '*.html', '*.css', '*.js'
+            '*.html', '*.css', '*.js', '*.ico'
         )
     )
