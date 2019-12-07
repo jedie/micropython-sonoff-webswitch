@@ -11,7 +11,7 @@ if __name__ == '__main__':
     src_path = Path('src')
     bdist_path = Path('bdist')
 
-    # lint_and_compile(src_path, bdist_path)
+    lint_and_compile(src_path, bdist_path)
 
     print('_' * 100)
     print('Sync bdist files\n')
