@@ -1,3 +1,8 @@
+"""
+    Delete all *.py files except 'boot.py' and 'main.py'
+    Useful after REPL experiments.
+    Start OTA Update to get all needed files back ;)
+"""
 import uos as os
 
 if __name__ == '__main__':

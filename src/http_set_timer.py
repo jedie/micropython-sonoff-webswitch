@@ -60,12 +60,14 @@ async def get_submit(server, reader, writer, querystring):
         await get_form(server, reader, writer, querystring, timers=get_parameters['timers'])
 
     del get_parameters
-    del sys.modules['times_utils']
     del sys.modules['rtc']
     gc.collect()
 
     server.message = 'Timers saved.'
     server.power_timer.schedule_next_switch()
+
+    del sys.modules['times_utils']  # used in schedule_next_switch
+    gc.collect()
 
     from http_utils import send_redirect
     await send_redirect(writer, url='/set_timer/form/')

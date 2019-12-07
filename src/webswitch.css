@@ -2,23 +2,40 @@ html {
     font-family: Georgia, serif;
     text-align: center;
 	font-size: 1.2em;
+    background-color: #7785AC;
+    color: #000;
+    padding-top: 20px;
 }
 body {
+    background-color: #F9FAFF;
     max-width: 950px;
     margin: auto;
+    padding: 20px;
+}
+h1 {
+    color: #071439;
+}
+a {
+    color: #552901;
 }
 p small {
     font-size: 0.7em;
 }
 legend {
-    background-color: #eee;
+    background-color: #071439;
+    color: #fff;
     border: none;
     border-radius: 4px;
     padding: 10px 40px;
     margin: 5px 10px;
 }
+fieldset {
+    background-color: #FFF1A6;
+    border-color: #071439;
+}
 .button, input, select {
-    background-color: #e7bd3b;
+    background-color: #AA9839;
+    color: #000;
     border: none;
     border-radius: 4px;
     padding: 10px 40px;
@@ -26,8 +43,11 @@ legend {
     cursor: pointer;
     font-size: 1.2em;
 }
+textarea {
+    font-size: 1.6em;
+}
 .button2{
-    background-color: #4286f4;
+    background-color: #AA6E39;
 }
 small {
     font-family: "Courier New", Courier, monospace;

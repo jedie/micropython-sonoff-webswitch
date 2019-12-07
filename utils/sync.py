@@ -1,7 +1,6 @@
-import binascii
+
 import hashlib
 import json
-import time
 from json import JSONDecodeError
 from pprint import pprint
 
@@ -41,7 +40,7 @@ class MyControl(MPyControl):
         try:
             files = json.loads(r[0].decode())
         except JSONDecodeError as err:
-            print('_'*80)
+            print('_' * 80)
             print('Error: %s' % err)
             print('Raw output:')
             print(r)
@@ -149,6 +148,7 @@ class SyncToDevice:
 
         print('Skip file: Size + SHA256 are same')
         return False
+
 
 def sync(src_path, verbose):
     SyncToDevice(src_path, verbose=verbose).update_device()
