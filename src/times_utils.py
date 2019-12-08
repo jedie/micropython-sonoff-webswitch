@@ -1,6 +1,7 @@
 
 
 _TIMERS_FILENAME = 'timers.txt'
+_ACTIVE_DAYS_FILENAME = 'timer_days.txt'
 
 
 def parse_time(clock_time):
@@ -74,6 +75,24 @@ def restore_timers():
     except OSError:
         print('File not exists: %r' % _TIMERS_FILENAME)
         yield ()
+
+
+def get_active_days():
+    try:
+        with open(_ACTIVE_DAYS_FILENAME, 'r') as f:
+            return tuple([int(d) for d in f.read().split(',')])
+    except OSError:
+        print('File not exists: %r' % _ACTIVE_DAYS_FILENAME)
+        return tuple(range(7))
+
+
+def save_active_days(active_days):
+    if tuple(get_active_days()) == active_days:
+        # Don't save if same active days already exists
+        return
+
+    with open(_ACTIVE_DAYS_FILENAME, 'w') as f:
+        f.write(','.join([str(d) for d in active_days]))
 
 
 def get_next_timer(current_time):
