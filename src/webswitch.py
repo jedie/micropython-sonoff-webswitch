@@ -73,26 +73,41 @@ class WebServer:
         del sys.modules[module_name]
         gc.collect()
 
-    def parse_request(self, request):
-        request, body = request.split(b'\r\n\r\n', 1)
-        request, headers = request.split(b'\r\n', 1)
-        request = request.decode('UTF-8')
-        print('request: %r' % request)
-        print('headers:', headers)
+    def parse_request(self, reader):
+        method, url, http_version = next(reader.readline()).strip().decode().split()
 
-        method, url, version = request.split(' ', 2)
+        # Consume all headers but use only content-length
+        content_length = None
+        for line in reader.readline():
+            if line == b'':
+                # header ends
+                break
+            header, value = line.split(b':', 1)
+            if header == b'Content-Length':
+                content_length = int(value.decode())
 
-        if '?' not in url:
-            querystring = None
+        # get body
+        if content_length:
+            body = reader.read(content_length)
         else:
-            url, querystring = url.split('?', 1)
+            body = None
 
-        return method, url, querystring
+        if '?' in url:
+            url, querystring = url.split('?', 1)
+        else:
+            querystring = None
+
+        return method, url, querystring, body
 
     async def send_response(self, reader, writer):
         print('\nAccepted connection from:', writer.get_extra_info('peername'))
 
-        method, url, querystring = self.parse_request(request=await reader.read())
+        try:
+            method, url, querystring, body = self.parse_request(reader)
+        except ValueError as e:
+            self.message = str(e)
+            url = '/'  # redirect
+
         gc.collect()
 
         if url == '/':
