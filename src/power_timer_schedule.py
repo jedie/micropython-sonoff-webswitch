@@ -6,20 +6,16 @@ import machine
 import utime as time
 
 
-def get_active_days():
-    from rtc import get_rtc_value
-    active_days = get_rtc_value(key=constants.POWER_TIMER_WEEKDAYS_KEY, default=list(range(7)))
-    del get_rtc_value
-    del sys.modules['rtc']
-    gc.collect()
-    return active_days
-
-
 def active_today():
     """
     Is the timer active this weekday?
     """
+    from times_utils import get_active_days
     active_days = get_active_days()
+    del get_active_days
+    del sys.modules['times_utils']
+    gc.collect()
+
     today = time.localtime()[6]
     return today in active_days
 

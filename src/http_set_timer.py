@@ -17,10 +17,11 @@ async def get_form(server, reader, writer, querystring, timers=None):
         'on_selected': 'selected' if server.power_timer.active else '',
         'off_selected': '' if server.power_timer.active else 'selected',
     }
-    from power_timer_schedule import get_active_days
+
+    from times_utils import get_active_days
     active_days = get_active_days()
     del get_active_days
-    del sys.modules['power_timer_schedule']
+    del sys.modules['times_utils']
     gc.collect()
 
     for day_no in range(7):
@@ -45,22 +46,25 @@ async def get_submit(server, reader, writer, querystring):
     del sys.modules['urllib_parse']
     gc.collect()
 
-    from times_utils import parse_timers, save_timers
+    from times_utils import parse_timers, save_timers, save_active_days
     try:
         timers = parse_timers(get_parameters['timers'])
+        del parse_timers
 
         save_timers(timers)
         del save_timers
 
         power_timer_active = get_parameters['active'] == 'on'
 
+        save_active_days(tuple(sorted([
+            no for no in range(7)
+            if 'd%i' % no in get_parameters
+        ])))
+        del save_active_days
+
         from rtc import update_rtc_dict
         update_rtc_dict(data={
             constants.POWER_TIMER_ACTIVE_KEY: power_timer_active,
-            constants.POWER_TIMER_WEEKDAYS_KEY: [
-                no for no in range(7)
-                if 'd%i' % no in get_parameters
-            ]
         })
         del update_rtc_dict
     except ValueError as e:
@@ -84,8 +88,6 @@ async def get_submit(server, reader, writer, querystring):
     server.power_timer.today_active = None
 
     server.power_timer.schedule_next_switch()
-
-    del sys.modules['times_utils']  # used in schedule_next_switch
     gc.collect()
 
     from http_utils import send_redirect
