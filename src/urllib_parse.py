@@ -26,6 +26,9 @@ def unquote(string):
 
 
 def parse_qsl(qs):
+    if qs is None:
+        return ()
+    qs = str(qs)
     pairs = [s2 for s1 in qs.split('&') for s2 in s1.split(';')]
     res = []
     for name_value in pairs:
@@ -38,5 +41,5 @@ def parse_qsl(qs):
     return res
 
 
-def querystring2dict(qs):
+def request_query2dict(qs):
     return dict(parse_qsl(qs))

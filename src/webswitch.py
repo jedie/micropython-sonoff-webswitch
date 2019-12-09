@@ -73,37 +73,49 @@ class WebServer:
         del sys.modules[module_name]
         gc.collect()
 
-    def parse_request(self, reader):
-        method, url, http_version = next(reader.readline()).strip().decode().split()
-
-        # Consume all headers but use only content-length
-        content_length = None
-        for line in reader.readline():
-            if line == b'':
-                # header ends
-                break
-            header, value = line.split(b':', 1)
-            if header == b'Content-Length':
-                content_length = int(value.decode())
-
-        # get body
-        if content_length:
-            body = reader.read(content_length)
-        else:
-            body = None
+    async def parse_request(self, reader):
+        method, url, http_version = (await reader.readline()).decode().strip().split()
+        # print(http_version)
 
         if '?' in url:
             url, querystring = url.split('?', 1)
         else:
             querystring = None
 
+        # Consume all headers but use only content-length
+        content_length = None
+        while True:
+            line = await reader.readline()
+            if line == b'\r\n':
+                break  # header ends
+
+            try:
+                header, value = line.split(b':', 1)
+            except ValueError:
+                break
+
+            value = value.strip()
+
+            if header == b'Content-Length':
+                content_length = int(value.decode())
+
+            # print(header, value)
+
+        print('content length:', content_length)
+
+        # get body
+        if content_length:
+            body = await reader.read(content_length)
+        else:
+            body = None
+
         return method, url, querystring, body
 
     async def send_response(self, reader, writer):
-        print('\nAccepted connection from:', writer.get_extra_info('peername'))
+        print('\nRequest from:', writer.get_extra_info('peername'))
 
         try:
-            method, url, querystring, body = self.parse_request(reader)
+            method, url, querystring, body = await self.parse_request(reader)
         except ValueError as e:
             self.message = str(e)
             url = '/'  # redirect

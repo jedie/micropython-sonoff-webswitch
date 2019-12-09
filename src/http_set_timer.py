@@ -40,9 +40,9 @@ async def get_form(server, reader, writer, querystring, timers=None):
 
 
 async def get_submit(server, reader, writer, querystring):
-    from urllib_parse import querystring2dict
-    get_parameters = querystring2dict(querystring)
-    del querystring2dict
+    from urllib_parse import request_query2dict
+    get_parameters = request_query2dict(querystring)
+    del request_query2dict
     del sys.modules['urllib_parse']
     gc.collect()
 
