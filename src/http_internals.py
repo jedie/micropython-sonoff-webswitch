@@ -1,13 +1,12 @@
-import sys
-
-import machine
-import uos as os
-from http_utils import send_redirect
-from rtc import get_dict_from_rtc
-from template import render
 
 
 async def get_show(server, reader, writer, url):
+    from template import render
+    from rtc import get_dict_from_rtc
+    import uos as os
+    import sys
+    import machine
+
     uname = os.uname()
 
     await server.send_html_page(
@@ -36,16 +35,17 @@ async def get_show(server, reader, writer, url):
 
 
 async def get_clear(server, reader, writer, querystring):
-    server.rtc.clear()
+    from http_utils import send_redirect
+    from rtc import clear_rtc_dict
+    clear_rtc_dict()
     server.message = 'RTC RAM cleared'
-    await send_redirect(writer)
+    await send_redirect(writer, url='/internals/show/')  # reload internal page
 
 
 async def get_reset(server, reader, writer, querystring):
-    server.message = (
-        'Reset device...'
-        ' Restart WebServer by pressing the Button on your device!'
-    )
+    from http_utils import send_redirect
+    server.message = 'Reset device... Please reload the page in a few seconds.'
+
     from reset import ResetDevice
-    ResetDevice(reason='Reset via web page').schedule(period=5000)
-    await send_redirect(writer)
+    ResetDevice(reason='Reset via web page').schedule(period=10000)
+    await send_redirect(writer, url='/internals/show/')  # reload internal page

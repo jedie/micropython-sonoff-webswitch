@@ -15,6 +15,11 @@ import uos as os
 import utime as time
 from micropython import const
 
+sys.modules.clear()
+
+gc.collect()
+
+
 _CONNECTION_TIMEOUT = const(30)
 _OTA_TIMEOUT = const(60)
 _PORT = const(8266)

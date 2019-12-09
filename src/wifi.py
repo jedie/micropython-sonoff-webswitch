@@ -59,11 +59,12 @@ class WiFi:
 
             if self.next_ntp_sync < time.time():
                 from ntp import ntp_sync
-                ntp_sync()  # update RTC via NTP
+                sync_done = ntp_sync()  # update RTC via NTP
                 del ntp_sync
                 del sys.modules['ntp']
-                self.next_ntp_sync = time.time() + _NTP_SYNC_WAIT_TIME_SEC
-                self.last_ntp_sync = rtc_isoformat()
+                if sync_done:
+                    self.next_ntp_sync = time.time() + _NTP_SYNC_WAIT_TIME_SEC
+                    self.last_ntp_sync = rtc_isoformat()
 
             self.last_refresh = rtc_isoformat()
             return
