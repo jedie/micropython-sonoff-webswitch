@@ -73,26 +73,53 @@ class WebServer:
         del sys.modules[module_name]
         gc.collect()
 
-    def parse_request(self, request):
-        request, body = request.split(b'\r\n\r\n', 1)
-        request, headers = request.split(b'\r\n', 1)
-        request = request.decode('UTF-8')
-        print('request: %r' % request)
-        print('headers:', headers)
+    async def parse_request(self, reader):
+        method, url, http_version = (await reader.readline()).decode().strip().split()
+        # print(http_version)
 
-        method, url, version = request.split(' ', 2)
-
-        if '?' not in url:
-            querystring = None
-        else:
+        if '?' in url:
             url, querystring = url.split('?', 1)
+        else:
+            querystring = None
 
-        return method, url, querystring
+        # Consume all headers but use only content-length
+        content_length = None
+        while True:
+            line = await reader.readline()
+            if line == b'\r\n':
+                break  # header ends
+
+            try:
+                header, value = line.split(b':', 1)
+            except ValueError:
+                break
+
+            value = value.strip()
+
+            if header == b'Content-Length':
+                content_length = int(value.decode())
+
+            # print(header, value)
+
+        print('content length:', content_length)
+
+        # get body
+        if content_length:
+            body = await reader.read(content_length)
+        else:
+            body = None
+
+        return method, url, querystring, body
 
     async def send_response(self, reader, writer):
-        print('\nAccepted connection from:', writer.get_extra_info('peername'))
+        print('\nRequest from:', writer.get_extra_info('peername'))
 
-        method, url, querystring = self.parse_request(request=await reader.read())
+        try:
+            method, url, querystring, body = await self.parse_request(reader)
+        except ValueError as e:
+            self.message = str(e)
+            url = '/'  # redirect
+
         gc.collect()
 
         if url == '/':

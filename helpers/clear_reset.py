@@ -3,23 +3,34 @@
 """
 
 import sys
+
 sys.modules.clear()
 
-import gc
-gc.collect()
 
-print('DELETE: main.py !!!')
-import uos
-uos.remove('main.py')
+def main():
+    import gc
+    gc.collect()
 
-print('Hard reset !')
+    print('DELETE: main.py !!!')
+    import uos
+    try:
+        uos.remove('main.py')
+    except BaseException:
+        # already deleted?
+        pass
 
-import machine
-machine.reset()
+    print('Hard reset !')
 
-import utime
-utime.sleep(1)
+    import machine
+    machine.reset()
 
-print('sys.exit()')
-import sys
-sys.exit()
+    import utime
+    utime.sleep(1)
+
+    print('sys.exit()')
+    import sys
+    sys.exit()
+
+
+if __name__ == '__main__':
+    main()

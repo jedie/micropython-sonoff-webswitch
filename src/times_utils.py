@@ -74,7 +74,6 @@ def restore_timers():
             yield from parse_timers(f.read())
     except OSError:
         print('File not exists: %r' % _TIMERS_FILENAME)
-        yield ()
 
 
 def get_active_days():
