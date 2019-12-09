@@ -76,15 +76,14 @@ async def get_submit(server, reader, writer, querystring):
     del sys.modules['rtc']
     gc.collect()
 
-    server.message = 'Timers saved.'
-
     # Update power timer:
     if power_timer_active:
-        server.power_timer.active = True
+        server.message = 'Timers saved and activated.'
     else:
-        server.power_timer.active = False
+        server.message = 'Timers saved and deactivated.'
 
-    # Force set 'today_active' by schedule_next_switch() in update_power_timer():
+    # Force set 'active' and 'today_active' by schedule_next_switch() in update_power_timer():
+    server.power_timer.active = None
     server.power_timer.today_active = None
 
     server.power_timer.schedule_next_switch()

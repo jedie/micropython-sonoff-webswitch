@@ -16,6 +16,7 @@ Tested devices:
 * checkbox for each day of the week where timers are active
 * Reset the device by long pressing the button
 * supports multiple WIFI credentials
+* NTP sync
 
 The device will do this on every boot:
 
@@ -29,6 +30,8 @@ The device will do this on every boot:
 
 Things that will be implement in the near feature:
 
+* NTP sync via button on web page
+* Insert new WiFi settings via web page
 * timer toggle flag to reverse: power is switched off during the specified periods
 * display local time to UTC offset via JavaScript
 * recalculate UTC timestamp on the page into local time via JavaScript

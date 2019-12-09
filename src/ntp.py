@@ -19,7 +19,7 @@ def ntp_sync():
             print('new UTC:', rtc_isoformat())
             del ntptime
             del sys.modules['ntptime']
-            return
+            return True
 
     from reset import ResetDevice
     ResetDevice(reason='Failed NTP sync').reset()
