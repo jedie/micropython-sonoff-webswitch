@@ -15,6 +15,7 @@ async def get_show(server, reader, writer, url):
         content_iterator=render(
             filename='http_internals.html',
             context={
+                'power_timer': server.power_timer,
                 'wifi': server.watchdog.wifi,
                 'watchdog': server.watchdog,
                 'rtc_memory': repr(get_dict_from_rtc()),

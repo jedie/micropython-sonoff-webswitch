@@ -36,7 +36,7 @@ class WebServer:
             context={
                 'version': self.version,
                 'state': Pins.relay.state,
-                'next_switch': str(self.power_timer),
+                'next_switch': self.power_timer.info_text(),
                 'message': self.message,
                 'total': alloc + free,
                 'alloc': alloc,

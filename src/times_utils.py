@@ -29,10 +29,7 @@ def validate_times(times):
 
 
 def parse_timers(data):
-    try:
-        import ure as re
-    except ImportError:
-        import re
+    import ure as re
     regex = re.compile(r'^\D*(\d+:\d+)\D+(\d+:\d+)\D*$')
     data = data.strip()
 

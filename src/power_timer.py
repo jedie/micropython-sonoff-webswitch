@@ -37,7 +37,7 @@ class PowerTimer:
         self.turn_on = None
         self.active = False
 
-    def __str__(self):
+    def info_text(self):
         if not self.active:
             return 'Power timer is deactivated.'
 
@@ -57,3 +57,20 @@ class PowerTimer:
                 self.next_time[0], self.next_time[1],
                 self.last_update
             )
+
+    def __str__(self):
+        return (
+            'last_update=%r,'
+            ' next_time=%r,'
+            ' next_time_ms=%r,'
+            ' turn_on=%r,'
+            ' active=%r,'
+            ' today_active=%r'
+        ) % (
+            self.last_update,
+            self.next_time,
+            self.next_time_ms,
+            self.turn_on,
+            self.active,
+            self.today_active,
+        )
