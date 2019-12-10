@@ -1,11 +1,12 @@
 import tempfile
 from unittest import TestCase, mock
 
+from tests.utils import AssertNoFilesCreatedMixin
 from times_utils import (get_ms_until_next_timer, get_next_timer, parse_timers, pformat_timers,
                          restore_timers, save_timers, validate_times)
 
 
-class ParseTimesTestCase(TestCase):
+class ParseTimesTestCase(AssertNoFilesCreatedMixin, TestCase):
 
     def test_parse_timers(self):
         assert tuple(parse_timers('''
