@@ -1,0 +1,19 @@
+<fieldset><legend>Your timezone:</legend>
+    Current set timezone offset to UTC: <strong>{offset}h</strong>
+    <form action="/settings/set_timezone/" method="post">
+        <input type="number" id="offset" name="offset" min="-12" max="12">
+        <input type="submit">
+    </form>
+    <p>
+        Insert your time zone offset in hours in relation to UTC.<br>
+        Your brower mean the right time zone offset is: <strong><span id="preview"></span>h</strong>
+    </p>
+    <a href="/main/menu"><button class="button">Cancel</button></a>
+</fieldset>
+<script>
+    var x = new Date();
+    var currentTimeZoneOffsetInHours = x.getTimezoneOffset() / 60;
+
+    document.querySelector('#offset').value = currentTimeZoneOffsetInHours;
+    document.querySelector('#preview').textContent = currentTimeZoneOffsetInHours;
+</script>

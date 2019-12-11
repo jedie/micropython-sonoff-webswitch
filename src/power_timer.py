@@ -35,25 +35,26 @@ class PowerTimer:
         self.next_time = None
         self.next_time_ms = None
         self.turn_on = None
-        self.active = False
+        self.active = None
+        self.today_active = None
 
     def info_text(self):
         if not self.active:
             return 'Power timer is deactivated.'
 
-        if self.next_time is not None and self.next_time_ms < 1:
+        if self.next_time is not None and self.next_time_ms <= 0:
             self.reset()
             return 'missed timer'
 
-        if not self.today_active:
+        if self.today_active is False:
             return 'Power timer is not active today.'
 
         if self.turn_on is None:
             return 'No switch scheduled. (Last update: %s)' % self.last_update
         else:
-            return 'Switch %s in %i sec. at %02i:%02i h. (Last update: %s)' % (
+            return 'Switch %s in %i min. at %02i:%02i h. (Last update: %s)' % (
                 'on' if self.turn_on else 'off',
-                (self.next_time_ms / 1000),
+                (self.next_time_ms / 1000 / 60),
                 self.next_time[0], self.next_time[1],
                 self.last_update
             )

@@ -117,9 +117,10 @@ If server runs: reboot device and look to the output of the OTA server.
 
 * `./bdist/` - Contains the compiled files that will be uploaded to the device.
 * `./helpers/` - Some device tests/helper scripts for developing (normaly not needed)
+* `./mpy_tests/` - tests that can be run on micropython device (will be also run by pytest with mocks)
 * `./ota/` - source code of the OTA server
 * `./src/` - device source files
-* `./tests/` - some pytest files
+* `./tests/` - some pytest files (run on host with CPython)
 * `./utils/` - utils for local run (compile, code lint, sync with mpycntrl)
 * `./start_ota_server.py` - Starts the local OTA server (will compile, lint the `src` files and create `bdist`)
 * `./upload_files.py` - Upload files via USB (will compile, lint the `src` files and create `bdist`)

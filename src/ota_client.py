@@ -185,13 +185,6 @@ class OtaUpdate:
             hexdigest = binascii.hexlify(sha256.digest()).decode('utf-8')
             if hexdigest == file_sha256:
                 print('Hash OK:', hexdigest)
-                try:
-                    os.remove(file_name)
-                except OSError:
-                    pass  # e.g.: new file that doesn't exist, yet.
-
-                os.rename(temp_file_name, file_name)
-
                 print('Compare written file content', end=' ')
                 sha256 = hashlib.sha256()
                 with open(file_name, 'rb') as f:
@@ -206,6 +199,19 @@ class OtaUpdate:
                 hexdigest = binascii.hexlify(sha256.digest()).decode('utf-8')
                 if hexdigest == file_sha256:
                     print('Hash OK:', hexdigest)
+                    try:
+                        os.remove(file_name)
+                    except OSError:
+                        pass  # e.g.: new file that doesn't exist, yet.
+
+                    os.rename(temp_file_name, file_name)
+                    if file_name.endswith('.mpy'):
+                        py_filename = '%s.py' % file_name.rsplit('.', 1)[0]
+                        try:
+                            os.remove(py_filename)
+                        except OSError:
+                            pass  # *.py file doesn't exists
+
                     await self.command_send_ok(reader, writer)
                     return
 

@@ -17,6 +17,7 @@ def active_today():
     gc.collect()
 
     today = time.localtime()[6]
+    print('Today:', today)
     return today in active_days
 
 

@@ -172,8 +172,12 @@ class ParseTimesTestCase(AssertNoFilesCreatedMixin, TestCase):
     def test_get_ms_until_next_timer(self):
         m = mock.mock_open(read_data='10:01 - 11:35')
         with mock.patch('src.times_utils.open', m):
-            assert get_ms_until_next_timer(current_time=(10, 0)) == (True, (10, 1), 1000)
-            assert get_ms_until_next_timer(current_time=(10, 35)) == (False, (11, 35), 60000)
+            assert get_ms_until_next_timer(current_time=(10, 0)) == (
+                True, (10, 1), 1 * 60 * 1000  # 1min * 60sec * 1000ms
+            )
+            assert get_ms_until_next_timer(current_time=(10, 35)) == (
+                False, (11, 35), 1 * 60 * 60 * 1000  # 1h * 60min * 60sec * 1000ms
+            )
 
     def test_get_ms_until_next_timer_empty(self):
         m = mock.mock_open(read_data='')

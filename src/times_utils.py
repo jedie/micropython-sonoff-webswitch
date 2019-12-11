@@ -1,7 +1,8 @@
-
+from micropython import const
 
 _TIMERS_FILENAME = 'timers.txt'
 _ACTIVE_DAYS_FILENAME = 'timer_days.txt'
+_SEC2MS = const(60 * 1000)
 
 
 def parse_time(clock_time):
@@ -129,4 +130,4 @@ def get_ms_until_next_timer(current_time):
     current_time_sec = (current_time[0] * 60) + current_time[1]
     next_time_sec = (next_time[0] * 60) + next_time[1]
 
-    return turn_on, next_time, (next_time_sec - current_time_sec) * 1000
+    return turn_on, next_time, (next_time_sec - current_time_sec) * _SEC2MS

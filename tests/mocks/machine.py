@@ -25,13 +25,24 @@ class Timer:
 
 
 class RTC:
-    _memory = ''
+    """
+    http://docs.micropython.org/en/latest/esp8266/quickref.html#real-time-clock-rtc
+    https://github.com/micropython/micropython/blob/master/lib/timeutils/timeutils.c
+    """
+
+    __shared_state = {
+        'rtc_memory': '',
+        'time_tuple': (2000, 1, 1, 5, 0, 0, 0, 0)
+    }
 
     def __init__(self):
-        pass
+        self.__dict__ = self.__shared_state
 
     def memory(self):
-        return self._memory
+        return self.__shared_state['rtc_memory']
 
-    def datetime(self):
-        return (2019, 5, 1, 4, 13, 12, 11, 0)
+    def datetime(self, time_tuple=None):
+        if time_tuple is not None:
+            self.__shared_state['time_tuple'] = time_tuple
+
+        return self.__shared_state['time_tuple']

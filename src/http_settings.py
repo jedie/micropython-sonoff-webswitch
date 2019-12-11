@@ -29,3 +29,17 @@ async def get_wifi(server, reader, writer, url):
             content_iterator=None
         ),
     )
+
+
+async def get_set_timezone(server, reader, writer, url):
+    await server.send_html_page(
+        writer,
+        filename='webswitch.html',
+        content_iterator=render(
+            filename='http_set_timezone.html',
+            context={
+                'offset': 'TODO'
+            },
+            content_iterator=None
+        ),
+    )
