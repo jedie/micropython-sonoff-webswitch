@@ -1,7 +1,7 @@
 
 from unittest import TestCase
 
-from urllib_parse import request_query2dict
+from src.urllib_parse import request_query2dict
 
 
 class UrllibParseTestCase(TestCase):

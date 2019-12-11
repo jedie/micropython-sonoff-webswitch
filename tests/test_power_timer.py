@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from power_timer import PowerTimer
+from src.power_timer import PowerTimer
 from tests.utils import AssertNoFilesCreatedMixin
 
 

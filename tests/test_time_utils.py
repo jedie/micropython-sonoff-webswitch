@@ -1,9 +1,9 @@
 import tempfile
 from unittest import TestCase, mock
 
+from src.times_utils import (get_ms_until_next_timer, get_next_timer, parse_timers, pformat_timers,
+                             restore_timers, save_timers, validate_times)
 from tests.utils import AssertNoFilesCreatedMixin
-from times_utils import (get_ms_until_next_timer, get_next_timer, parse_timers, pformat_timers,
-                         restore_timers, save_timers, validate_times)
 
 
 class ParseTimesTestCase(AssertNoFilesCreatedMixin, TestCase):
@@ -115,7 +115,7 @@ class ParseTimesTestCase(AssertNoFilesCreatedMixin, TestCase):
 
     def test_save_restore_times(self):
         with tempfile.NamedTemporaryFile() as f:
-            with mock.patch('times_utils._TIMERS_FILENAME', f.name):
+            with mock.patch('src.times_utils._TIMERS_FILENAME', f.name):
                 save_timers([
                     ((1, 23), (4, 56)),
                     ((19, 0), (20, 0))
@@ -131,7 +131,7 @@ class ParseTimesTestCase(AssertNoFilesCreatedMixin, TestCase):
                     1:23 - 4:56
                     19:00 - 20:00
                 ''')
-                with mock.patch('times_utils.open', m):
+                with mock.patch('src.times_utils.open', m):
                     save_timers((
                         ((1, 23), (4, 56)),
                         ((19, 0), (20, 0))
@@ -143,7 +143,7 @@ class ParseTimesTestCase(AssertNoFilesCreatedMixin, TestCase):
             1:23 - 4:56
             19:00 - 20:00
         ''')
-        with mock.patch('times_utils.open', m):
+        with mock.patch('src.times_utils.open', m):
             assert get_next_timer(current_time=(1, 22)) == (True, (1, 23))
             assert get_next_timer(current_time=(1, 23)) == (False, (4, 56))
             assert get_next_timer(current_time=(4, 55)) == (False, (4, 56))
@@ -158,7 +158,7 @@ class ParseTimesTestCase(AssertNoFilesCreatedMixin, TestCase):
         m = mock.mock_open(read_data='''
             0:00 - 23:59
         ''')
-        with mock.patch('times_utils.open', m):
+        with mock.patch('src.times_utils.open', m):
             assert get_next_timer(current_time=(0, 0)) == (False, (23, 59))
             assert get_next_timer(current_time=(0, 1)) == (False, (23, 59))
             assert get_next_timer(current_time=(23, 58)) == (False, (23, 59))
@@ -166,16 +166,16 @@ class ParseTimesTestCase(AssertNoFilesCreatedMixin, TestCase):
 
     def test_get_next_timer_empty(self):
         m = mock.mock_open(read_data='')
-        with mock.patch('times_utils.open', m):
+        with mock.patch('src.times_utils.open', m):
             assert get_next_timer(current_time=(0, 0)) == (None, None)
 
     def test_get_ms_until_next_timer(self):
         m = mock.mock_open(read_data='10:01 - 11:35')
-        with mock.patch('times_utils.open', m):
+        with mock.patch('src.times_utils.open', m):
             assert get_ms_until_next_timer(current_time=(10, 0)) == (True, (10, 1), 1000)
             assert get_ms_until_next_timer(current_time=(10, 35)) == (False, (11, 35), 60000)
 
     def test_get_ms_until_next_timer_empty(self):
         m = mock.mock_open(read_data='')
-        with mock.patch('times_utils.open', m):
+        with mock.patch('src.times_utils.open', m):
             assert get_ms_until_next_timer(current_time=(12, 34)) == (None, None, None)
