@@ -91,12 +91,14 @@ def request_query2dict(qs):
 class WebServer:
     async def parse_request(self, reader):
         method, url, http_version = (await reader.readline()).decode().strip().split()
-        print(http_version)
+        print(method, url, http_version)
 
         if '?' in url:
             url, querystring = url.split('?', 1)
         else:
             querystring = None
+
+        print('querystring:', repr(querystring))
 
         # Consume all headers but use only content-length
         content_length = None
@@ -108,6 +110,7 @@ class WebServer:
             try:
                 header, value = line.split(b':', 1)
             except ValueError:
+                print('ValueError in:', repr(line))
                 break
 
             value = value.strip()
@@ -121,7 +124,8 @@ class WebServer:
 
         # get body
         if content_length:
-            body = await reader.read(content_length)
+            body = (await reader.read(content_length)).decode()
+            print('body:', repr(body))
         else:
             body = None
 
