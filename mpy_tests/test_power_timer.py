@@ -1,6 +1,6 @@
-"""
+'''
     Tests power timer on device
-"""
+'''
 from power_timer import PowerTimer
 
 
@@ -8,10 +8,10 @@ def test_power_timer():
     print('test not active...', end=' ')
     power_timer = PowerTimer()
     result = power_timer.info_text()
-    assert result == 'Power timer is deactivated.', result
+    assert result == 'Power timer is deactivated. (Last update: None)', result
     result = str(power_timer)
     assert result == (
-        'last_update=None, next_time=None, next_time_ms=None,'
+        'last_update=None, next_timer_epoch=None,'
         ' turn_on=None, active=None, today_active=None'
     ), result
     print('OK')
@@ -23,7 +23,7 @@ def test_power_timer():
     assert result == 'No switch scheduled. (Last update: None)', result
     result = str(power_timer)
     assert result == (
-        'last_update=None, next_time=None, next_time_ms=None,'
+        'last_update=None, next_timer_epoch=None,'
         ' turn_on=None, active=True, today_active=True'
     ), result
     print('OK')
@@ -31,15 +31,14 @@ def test_power_timer():
     print('test schedule_next_switch()...', end=' ')
     power_timer.schedule_next_switch()
     power_timer.timer.deinit()
-    power_timer.next_time = (21, 30)
-    power_timer.next_time_ms = 0
-    power_timer.last_update = 'Fake'
+    power_timer.next_timer_epoch = 0
+    power_timer.last_update = 0
     result = power_timer.info_text()
-    assert result == 'missed timer', result
+    assert result == 'missed timer (Last update: 0)', result
     result = str(power_timer)
-    assert result == (  # reset was called!
-        "last_update='Fake', next_time=None, next_time_ms=None,"
-        " turn_on=None, active=None, today_active=None"
+    assert result == (
+        'last_update=0, next_timer_epoch=None,'
+        ' turn_on=None, active=True, today_active=True'
     ), result
     print('OK')
 

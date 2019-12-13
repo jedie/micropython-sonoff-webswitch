@@ -3,7 +3,7 @@ import gc
 import constants
 import uerrno as errno
 import usocket as socket
-import utime as time
+import utime
 from micropython import const
 
 _MIN_FREE = const(2 * 1024)
@@ -43,14 +43,17 @@ def check(last_feed, wifi, check_callback):
     if not wifi.is_connected:
         wifi.ensure_connection()
 
-    last_connection = time.time() - wifi.connected_time
+    if wifi.connected_time is None:
+        reset(reason='WiFi not connected')
+
+    last_connection = utime.time() - wifi.connected_time
     if last_connection > constants.WIFI_TIMEOUT:
         reset(reason='WiFi timeout')
 
     if can_bind_web_server_port():
         reset(reason='Web Server down')
 
-    if time.time() - last_feed > constants.WATCHDOG_TIMEOUT:
+    if utime.time() - last_feed > constants.WATCHDOG_TIMEOUT:
         reset(reason='Feed timeout')
 
     check_callback()

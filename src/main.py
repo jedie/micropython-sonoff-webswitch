@@ -1,7 +1,7 @@
 print('main.py')
 
-import time
-time.sleep(1)
+import utime
+utime.sleep(1)
 
 
 def main():
@@ -16,7 +16,7 @@ def main():
 
     from wifi import WiFi
 
-    __version__ = 'v0.7.1'
+    __version__ = 'v0.8.0'
 
     # Init device button IRQ:
     Pins.button_pin.irq(Button().irq_handler)

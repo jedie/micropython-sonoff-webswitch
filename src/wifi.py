@@ -2,12 +2,12 @@ import gc
 import sys
 
 import network
-import utime as time
+import utime
 from micropython import const
 from pins import Pins
-from rtc import rtc_isoformat
 
 _NTP_SYNC_WAIT_TIME_SEC = const(1 * 60 * 60)  # sync NTP every 1 h
+_MIN_TIME_EPOCH = const(599616000)  # epoch 1.1.2019
 
 
 class WiFi:
@@ -36,7 +36,7 @@ class WiFi:
             Pins.power_led.off()
             return False
         else:
-            self.connected_time = time.time()
+            self.connected_time = utime.time()
             if self.verbose:
                 print('Connected to station IP/netmask/gw/DNS addresses:', self.station.ifconfig())
             Pins.power_led.on()
@@ -57,16 +57,22 @@ class WiFi:
         if self.is_connected:
             self.is_connected_count += 1
 
-            if self.next_ntp_sync < time.time():
+            from timezone import localtime_isoformat
+
+            if self.next_ntp_sync < utime.time():
                 from ntp import ntp_sync
                 sync_done = ntp_sync()  # update RTC via NTP
                 del ntp_sync
                 del sys.modules['ntp']
-                if sync_done:
-                    self.next_ntp_sync = time.time() + _NTP_SYNC_WAIT_TIME_SEC
-                    self.last_ntp_sync = rtc_isoformat()
+                if sync_done and utime.time() > _MIN_TIME_EPOCH:
+                    self.next_ntp_sync = utime.time() + _NTP_SYNC_WAIT_TIME_SEC
+                    self.last_ntp_sync = localtime_isoformat()
 
-            self.last_refresh = rtc_isoformat()
+            self.last_refresh = localtime_isoformat()
+
+            del localtime_isoformat
+            del sys.modules['timezone']
+            gc.collect()
             return
 
         self.not_connected_count += 1

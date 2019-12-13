@@ -39,7 +39,7 @@ async def get_form(server, reader, writer, querystring, timers=None):
     )
 
 
-async def get_submit(server, reader, writer, querystring):
+async def get_submit(server, reader, writer, querystring, body):
     from urllib_parse import request_query2dict
     get_parameters = request_query2dict(querystring)
     del request_query2dict
@@ -48,7 +48,7 @@ async def get_submit(server, reader, writer, querystring):
 
     from times_utils import parse_timers, save_timers, save_active_days
     try:
-        timers = parse_timers(get_parameters['timers'])
+        timers = tuple(parse_timers(get_parameters['timers']))
         del parse_timers
 
         save_timers(timers)

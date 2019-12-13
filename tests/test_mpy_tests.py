@@ -1,15 +1,16 @@
-from unittest import TestCase
+
 
 from mpy_tests.test_power_timer import test_power_timer
-from mpy_tests.test_timezone import test_time_basics, test_timezone_shift
+from mpy_tests.test_timezone import run_all_timezone_tests
+from tests.base import MicropythonBaseTestCase
+from tests.utils.mock_py_config import mock_py_config_context
 
 
-class MPyTestCase(TestCase):
-    def test_call_test_time_basics(self):
-        test_time_basics()
-
-    def test_call_timezone_shift_tests(self):
-        test_timezone_shift()
+class MPyTestCase(MicropythonBaseTestCase):
+    def test_call_run_all_timezone_tests(self):
+        with mock_py_config_context():
+            run_all_timezone_tests()
 
     def test_call_test_power_timer(self):
-        test_power_timer()
+        with mock_py_config_context():
+            test_power_timer()

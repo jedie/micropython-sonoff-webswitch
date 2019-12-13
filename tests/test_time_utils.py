@@ -1,12 +1,13 @@
-import tempfile
-from unittest import TestCase, mock
-
-from src.times_utils import (get_ms_until_next_timer, get_next_timer, parse_timers, pformat_timers,
-                             restore_timers, save_timers, validate_times)
-from tests.utils import AssertNoFilesCreatedMixin
 
 
-class ParseTimesTestCase(AssertNoFilesCreatedMixin, TestCase):
+import machine
+from src.times_utils import (get_next_timer, parse_timers, pformat_timers, restore_timers,
+                             save_timers, validate_times)
+from tests.base import MicropythonBaseTestCase
+from tests.utils.mock_py_config import mock_py_config_context
+
+
+class ParseTimesTestCase(MicropythonBaseTestCase):
 
     def test_parse_timers(self):
         assert tuple(parse_timers('''
@@ -111,75 +112,20 @@ class ParseTimesTestCase(AssertNoFilesCreatedMixin, TestCase):
         self.assertEqual(cm.exception.args[0], '19:-1 is not valid')
 
     def test_restore_times_without_existing_file(self):
-        assert tuple(restore_timers()) == ()
-
-    def test_save_restore_times(self):
-        with tempfile.NamedTemporaryFile() as f:
-            with mock.patch('src.times_utils._TIMERS_FILENAME', f.name):
-                save_timers([
-                    ((1, 23), (4, 56)),
-                    ((19, 0), (20, 0))
-                ])
-                assert tuple(restore_timers()) == (
-                    ((1, 23), (4, 56)),
-                    ((19, 0), (20, 0))
-                )
-
-                # Don't save if the same timers already exists:
-
-                m = mock.mock_open(read_data='''
-                    1:23 - 4:56
-                    19:00 - 20:00
-                ''')
-                with mock.patch('src.times_utils.open', m):
-                    save_timers((
-                        ((1, 23), (4, 56)),
-                        ((19, 0), (20, 0))
-                    ))
-                m.assert_called_once_with(f.name, 'r')
+        assert restore_timers() == ()
 
     def test_get_next_timer(self):
-        m = mock.mock_open(read_data='''
-            1:23 - 4:56
-            19:00 - 20:00
-        ''')
-        with mock.patch('src.times_utils.open', m):
-            assert get_next_timer(current_time=(1, 22)) == (True, (1, 23))
-            assert get_next_timer(current_time=(1, 23)) == (False, (4, 56))
-            assert get_next_timer(current_time=(4, 55)) == (False, (4, 56))
-            assert get_next_timer(current_time=(4, 56)) == (True, (19, 00))
-            assert get_next_timer(current_time=(19, 00)) == (False, (20, 00))
-            assert get_next_timer(current_time=(20, 00)) == (True, (1, 23))
-            assert get_next_timer(current_time=(23, 59)) == (True, (1, 23))
-            assert get_next_timer(current_time=(0, 0)) == (True, (1, 23))
-            assert get_next_timer(current_time=(0, 1)) == (True, (1, 23))
+        with mock_py_config_context():
+            save_timers((
+                ((1, 0), (2, 0)),
+            ))
+            rtc = machine.RTC()
+            rtc.datetime((2000, 1, 1, 5, 0, 0, 0, 0))
+            assert get_next_timer() == (True, 3600)
 
-    def test_get_next_timer_always_on(self):
-        m = mock.mock_open(read_data='''
-            0:00 - 23:59
-        ''')
-        with mock.patch('src.times_utils.open', m):
-            assert get_next_timer(current_time=(0, 0)) == (False, (23, 59))
-            assert get_next_timer(current_time=(0, 1)) == (False, (23, 59))
-            assert get_next_timer(current_time=(23, 58)) == (False, (23, 59))
-            assert get_next_timer(current_time=(23, 59)) == (True, (0, 0))
+            rtc.datetime((2000, 1, 1, 5, 1, 30, 0, 0))
+            assert get_next_timer() == (False, 7200)
 
     def test_get_next_timer_empty(self):
-        m = mock.mock_open(read_data='')
-        with mock.patch('src.times_utils.open', m):
-            assert get_next_timer(current_time=(0, 0)) == (None, None)
-
-    def test_get_ms_until_next_timer(self):
-        m = mock.mock_open(read_data='10:01 - 11:35')
-        with mock.patch('src.times_utils.open', m):
-            assert get_ms_until_next_timer(current_time=(10, 0)) == (
-                True, (10, 1), 1 * 60 * 1000  # 1min * 60sec * 1000ms
-            )
-            assert get_ms_until_next_timer(current_time=(10, 35)) == (
-                False, (11, 35), 1 * 60 * 60 * 1000  # 1h * 60min * 60sec * 1000ms
-            )
-
-    def test_get_ms_until_next_timer_empty(self):
-        m = mock.mock_open(read_data='')
-        with mock.patch('src.times_utils.open', m):
-            assert get_ms_until_next_timer(current_time=(12, 34)) == (None, None, None)
+        with mock_py_config_context():
+            assert get_next_timer() == (None, None)

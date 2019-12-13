@@ -5,47 +5,59 @@
     http://docs.micropython.org/en/latest/library/utime.html?highlight=datetime#utime.localtime
     year, month, mday, hour, minute, second, weekday, yearday
 """
+import gc
+import sys
 
 import utime
 from micropython import const
 
-_TIMEZONE_FILENAME = 'timezone.txt'
+_TIMEZONE_PY_CFG_NAME = 'timezone'
 _DEFAULT_OFFSET_H = const(0)
-_h2sec = const(60 * 60)
-
-
-def datetime_shift(dt, offset_h):
-    return utime.localtime(
-        utime.mktime(dt) + (
-            offset_h * _h2sec
-        )
-    )
-
-
-def clock_time_shift(clock_time, offset_h):
-    dt = datetime_shift(
-        dt=(2000, 1, 2, clock_time[0], clock_time[1], 0, 6, 2),
-        offset_h=offset_h
-    )
-    return dt[3], dt[4]
 
 
 def save_timezone(offset_h):
-    if restore_timezone() == offset_h:
-        # Don't save if the same offset already exists
-        return
+    from config_files import save_py_config
+    save_py_config(module_name=_TIMEZONE_PY_CFG_NAME, value=offset_h)
 
-    with open(_TIMEZONE_FILENAME, 'w') as f:
-        f.write('%+i' % offset_h)
+    del save_py_config
+    del sys.modules['config_files']
+    gc.collect()
 
 
 def restore_timezone():
-    try:
-        with open(_TIMEZONE_FILENAME, 'r') as f:
-            try:
-                return int(f.read())
-            except ValueError:
-                return _DEFAULT_OFFSET_H
-    except OSError:
-        print('File not exists: %r' % _TIMEZONE_FILENAME)
-        return _DEFAULT_OFFSET_H
+    from config_files import restore_py_config
+    offset_h = restore_py_config(module_name=_TIMEZONE_PY_CFG_NAME, default=_DEFAULT_OFFSET_H)
+
+    del restore_py_config
+    del sys.modules['config_files']
+    return offset_h
+
+
+def localtime_isoformat(sep='T', dt=None, epoch=None, offset_h=None, add_offset=False):
+    """
+    dt = tuple from utime.localtime() and not from: machine.RTC().datetime() !
+    """
+    # dt = (year, month, mday, hour, minute, second, weekday, yearday)
+    if dt is None:
+        dt = utime.localtime(epoch)
+
+    if not add_offset:
+        return '%i-%02i-%02i%s%02i:%02i:%02i' % (dt[:3] + (sep,) + dt[3:6])
+
+    if offset_h is None:
+        offset_h = restore_timezone()
+
+    return '%i-%02i-%02i%s%02i:%02i:%02i%s%02i:00' % (
+        dt[:3] + (sep,) + dt[3:6] + ('+' if offset_h >= 0 else '-',) + (abs(offset_h),)
+    )
+
+
+def get_local_epoch():
+    offset_sec = restore_timezone() * 60 * 60
+
+    # year, month, mday, hour, minute, second, weekday, yearday
+    utc_time_tuple = utime.localtime()
+    utc_now_epoch = utime.mktime(utc_time_tuple)
+
+    local_epoch = utc_now_epoch + (offset_sec * -1)
+    return local_epoch

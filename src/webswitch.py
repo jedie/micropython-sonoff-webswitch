@@ -30,7 +30,7 @@ class WebServer:
         gc.collect()
 
         from template import render
-        from rtc import rtc_isoformat
+        from timezone import localtime_isoformat
         content = render(
             filename=filename,
             context={
@@ -41,7 +41,7 @@ class WebServer:
                 'total': alloc + free,
                 'alloc': alloc,
                 'free': free,
-                'utc': rtc_isoformat(sep=' '),
+                'localtime': localtime_isoformat(sep=' '),
             },
             content_iterator=content_iterator
         )
@@ -49,7 +49,7 @@ class WebServer:
             await writer.awrite(line)
         gc.collect()
 
-    async def call_module_func(self, url, method, querystring, reader, writer):
+    async def call_module_func(self, url, method, querystring, body, reader, writer):
         url = url.strip('/')
         try:
             module_name, func_name = url.split('/')
@@ -67,7 +67,7 @@ class WebServer:
         if func is None:
             raise AttributeError('Not found: %s.%s' % (module_name, func_name))
 
-        await func(self, reader, writer, querystring)
+        await func(self, reader, writer, querystring, body)
         del func
         del module
         del sys.modules[module_name]
@@ -105,7 +105,7 @@ class WebServer:
 
         # get body
         if content_length:
-            body = await reader.read(content_length)
+            body = (await reader.read(content_length)).decode()
         else:
             body = None
 
@@ -129,7 +129,7 @@ class WebServer:
             from http_send_file import send_file
             await send_file(self, reader, writer, url)
         else:
-            await self.call_module_func(url, method, querystring, reader, writer)
+            await self.call_module_func(url, method, querystring, body, reader, writer)
             for module_name in [
                     name for name in sys.modules.keys() if name not in self.minimal_modules]:
                 print('remove obsolete module: %r' % module_name)
@@ -155,8 +155,9 @@ class WebServer:
         Pins.power_led.on()
 
     async def feed_watchdog(self):
+        sleep_time = int(constants.WATCHDOG_TIMEOUT / 2)
         while True:
-            await asyncio.sleep(int(constants.WATCHDOG_TIMEOUT / 2))
+            await asyncio.sleep(sleep_time)
             self.watchdog.feed()
 
     def run(self):

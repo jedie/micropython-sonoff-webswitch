@@ -1,6 +1,6 @@
 import gc
 
-import utime as time
+import utime
 from pins import Pins
 
 
@@ -16,7 +16,7 @@ def get_debounced_value(pin):
         else:
             stable = 0
             cur_value = pin.value()
-        time.sleep_ms(1)
+        utime.sleep_ms(1)
     return cur_value
 
 
@@ -31,13 +31,13 @@ class Button:
         print('button_value:', button_value)
         if button_value == 0:
             # button pressed
-            self.down_start = time.ticks_ms()
+            self.down_start = utime.ticks_ms()
 
         elif button_value == 1:
             # button released
             Pins.power_led.on()
 
-            duration_ms = time.ticks_diff(time.ticks_ms(), self.down_start)
+            duration_ms = utime.ticks_diff(utime.ticks_ms(), self.down_start)
             print('duration_ms:', duration_ms)
             if duration_ms > 2000:
                 from reset import ResetDevice

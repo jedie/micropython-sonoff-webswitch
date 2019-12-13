@@ -1,6 +1,6 @@
 
 
-async def get_show(server, reader, writer, url):
+async def get_show(server, reader, writer, querystring, body):
     from template import render
     from rtc import get_dict_from_rtc
     import uos as os
@@ -35,7 +35,7 @@ async def get_show(server, reader, writer, url):
     )
 
 
-async def get_clear(server, reader, writer, querystring):
+async def get_clear(server, reader, writer, querystring, body):
     from http_utils import send_redirect
     from rtc import clear_rtc_dict
     clear_rtc_dict()
@@ -43,7 +43,7 @@ async def get_clear(server, reader, writer, querystring):
     await send_redirect(writer, url='/internals/show/')  # reload internal page
 
 
-async def get_reset(server, reader, writer, querystring):
+async def get_reset(server, reader, writer, querystring, body):
     from http_utils import send_redirect
     server.message = 'Reset device... Please reload the page in a few seconds.'
 

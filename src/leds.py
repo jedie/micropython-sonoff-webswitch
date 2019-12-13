@@ -1,4 +1,4 @@
-import utime as time
+import utime
 
 
 class Led:
@@ -24,7 +24,7 @@ class Led:
         old_value = self.pin.value()
         for no in range(count):
             self.toggle()
-            time.sleep(sleep)
+            utime.sleep(sleep)
         self.pin.value(old_value)
 
     @property
