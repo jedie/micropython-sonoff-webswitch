@@ -1,7 +1,11 @@
+import gc
+import sys
 
+from micropython import const
 
-_TIMERS_FILENAME = 'timers.txt'
-_ACTIVE_DAYS_FILENAME = 'timer_days.txt'
+_TIMERS_PY_CFG_NAME = 'timers'
+_ACTIVE_DAYS_PY_CFG_NAME = 'timer_days'
+_SEC2MS = const(60 * 1000)
 
 
 def parse_time(clock_time):
@@ -11,14 +15,15 @@ def parse_time(clock_time):
 
 def iter_times(times):
     for start, stop in times:
-        yield start
-        yield stop
+        assert isinstance(start, tuple)
+        assert isinstance(stop, tuple)
+        yield True, start
+        yield False, stop
 
 
 def validate_times(times):
     old_time = 0
-    for hours, minutes in iter_times(times):
-        print(hours, minutes)
+    for turn_on, (hours, minutes) in iter_times(times):
         if not (0 <= hours <= 23 and 0 <= minutes <= 59):
             raise ValueError('%02i:%02i is not valid' % (hours, minutes))
         new_time = minutes + (hours * 60)
@@ -29,10 +34,7 @@ def validate_times(times):
 
 
 def parse_timers(data):
-    try:
-        import ure as re
-    except ImportError:
-        import re
+    import ure as re
     regex = re.compile(r'^\D*(\d+:\d+)\D+(\d+:\d+)\D*$')
     data = data.strip()
 
@@ -59,77 +61,81 @@ def pformat_timers(times):
 
 
 def save_timers(times):
-    if tuple(restore_timers()) == times:
-        # Don't save if the same timers already exists
-        return
+    from config_files import save_py_config
+    save_py_config(module_name=_TIMERS_PY_CFG_NAME, value=times)
 
-    with open(_TIMERS_FILENAME, 'w') as f:
-        for t in times:
-            f.write('%i:%i-%i:%i\n' % (t[0][0], t[0][1], t[1][0], t[1][1]))
+    del save_py_config
+    del sys.modules['config_files']
+    gc.collect()
 
 
 def restore_timers():
-    try:
-        with open(_TIMERS_FILENAME, 'r') as f:
-            yield from parse_timers(f.read())
-    except OSError:
-        print('File not exists: %r' % _TIMERS_FILENAME)
+    from config_files import restore_py_config
+    timers = restore_py_config(module_name=_TIMERS_PY_CFG_NAME, default=())
+
+    del restore_py_config
+    del sys.modules['config_files']
+    gc.collect()
+    return timers
 
 
 def get_active_days():
-    try:
-        with open(_ACTIVE_DAYS_FILENAME, 'r') as f:
-            return tuple([int(d) for d in f.read().split(',')])
-    except OSError:
-        print('File not exists: %r' % _ACTIVE_DAYS_FILENAME)
-        return tuple(range(7))
+    from config_files import restore_py_config
+    active_days = restore_py_config(module_name=_ACTIVE_DAYS_PY_CFG_NAME, default=tuple(range(7)))
+
+    del restore_py_config
+    del sys.modules['config_files']
+    gc.collect()
+    return active_days
 
 
 def save_active_days(active_days):
-    if tuple(get_active_days()) == active_days:
-        # Don't save if same active days already exists
-        return
+    from config_files import save_py_config
+    save_py_config(module_name=_ACTIVE_DAYS_PY_CFG_NAME, value=active_days)
 
-    with open(_ACTIVE_DAYS_FILENAME, 'w') as f:
-        f.write(','.join([str(d) for d in active_days]))
+    del save_py_config
+    del sys.modules['config_files']
+    gc.collect()
 
 
-def get_next_timer(current_time):
+def get_next_timer():
     """
     return next next switching point
 
-    :param current_time: machine.RTC().datetime()[4:6]
+    :param current_time: get_localtime()[4:6]
     :return: (bool, (hour, minute))
     """
-    first_time = None
-    for no, time in enumerate(iter_times(restore_timers())):
-        if no == 0:
-            first_time = time
+    import utime
 
-        if time > current_time:
-            return (not bool(no % 2)), time
+    local_time_tuple = utime.localtime()
+    local_epoch = utime.mktime(local_time_tuple)
 
-    if first_time:
-        # After the last switching point,
-        # the next day is switched on again
-        # at the first switching point.
-        return True, first_time
+    local_time_prefix = local_time_tuple[:3]  # year, month, mday
+    local_time_suffix = local_time_tuple[5:]  # second, weekday, yearday
+
+    for turn_on, hours_minutes in iter_times(restore_timers()):
+        # print('Timer:', hours_minutes)
+        timer_epoch = utime.mktime(local_time_prefix + hours_minutes + local_time_suffix)
+
+        if timer_epoch > local_epoch:
+            # print('Next timer:', utime.localtime(timer_epoch))
+            return turn_on, timer_epoch
 
     return None, None
 
 
-def get_ms_until_next_timer(current_time):
-    """
-    return time in ms until the next switching point.
+if __name__ == '__main__':
+    print('test...')
+    from timezone import localtime_isoformat
 
-    :param current_time: machine.RTC().datetime()[4:6]
-    :return: (bool, ms)
-    """
-    turn_on, next_time = get_next_timer(current_time)
-    if turn_on is None:
-        return None, None, None
+    timers = tuple(parse_timers('''
+         6:00 -  7:00
+        19:00 - 20:00
+    '''))
+    print('Overwrite timers with:', timers)
+    save_timers(timers)
 
-    current_time_sec = (current_time[0] * 60) + current_time[1]
-    next_time_sec = (next_time[0] * 60) + next_time[1]
-
-    return turn_on, next_time, (next_time_sec - current_time_sec) * 1000
+    print(localtime_isoformat(sep=' '))
+    turn_on, timer_epoch = get_next_timer()
+    print('get_ms_until_next_timer():', turn_on, timer_epoch)
+    print(localtime_isoformat(sep=' ', epoch=timer_epoch))

@@ -2,7 +2,7 @@ import gc
 import sys
 
 import network
-import utime as time
+import utime
 from pins import Pins
 
 
@@ -43,7 +43,7 @@ def connect2ssid(station, ssid, password, verbose):
             status = station.status()
             if status == network.STAT_GOT_IP:
                 Pins.power_led.on()
-                return time.time()
+                return utime.time()
             elif status == network.STAT_WRONG_PASSWORD:
                 print('Wrong password!')
                 return
@@ -68,11 +68,22 @@ def connect(station, verbose):
     if verbose:
         print('read WiFi config...')
 
-    from get_config import get_config
-    wifi_configs = get_config(key='wifi')
+    # Rename old 'config.json' to new '_config_wifi.json'
+    import os
+    try:
+        os.stat('config.json')  # Check if exists
+    except OSError:
+        pass
+    else:
+        os.rename('config.json', '_config_wifi.json')
+    del os
+    gc.collect()
 
-    del get_config
-    del sys.modules['get_config']
+    from config_files import get_json_config
+    wifi_configs = get_json_config(key='wifi')
+
+    del get_json_config
+    del sys.modules['config_files']
     gc.collect()
 
     known_ssid = get_known_ssid(station, wifi_configs, verbose=verbose)

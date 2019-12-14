@@ -14,6 +14,7 @@ def lint_and_compile(src_path, bdist_path):
     create_bdist(
         src_path=src_path,
         dst_path=bdist_path,
+        ignore_files=('__init__.py',),
         copy_files=(
             # Theses files will be not compiled.
             # They are just copied from src to bdist.

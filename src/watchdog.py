@@ -2,8 +2,7 @@ import gc
 
 import constants
 import machine
-import utime as time
-from rtc import get_rtc_value, rtc_isoformat
+import utime
 
 
 class Watchdog:
@@ -32,13 +31,16 @@ class Watchdog:
         gc.collect()
 
         self.check_count += 1
-        self.last_check = rtc_isoformat()
+
+        from timezone import localtime_isoformat
+        self.last_check = localtime_isoformat()
 
     def feed(self):
-        self.last_feed = time.time()
+        self.last_feed = utime.time()
 
     def __str__(self):
         # get reset info form RTC RAM:
+        from rtc import get_rtc_value
         reset_count = get_rtc_value(constants.RTC_KEY_WATCHDOG_COUNT, 0)
         reset_reason = get_rtc_value(constants.RTC_KEY_RESET_REASON)
         return (
@@ -49,6 +51,6 @@ class Watchdog:
             ' last reset reason: %s'
         ) % (
             self.last_check, self.check_count,
-            (time.time() - self.last_feed),
+            (utime.time() - self.last_feed),
             reset_count, reset_reason,
         )

@@ -3,7 +3,7 @@
 from template import render
 
 
-async def get_menu(server, reader, writer, url):
+async def get_menu(server, reader, writer, querystring, body):
     await server.send_html_page(
         writer,
         filename='webswitch.html',

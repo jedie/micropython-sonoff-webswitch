@@ -2,7 +2,7 @@ import sys
 
 import constants
 import machine
-import utime as time
+import utime
 from rtc import update_rtc_dict
 
 
@@ -14,9 +14,9 @@ class ResetDevice:
         update_rtc_dict(data={constants.RTC_KEY_RESET_REASON: reason})
 
     def reset(self):
-        time.sleep(1)
+        utime.sleep(1)
         machine.reset()
-        time.sleep(1)
+        utime.sleep(1)
         sys.exit()
 
     def schedule(self, period=2000):

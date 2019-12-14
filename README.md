@@ -11,6 +11,7 @@ Tested devices:
 
 * web interface
 * schedule multiple timers
+* Handle time zones (set you time zone via web page)
 * OTA updates (currently without directory support)
 * turn the switch on/off by the web page or the device button
 * checkbox for each day of the week where timers are active
@@ -33,13 +34,10 @@ Things that will be implement in the near feature:
 * NTP sync via button on web page
 * Insert new WiFi settings via web page
 * timer toggle flag to reverse: power is switched off during the specified periods
-* display local time to UTC offset via JavaScript
-* recalculate UTC timestamp on the page into local time via JavaScript
 
 further away:
 
 * different timers for every weekday
-* Handling time zones completely invisible in the background.
 * Support directories via OTA Updates
 
 
@@ -64,12 +62,12 @@ Very good information to get started can you found here: https://github.com/tsaa
 * Flash last MicroPython firmware to your device, see: http://docs.micropython.org/en/latest/esp8266/tutorial/intro.html
 
 
-### config.json
+### WiFi config
 
 To connect the device with your WIFI it needs the SSID/password.
 Several WLAN network access data can be specified.
 
-Copy and edit [config-example.json](https://github.com/jedie/micropython-sonoff-webswitch/blob/master/config-example.json) to `src/config.json`
+Copy and edit [config-example.json](https://github.com/jedie/micropython-sonoff-webswitch/blob/master/config-example.json) to `src/_config_wifi.json`
 
 
 ## quickstart
@@ -81,8 +79,6 @@ Clone the sources, and setup virtualenv via `pipenv`:
 ~/micropython-sonoff-webswitch$ pipenv sync
 ~/micropython-sonoff-webswitch$ pipenv run start_ota_server.py
 ```
-
-* Create a `src/config.json` with your WiFi SSID/password ([See example file](https://github.com/jedie/micropython-sonoff-webswitch/blob/master/config.json))
 
 ### bootstrap
 
@@ -113,13 +109,21 @@ To start the `OTA Server`, do this:
 
 If server runs: reboot device and look to the output of the OTA server.
 
+The OTA update implementation does:
+
+* send only new/changed files
+* remove existing `.py` file on the device if `.mpy` file was send
+* replace existing files only after correct sha hash verify
+
+
 ## project structure
 
 * `./bdist/` - Contains the compiled files that will be uploaded to the device.
 * `./helpers/` - Some device tests/helper scripts for developing (normaly not needed)
+* `./mpy_tests/` - tests that can be run on micropython device (will be also run by pytest with mocks)
 * `./ota/` - source code of the OTA server
 * `./src/` - device source files
-* `./tests/` - some pytest files
+* `./tests/` - some pytest files (run on host with CPython)
 * `./utils/` - utils for local run (compile, code lint, sync with mpycntrl)
 * `./start_ota_server.py` - Starts the local OTA server (will compile, lint the `src` files and create `bdist`)
 * `./upload_files.py` - Upload files via USB (will compile, lint the `src` files and create `bdist`)

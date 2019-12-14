@@ -31,14 +31,14 @@ def compile(src_path, dst_path, skip_files):
         )
 
 
-def create_bdist(src_path, dst_path, copy_files, copy_file_pattern):
+def create_bdist(src_path, dst_path, ignore_files, copy_files, copy_file_pattern):
     src_path = src_path.resolve()
     dst_path = dst_path.resolve()
     dst_path.mkdir(exist_ok=True)
     compile(
         src_path=src_path,
         dst_path=dst_path,
-        skip_files=copy_files
+        skip_files=list(copy_files) + list(ignore_files),
     )
     print(' -' * 50)
     print('Copy files...')
@@ -48,6 +48,9 @@ def create_bdist(src_path, dst_path, copy_files, copy_file_pattern):
         files2copy.update(set(src_path.glob(pattern)))
 
     for file_path in files2copy:
+        if file_path.name in ignore_files:
+            continue
+
         file_path = file_path.resolve().relative_to(cwd)
         output_path = Path(dst_path, file_path.name).relative_to(cwd)
         print(f' + {file_path} -> {output_path}')

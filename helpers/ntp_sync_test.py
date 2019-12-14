@@ -1,13 +1,24 @@
-import sys
+import machine
+import utime
+from ntp import ntp_sync
 
-from rtc import Rtc
+
+def print_times():
+    # year, month, day, weekday, hours, minutes, seconds, ???
+    print('machine.RTC().datetime():', machine.RTC().datetime())
+
+    # http://docs.micropython.org/en/latest/library/uutime.html#uutime.localtime
+    # year, month, mday, hour, minute, second, weekday, yearday
+    print('utime.localtime().......:', utime.localtime())
+
 
 if __name__ == '__main__':
-    print('sys.modules:', ', '.join(sys.modules.keys()))
-    from ntp import ntp_sync
+    ntp_sync()
 
-    ntp_sync(rtc=Rtc())  # update RTC via NTP
-    del ntp_sync
-    del sys.modules['ntp']
+    print_times()
 
-    print('sys.modules:', ', '.join(sys.modules.keys()))
+    rtc = machine.RTC()
+    rtc.datetime((2017, 8, 23, 1, 12, 48, 0, 0))  # set a specific date and time
+    print(machine.RTC().datetime())
+
+    print_times()

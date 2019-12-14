@@ -2,13 +2,13 @@ import gc
 import sys
 
 import machine
+import utime
 from pins import Pins
 
 
 class PowerTimer:
     last_update = None
-    next_time = None
-    next_time_ms = None
+    next_timer_epoch = None
     turn_on = None  # turn power switch next time on or off ?
     active = None  # are timers activated ?
     today_active = None  # Is the timer active this weekday ?
@@ -24,36 +24,72 @@ class PowerTimer:
         gc.collect()
 
     def _timer_callback(self, timer):
+        print('Power timer called!')
         assert self.active is True
         if self.turn_on:
+            print('switch on')
             Pins.relay.on()
         else:
+            print('switch off')
             Pins.relay.off()
 
-    def reset(self):
-        self.timer.deinit()
-        self.next_time = None
-        self.next_time_ms = None
-        self.turn_on = None
-        self.active = False
+    def timer_hour_min(self):
+        timer_tuple = utime.localtime(self.next_timer_epoch)
+        # year, month, mday, hour, minute, second, weekday, yearday
+        return timer_tuple[3], timer_tuple[4]
+
+    @property
+    def timer_in_sec(self):
+        if self.next_timer_epoch is not None:
+            return self.next_timer_epoch - utime.time()
+        return -1
+
+    @property
+    def missed_timer(self):
+        if self.next_timer_epoch is not None:
+            return self.timer_in_sec <= 0
+
+    def human_timer_duration(self):
+        sec = self.timer_in_sec
+        if sec > (2 * 60 * 60):
+            return '%i h' % (sec / 60 / 60)
+        if sec >= 60:
+            return '%i min' % (sec / 60)
+        return '%i sec' % sec
+
+    def info_text(self):
+        if not self.active:
+            return 'Power timer is deactivated. (Last update: %s)' % self.last_update
+
+        if self.missed_timer:
+            self.next_timer_epoch = None
+            return 'missed timer (Last update: %s)' % self.last_update
+
+        if self.today_active is False:
+            return 'Power timer is not active today. (Last update: %s)' % self.last_update
+
+        if self.next_timer_epoch is None:
+            return 'No switch scheduled. (Last update: %s)' % self.last_update
+
+        timer_hour, timer_min = self.timer_hour_min()
+        return 'Switch %s in %s at %02i:%02i h. (Last update: %s)' % (
+            'on' if self.turn_on else 'off',
+            self.human_timer_duration(),
+            timer_hour, timer_min,
+            self.last_update
+        )
 
     def __str__(self):
-        if not self.active:
-            return 'Power timer is deactivated.'
-
-        if self.next_time is not None and self.next_time_ms < 1:
-            self.reset()
-            return 'missed timer'
-
-        if not self.today_active:
-            return 'Power timer is not active today.'
-
-        if self.turn_on is None:
-            return 'No switch scheduled. (Last update: %s)' % self.last_update
-        else:
-            return 'Switch %s in %i sec. at %02i:%02i h. (Last update: %s)' % (
-                'on' if self.turn_on else 'off',
-                (self.next_time_ms / 1000),
-                self.next_time[0], self.next_time[1],
-                self.last_update
-            )
+        return (
+            'last_update=%r,'
+            ' next_timer_epoch=%r,'
+            ' turn_on=%r,'
+            ' active=%r,'
+            ' today_active=%r'
+        ) % (
+            self.last_update,
+            self.next_timer_epoch,
+            self.turn_on,
+            self.active,
+            self.today_active,
+        )

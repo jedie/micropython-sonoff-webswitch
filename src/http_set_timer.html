@@ -1,7 +1,6 @@
 <fieldset><legend>Automatic timer:</legend>
     <form action="/set_timer/submit/">
         <textarea name="timers" rows="6" cols="13">{timers}</textarea>
-        <p><small>(All times must be <strong>in UTC</strong>!)</small></p>
         <p>
             <input type="checkbox" id="d0" name="d0" {d0}><label for="d0">Monday</label>
             <input type="checkbox" id="d1" name="d1" {d1}><label for="d1">Tuesday</label>
@@ -17,7 +16,7 @@
         </select><br>
         <input type="submit">
     </form>
-    <a href="/main/menu"><button class="button">Cancel</button></a>
+    <a href="/main/menu/"><button class="button">Cancel</button></a>
 </fieldset>
 <fieldset><legend>Example:</legend>
 <textarea rows="2" cols="13" disabled>

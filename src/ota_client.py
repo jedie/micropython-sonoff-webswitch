@@ -12,7 +12,7 @@ import uasyncio as asyncio
 import ubinascii as binascii
 import uhashlib as hashlib
 import uos as os
-import utime as time
+import utime
 from micropython import const
 
 sys.modules.clear()
@@ -31,9 +31,9 @@ _FILE_TYPE = const(0x8000)
 def reset(reason):
     for no in range(3, 0, -1):
         print('%i Reset because: %s' % (no, reason))
-        time.sleep(1)
+        utime.sleep(1)
     machine.reset()
-    time.sleep(1)
+    utime.sleep(1)
     sys.exit(-1)
 
 
@@ -117,7 +117,7 @@ class OtaUpdate:
     async def command_exit(self, reader, writer):
         await self.command_send_ok(reader, writer)
         self.timeout.deinit()
-        time.sleep(1)  # Don't close connection before server processed 'OK'
+        utime.sleep(1)  # Don't close connection before server processed 'OK'
         sys.exit(0)
 
     async def command_chunk_size(self, reader, writer):
@@ -185,16 +185,9 @@ class OtaUpdate:
             hexdigest = binascii.hexlify(sha256.digest()).decode('utf-8')
             if hexdigest == file_sha256:
                 print('Hash OK:', hexdigest)
-                try:
-                    os.remove(file_name)
-                except OSError:
-                    pass  # e.g.: new file that doesn't exist, yet.
-
-                os.rename(temp_file_name, file_name)
-
                 print('Compare written file content', end=' ')
                 sha256 = hashlib.sha256()
-                with open(file_name, 'rb') as f:
+                with open(temp_file_name, 'rb') as f:
                     while True:
                         count = f.readinto(_BUFFER, _CHUNK_SIZE)
                         if count < _CHUNK_SIZE:
@@ -206,6 +199,20 @@ class OtaUpdate:
                 hexdigest = binascii.hexlify(sha256.digest()).decode('utf-8')
                 if hexdigest == file_sha256:
                     print('Hash OK:', hexdigest)
+                    try:
+                        os.remove(file_name)
+                    except OSError:
+                        pass  # e.g.: new file that doesn't exist, yet.
+
+                    os.rename(temp_file_name, file_name)
+
+                    if file_name.endswith('.mpy'):
+                        py_filename = '%s.py' % file_name.rsplit('.', 1)[0]
+                        try:
+                            os.remove(py_filename)
+                        except OSError:
+                            pass  # *.py file doesn't exists
+
                     await self.command_send_ok(reader, writer)
                     return
 

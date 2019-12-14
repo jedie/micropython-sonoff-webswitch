@@ -4,8 +4,19 @@ import json
 from json import JSONDecodeError
 from pprint import pprint
 
-import serial
 from mpycntrl import MPyControl
+from pttydev import PseudoTTY, pttyopen
+
+
+def get_pttyopen():
+    return pttyopen(
+        port='/dev/ttyUSB0',
+        baudrate=115200,
+        bytesize=8,
+        parity='N',
+        stopbits=1,
+        timeout=0.35,
+    )
 
 
 class MyControl(MPyControl):
@@ -13,7 +24,7 @@ class MyControl(MPyControl):
         cmd = f"""
             import uos, json, uhashlib, ubinascii
             data={{}}
-            chunk_size = const(512)
+            chunk_size = const(1024)
             buffer = bytearray(chunk_size)
             for name, file_type, inode, size in uos.ilistdir('{path}'):
                 if file_type != 0x8000:
@@ -49,7 +60,6 @@ class MyControl(MPyControl):
 
 
 class SyncToDevice:
-    send_file_timeout = 1
 
     def __init__(self, src_path, verbose=False):
         self.src_path = src_path.resolve()
@@ -57,24 +67,35 @@ class SyncToDevice:
 
         if self.verbose:
             print('Verbose mode activated.')
+            print(f'\nMPyControl v{MPyControl.VERSION}\n')
 
         assert self.src_path.is_dir(), 'Directory not found: %s' % self.src_path
 
         self.files_info = None  # Requested in self.update_device()
 
     def update_device(self):
-        port = '/dev/ttyUSB0'
-        baud = 115200
-        bytesize = 8
-        parity = 'N'
-        stopbits = 1
-        timeout = 0.35
 
-        with serial.Serial(port=port, baudrate=baud,
-                           bytesize=bytesize, parity=parity, stopbits=stopbits,
-                           timeout=timeout) as ser:
+        tty = PseudoTTY(
+            pttyopen=get_pttyopen,
 
-            mpyc = MyControl(ser, debug=self.verbose, trace=False)
+            timeout=2,
+            block_size=512,
+            reconnect_delay=1,
+
+            # trace_on=True,
+            # debug=True,
+            # thrd_debug=True,
+            # thrd_trace_on=True
+
+            trace_on=False,
+            debug=False,
+            thrd_debug=False,
+            thrd_trace_on=False,
+        )
+
+        with tty.open() as octx:
+            octx.waitready()
+            mpyc = MyControl(octx, debug=self.verbose, trace=False)
 
             # enter raw-repl mode
             r = mpyc.send_cntrl_c()
@@ -108,8 +129,8 @@ class SyncToDevice:
                     continue
 
                 with item.open('rb') as f:
-                    with mpyc.timeout(timeout=self.send_file_timeout):
-                        mpyc.cmd_put(fnam=item.name, content=f.read())
+                    mpyc.cmd_put(fnam=item.name, content=f.read(), blk_size=1024)
+
                 print('-' * 100)
                 updated.append(item)
 
