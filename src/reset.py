@@ -15,7 +15,7 @@ class ResetDevice:
         # Save reason in RTC RAM:
         update_rtc_dict(data={constants.RTC_KEY_RESET_REASON: reason})
 
-    def reset(self, timer):
+    def reset(self, timer=None):
         print('Reset device: %r' % self.reason)
         utime.sleep(1)
         machine.reset()
