@@ -46,15 +46,15 @@ further away:
 
 The Web Page looks like this:
 
-![screenshot 1](https://raw.githubusercontent.com/jedie/jedie.github.io/master/screenshots/WebSwitch/2019-12-14 Sonoff S20 WebServer v0.8.1a.png)
+![screenshot 1](https://raw.githubusercontent.com/jedie/jedie.github.io/master/screenshots/WebSwitch/2019-12-14%20Sonoff%20S20%20WebServer%20v0.8.1a.png)
 
-![screenshot 2](https://raw.githubusercontent.com/jedie/jedie.github.io/master/screenshots/WebSwitch/2019-12-14 Sonoff S20 WebServer v0.8.1b.png)
+![screenshot 2](https://raw.githubusercontent.com/jedie/jedie.github.io/master/screenshots/WebSwitch/2019-12-14%20Sonoff%20S20%20WebServer%20v0.8.1b.png)
 
-![screenshot 3](https://raw.githubusercontent.com/jedie/jedie.github.io/master/screenshots/WebSwitch/2019-12-14 Sonoff S20 WebServer v0.8.1c.png)
+![screenshot 3](https://raw.githubusercontent.com/jedie/jedie.github.io/master/screenshots/WebSwitch/2019-12-14%20Sonoff%20S20%20WebServer%20v0.8.1c.png)
 
-![screenshot 4](https://raw.githubusercontent.com/jedie/jedie.github.io/master/screenshots/WebSwitch/2019-12-14 Sonoff S20 WebServer v0.8.1d.png)
+![screenshot 4](https://raw.githubusercontent.com/jedie/jedie.github.io/master/screenshots/WebSwitch/2019-12-14%20Sonoff%20S20%20WebServer%20v0.8.1d.png)
 
-![screenshot 5](https://raw.githubusercontent.com/jedie/jedie.github.io/master/screenshots/WebSwitch/2019-12-14 Sonoff S20 WebServer v0.8.1e.png)
+![screenshot 5](https://raw.githubusercontent.com/jedie/jedie.github.io/master/screenshots/WebSwitch/2019-12-14%20Sonoff%20S20%20WebServer%20v0.8.1e.png)
 
 
 All existing screenshots can be found here:
