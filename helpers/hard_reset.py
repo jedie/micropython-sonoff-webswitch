@@ -1,5 +1,5 @@
 if __name__ == '__main__':
-    print('Hard reset !')
+    print(' *** Hard reset ! ***')
 
     import machine
     machine.reset()
