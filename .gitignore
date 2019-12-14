@@ -1,5 +1,4 @@
-config.json
-src/config.json
+_config_*.*
 .idea
 /bdist/
 __pycache__
