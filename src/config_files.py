@@ -84,7 +84,7 @@ def save_py_config(module_name, value):
     file_name = _PY_FILE_PATTERN % module_name
     with open(file_name, 'w') as f:
         print('Store in %r: %r' % (file_name, value))
-        if isinstance(value, (int, float)):
+        if isinstance(value, int):
             f.write('from micropython import const\n')
             f.write('%s = const(%r)' % (_PY_VALUE_ATTRIBUTE_NAME, value))
         else:

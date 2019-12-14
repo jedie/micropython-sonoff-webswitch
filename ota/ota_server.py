@@ -190,10 +190,16 @@ class OtaServer:
 
         files_info = {}
         for file_info in data.split('\r\n'):
-            name, size, hash = file_info.split('\r')
-            size = int(size)
-            print(f'{name:25s} {size:4} Bytes - SHA256: {hash}')
-            files_info[name] = (size, hash)
+            try:
+                name, size, hash = file_info.split('\r')
+            except ValueError:
+                # e.g.: Device is completely empty
+                print(f'Error in file info: {file_info!r}')
+                print('Skip.')
+            else:
+                size = int(size)
+                print(f'{name:25s} {size:4} Bytes - SHA256: {hash}')
+                files_info[name] = (size, hash)
         return files_info
 
     def client_file_outdated(self, file_path):

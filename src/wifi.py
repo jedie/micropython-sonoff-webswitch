@@ -4,7 +4,6 @@ import sys
 import network
 import utime
 from micropython import const
-from pins import Pins
 
 _NTP_SYNC_WAIT_TIME_SEC = const(1 * 60 * 60)  # sync NTP every 1 h
 _MIN_TIME_EPOCH = const(599616000)  # epoch 1.1.2019
@@ -21,6 +20,7 @@ class WiFi:
     verbose = True
 
     def __init__(self):
+        from pins import Pins
         Pins.power_led.off()
 
         print('Setup WiFi interfaces')
@@ -33,12 +33,14 @@ class WiFi:
         if not self.station.isconnected():
             if self.verbose:
                 print('Not connected to station!')
+            from pins import Pins
             Pins.power_led.off()
             return False
         else:
             self.connected_time = utime.time()
             if self.verbose:
                 print('Connected to station IP/netmask/gw/DNS addresses:', self.station.ifconfig())
+            from pins import Pins
             Pins.power_led.on()
 
             if self.access_point.active():

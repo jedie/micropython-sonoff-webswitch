@@ -3,11 +3,11 @@ import sys
 
 import network
 import utime
-from pins import Pins
 
 
 def get_known_ssid(station, wifi_configs, verbose):
     print('Scan WiFi...')
+    from pins import Pins
 
     known_ssid = None
     for no in range(3):
@@ -31,6 +31,7 @@ def get_known_ssid(station, wifi_configs, verbose):
 
 
 def connect2ssid(station, ssid, password, verbose):
+    from pins import Pins
     for no in range(0, 3):
         if verbose:
             print('PHY mode: %s' % network.phy_mode())
@@ -63,6 +64,7 @@ def connect2ssid(station, ssid, password, verbose):
 
 
 def connect(station, verbose):
+    from pins import Pins
     Pins.power_led.flash(sleep=0.1, count=5)
 
     if verbose:
@@ -86,6 +88,9 @@ def connect(station, verbose):
     del sys.modules['config_files']
     gc.collect()
 
+    if wifi_configs is None:
+        raise RuntimeError('Empty WiFi settings! Please upload you WiFi config file!')
+
     try:
         known_ssid = get_known_ssid(station, wifi_configs, verbose=verbose)
     except OSError as e:
@@ -102,3 +107,9 @@ def connect(station, verbose):
             password=wifi_configs[known_ssid],
             verbose=verbose
         )
+
+
+if __name__ == '__main__':
+    sta_if = network.WLAN(network.STA_IF)
+    sta_if.active(True)
+    connect(station=sta_if, verbose=True)

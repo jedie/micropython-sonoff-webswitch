@@ -1,13 +1,14 @@
+import sys
+
+import machine
+import uos
 
 
 async def get_show(server, reader, writer, querystring, body):
     from template import render
     from rtc import get_dict_from_rtc
-    import uos as os
-    import sys
-    import machine
 
-    uname = os.uname()
+    uname = uos.uname()
 
     await server.send_html_page(
         writer,

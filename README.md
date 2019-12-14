@@ -69,6 +69,20 @@ All existing screenshots can be found here:
 
 Very good information to get started can you found here: https://github.com/tsaarni/mqtt-micropython-smartsocket
 
+
+## quickstart
+
+Clone the sources, and setup virtualenv via `pipenv`:
+```bash
+~$ git clone https://github.com/jedie/micropython-sonoff-webswitch.git
+~$ cd micropython-sonoff-webswitch
+~/micropython-sonoff-webswitch$ pipenv sync
+~/micropython-sonoff-webswitch$ pipenv run start_ota_server.py
+```
+
+
+## flash micropython
+
 * Flash last MicroPython firmware to your device, see: http://docs.micropython.org/en/latest/esp8266/tutorial/intro.html
 
 overview:
@@ -84,7 +98,7 @@ overview:
 Notes: In my experience flashing the S20 needs `-fs 1MB -fm dout 0x0`.
 
 
-### WiFi config
+## WiFi config
 
 To connect the device with your WIFI it needs the SSID/password.
 Several WLAN network access data can be specified.
@@ -92,19 +106,14 @@ Several WLAN network access data can be specified.
 Copy and edit [config-example.json](https://github.com/jedie/micropython-sonoff-webswitch/blob/master/config-example.json) to `src/_config_wifi.json`
 
 
-## quickstart
+## bootstrap
 
-Clone the sources, and setup virtualenv via `pipenv`:
-```bash
-~$ git clone https://github.com/jedie/micropython-sonoff-webswitch.git
-~$ cd micropython-sonoff-webswitch
-~/micropython-sonoff-webswitch$ pipenv sync
-~/micropython-sonoff-webswitch$ pipenv run start_ota_server.py
-```
+If micropython is on the device, only the sources and your WiFi credentials file needs to be uploaded.
 
-### bootstrap
+This 'bootstrapping' can be done in different ways.
 
-Bootstrap a new, fresh, empty device:
+
+### bootstrap via USB
 
 Connect device via TTL-USB-converter to your PC and run [upload_files.py](https://github.com/jedie/micropython-sonoff-webswitch/blob/master/upload_files.py)
 
@@ -113,6 +122,27 @@ This script will do this:
 * compile `src` files with [mpy-cross](https://pypi.org/project/mpy-cross/) to `bdist`
 * upload all files from `bdist` to the device via [mpycntrl](https://github.com/kr-g/mpycntrl)
 
+The upload is a little bit slow. Bootstrap via WiFi is faster, see below:
+
+
+### bootstrap via WiFi
+
+overview:
+
+* Connect the device to your WiFi network
+* put your `_config_wifi.json` to the root of the device
+* Run `ota_client.py` to upload all `*.mpy` compiled files
+
+I used [thonny](https://github.com/thonny/thonny) for this. With thonny it's easy to upload the config file and execute scripts on the device.
+
+To connect to your WiFi network, edit and run this:
+
+```python
+import network
+sta_if = network.WLAN(network.STA_IF)
+sta_if.active(True)
+sta_if.connect('your-ssid', 'Your-WiFi-Password')
+```
 
 ### OTA updates
 

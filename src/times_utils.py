@@ -1,6 +1,8 @@
 import gc
 import sys
 
+import ure
+import utime
 from micropython import const
 
 _TIMERS_PY_CFG_NAME = 'timers'
@@ -34,8 +36,7 @@ def validate_times(times):
 
 
 def parse_timers(data):
-    import ure as re
-    regex = re.compile(r'^\D*(\d+:\d+)\D+(\d+:\d+)\D*$')
+    regex = ure.compile(r'^\D*(\d+:\d+)\D+(\d+:\d+)\D*$')
     data = data.strip()
 
     last_time = None
@@ -114,7 +115,6 @@ def get_next_timer():
     :param current_time: get_localtime()[4:6]
     :return: (bool, (hour, minute))
     """
-    import utime
 
     local_time_tuple = utime.localtime()
     local_epoch = utime.mktime(local_time_tuple)
@@ -131,20 +131,3 @@ def get_next_timer():
             return turn_on, timer_epoch
 
     return None, None
-
-
-if __name__ == '__main__':
-    print('test...')
-    from timezone import localtime_isoformat
-
-    timers = tuple(parse_timers('''
-         6:00 -  7:00
-        19:00 - 20:00
-    '''))
-    print('Overwrite timers with:', timers)
-    save_timers(timers)
-
-    print(localtime_isoformat(sep=' '))
-    turn_on, timer_epoch = get_next_timer()
-    print('get_ms_until_next_timer():', turn_on, timer_epoch)
-    print(localtime_isoformat(sep=' ', epoch=timer_epoch))
