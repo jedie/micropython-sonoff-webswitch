@@ -23,20 +23,35 @@ class WebServer:
 
         gc.collect()
 
-        from template import render
         from timezone import localtime_isoformat
+        localtime = localtime_isoformat(sep=' ')
+
+        del localtime_isoformat
+        del sys.modules['timezone']
+        gc.collect()
+
+        from device_name import get_device_name
+        device_name = get_device_name()
+
+        del get_device_name
+        del sys.modules['device_name']
+        gc.collect()
+
         from pins import Pins
+        from template import render
+
         content = render(
             filename=filename,
             context={
                 'version': self.version,
+                'device_name': device_name,
                 'state': Pins.relay.state,
                 'next_switch': self.power_timer.info_text(),
                 'message': self.message,
                 'total': alloc + free,
                 'alloc': alloc,
                 'free': free,
-                'localtime': localtime_isoformat(sep=' '),
+                'localtime': localtime,
             },
             content_iterator=content_iterator
         )
