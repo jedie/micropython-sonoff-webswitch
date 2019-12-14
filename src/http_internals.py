@@ -47,6 +47,7 @@ async def get_reset(server, reader, writer, querystring, body):
     from http_utils import send_redirect
     server.message = 'Reset device... Please reload the page in a few seconds.'
 
-    from reset import ResetDevice
-    ResetDevice(reason='Reset via web page').schedule(period=10000)
     await send_redirect(writer, url='/internals/show/')  # reload internal page
+
+    from reset import ResetDevice
+    ResetDevice(reason='Reset via web page').schedule(period=15000)

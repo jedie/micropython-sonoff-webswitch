@@ -3,7 +3,6 @@ import sys
 
 import constants
 import uasyncio as asyncio
-from pins import Pins
 
 
 class WebServer:
@@ -13,11 +12,6 @@ class WebServer:
         self.version = version
         self.message = 'Web server started...'
         self.minimal_modules = tuple(sorted(sys.modules.keys()))
-
-    async def error_redirect(self, writer, message):
-        self.message = str(message)
-        from http_utils import send_redirect
-        await send_redirect(writer)
 
     async def send_html_page(self, writer, filename, content_iterator=None):
         from http_utils import HTTP_LINE_200
@@ -29,19 +23,35 @@ class WebServer:
 
         gc.collect()
 
-        from template import render
         from timezone import localtime_isoformat
+        localtime = localtime_isoformat(sep=' ')
+
+        del localtime_isoformat
+        del sys.modules['timezone']
+        gc.collect()
+
+        from device_name import get_device_name
+        device_name = get_device_name()
+
+        del get_device_name
+        del sys.modules['device_name']
+        gc.collect()
+
+        from pins import Pins
+        from template import render
+
         content = render(
             filename=filename,
             context={
                 'version': self.version,
+                'device_name': device_name,
                 'state': Pins.relay.state,
                 'next_switch': self.power_timer.info_text(),
                 'message': self.message,
                 'total': alloc + free,
                 'alloc': alloc,
                 'free': free,
-                'localtime': localtime_isoformat(sep=' '),
+                'localtime': localtime,
             },
             content_iterator=content_iterator
         )
@@ -73,53 +83,18 @@ class WebServer:
         del sys.modules[module_name]
         gc.collect()
 
-    async def parse_request(self, reader):
-        method, url, http_version = (await reader.readline()).decode().strip().split()
-        # print(http_version)
-
-        if '?' in url:
-            url, querystring = url.split('?', 1)
-        else:
-            querystring = None
-
-        # Consume all headers but use only content-length
-        content_length = None
-        while True:
-            line = await reader.readline()
-            if line == b'\r\n':
-                break  # header ends
-
-            try:
-                header, value = line.split(b':', 1)
-            except ValueError:
-                break
-
-            value = value.strip()
-
-            if header == b'Content-Length':
-                content_length = int(value.decode())
-
-            # print(header, value)
-
-        print('content length:', content_length)
-
-        # get body
-        if content_length:
-            body = (await reader.read(content_length)).decode()
-        else:
-            body = None
-
-        return method, url, querystring, body
-
     async def send_response(self, reader, writer):
         print('\nRequest from:', writer.get_extra_info('peername'))
 
+        from http_utils import parse_request
         try:
-            method, url, querystring, body = await self.parse_request(reader)
+            method, url, querystring, body = await parse_request(reader)
         except ValueError as e:
             self.message = str(e)
             url = '/'  # redirect
 
+        del parse_request
+        del sys.modules['http_utils']
         gc.collect()
 
         if url == '/':
@@ -138,13 +113,16 @@ class WebServer:
         gc.collect()
 
     async def request_handler(self, reader, writer):
+        from pins import Pins
         Pins.power_led.off()
         gc.collect()
         try:
             await self.send_response(reader, writer)
         except Exception as e:
             sys.print_exception(e)
-            await self.error_redirect(writer, message=e)
+            self.message = str(e)
+            from http_utils import send_redirect
+            await send_redirect(writer)
             await asyncio.sleep(3)
             gc.collect()
             if isinstance(e, MemoryError):
@@ -167,6 +145,7 @@ class WebServer:
 
         gc.collect()
 
+        from pins import Pins
         Pins.power_led.on()
         print(self.message)
         loop.run_forever()

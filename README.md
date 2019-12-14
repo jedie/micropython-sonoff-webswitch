@@ -12,6 +12,7 @@ Tested devices:
 * web interface
 * schedule multiple timers
 * Handle time zones (set you time zone via web page)
+* Display an editable device name (Helpful if you have more than one device ;) )
 * OTA updates (currently without directory support)
 * turn the switch on/off by the web page or the device button
 * checkbox for each day of the week where timers are active
@@ -31,7 +32,6 @@ The device will do this on every boot:
 
 Things that will be implement in the near feature:
 
-* NTP sync via button on web page
 * Insert new WiFi settings via web page
 * timer toggle flag to reverse: power is switched off during the specified periods
 
@@ -43,13 +43,23 @@ further away:
 
 ## Screenshot
 
+
 The Web Page looks like this:
 
-![screenshot 1](https://raw.githubusercontent.com/jedie/jedie.github.io/master/screenshots/WebSwitch/2019-12-07%20Sonoff%20S20%20WebServer%20v0.5.1a.png)
+![screenshot 1](https://raw.githubusercontent.com/jedie/jedie.github.io/master/screenshots/WebSwitch/2019-12-14 Sonoff S20 WebServer v0.8.1a.png)
 
-![screenshot 2](https://raw.githubusercontent.com/jedie/jedie.github.io/master/screenshots/WebSwitch/2019-12-07%20Sonoff%20S20%20WebServer%20v0.5.1b.png)
+![screenshot 2](https://raw.githubusercontent.com/jedie/jedie.github.io/master/screenshots/WebSwitch/2019-12-14 Sonoff S20 WebServer v0.8.1b.png)
 
-![screenshot 3](https://raw.githubusercontent.com/jedie/jedie.github.io/master/screenshots/WebSwitch/2019-12-07%20Sonoff%20S20%20WebServer%20v0.5.1c.png)
+![screenshot 3](https://raw.githubusercontent.com/jedie/jedie.github.io/master/screenshots/WebSwitch/2019-12-14 Sonoff S20 WebServer v0.8.1c.png)
+
+![screenshot 4](https://raw.githubusercontent.com/jedie/jedie.github.io/master/screenshots/WebSwitch/2019-12-14 Sonoff S20 WebServer v0.8.1d.png)
+
+![screenshot 5](https://raw.githubusercontent.com/jedie/jedie.github.io/master/screenshots/WebSwitch/2019-12-14 Sonoff S20 WebServer v0.8.1e.png)
+
+
+All existing screenshots can be found here:
+
+* [jedie.github.io/blob/master/screenshots/WebSwitch/](https://github.com/jedie/jedie.github.io/blob/master/screenshots/WebSwitch/README.creole)
 
 
 ## prepare

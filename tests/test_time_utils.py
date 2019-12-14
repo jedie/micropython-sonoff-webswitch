@@ -29,7 +29,6 @@ class ParseTimesTestCase(MicropythonBaseTestCase):
         )
 
     def test_parse_timers2(self):
-        self.assertRaises(ValueError)
         assert tuple(parse_timers('''
             1:23 4:56
             Foo 19:00 X 20:00 Bar
@@ -37,6 +36,21 @@ class ParseTimesTestCase(MicropythonBaseTestCase):
             ((1, 23), (4, 56)),
             ((19, 0), (20, 0))
         )
+
+    def test_parse_timers_not_sequential1(self):
+        with self.assertRaises(ValueError) as cm:
+            tuple(parse_timers('''
+                2:00 - 1:00
+            '''))
+        self.assertEqual(cm.exception.args[0], 'Times in line 1 are not sequential!')
+
+    def test_parse_timers_not_sequential2(self):
+        with self.assertRaises(ValueError) as cm:
+            tuple(parse_timers('''
+                10:00 - 12:00
+                10:30 - 13:00
+            '''))
+        self.assertEqual(cm.exception.args[0], 'Times in line 2 are not sequential!')
 
     def test_parse_timers_error1(self):
         with self.assertRaises(ValueError) as cm:
