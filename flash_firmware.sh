@@ -24,4 +24,4 @@ set -ex
 FIRMWARE='esp8266-20190529-v1.11.bin'
 
 #pipenv run esptool.py --port /dev/ttyUSB0 erase_flash
-pipenv run esptool.py --port /dev/ttyUSB0 --baud 460800 write_flash --flash_size=detect 0 ${FIRMWARE}
+pipenv run esptool.py --port /dev/ttyUSB0 --baud 460800 write_flash -fs 1MB -fm dout 0x0 ${FIRMWARE}
