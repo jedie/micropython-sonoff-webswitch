@@ -1,3 +1,4 @@
+import constants
 import uos
 from micropython import const
 
@@ -6,7 +7,6 @@ _MIME_TYPES = {
     'css': b'text/css',
 }
 _CONTENT_TYPE = b'Content-Type: %s\r\n'
-_CHUNK_SIZE = const(512)
 
 
 async def send_file(server, reader, writer, url):
@@ -35,11 +35,10 @@ async def send_file(server, reader, writer, url):
         await writer.awrite(HTTP_LINE_CACHE)
         await writer.awrite(b'\r\n')
 
-        buffer = bytearray(_CHUNK_SIZE)
         while True:
-            count = f.readinto(buffer, _CHUNK_SIZE)
-            if count < _CHUNK_SIZE:
-                await writer.awrite(buffer[:count])
+            count = f.readinto(constants.BUFFER, constants.CHUNK_SIZE)
+            if count < constants.CHUNK_SIZE:
+                await writer.awrite(constants.BUFFER[:count])
                 break
             else:
-                await writer.awrite(buffer)
+                await writer.awrite(constants.BUFFER)
