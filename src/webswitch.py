@@ -14,8 +14,7 @@ class WebServer:
         self.minimal_modules = tuple(sorted(sys.modules.keys()))
 
     async def send_html_page(self, writer, filename, content_iterator=None):
-        from http_utils import HTTP_LINE_200
-        await writer.awrite(HTTP_LINE_200)
+        await writer.awrite(constants.HTTP_LINE_200)
         await writer.awrite(b'Content-type: text/html; charset=utf-8\r\n\r\n')
 
         alloc = gc.mem_alloc() / 1024
