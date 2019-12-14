@@ -38,6 +38,7 @@ def parse_timers(data):
     regex = re.compile(r'^\D*(\d+:\d+)\D+(\d+:\d+)\D*$')
     data = data.strip()
 
+    last_time = None
     for no, line in enumerate(data.split('\n'), 1):
         line = line.strip()
         if not line:
@@ -48,7 +49,15 @@ def parse_timers(data):
             print('Error in: %r' % line)
             raise ValueError('Wrong time in line %i' % no)
 
-        yield (parse_time(match.group(1)), parse_time(match.group(2)))
+        start_time = parse_time(match.group(1))
+        end_time = parse_time(match.group(2))
+
+        if start_time >= end_time or (last_time is not None and start_time <= last_time):
+            print('Error in: %r' % line)
+            raise ValueError('Times in line %i are not sequential!' % no)
+
+        last_time = end_time
+        yield (start_time, end_time)
 
 
 def pformat_timers(times):
