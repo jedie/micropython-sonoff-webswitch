@@ -3,7 +3,6 @@ import sys
 
 import machine
 import utime
-from pins import Pins
 
 
 class PowerTimer:
@@ -26,6 +25,7 @@ class PowerTimer:
     def _timer_callback(self, timer):
         print('Power timer called!')
         assert self.active is True
+        from pins import Pins
         if self.turn_on:
             print('switch on')
             Pins.relay.on()

@@ -3,7 +3,6 @@ import sys
 import constants
 import machine
 import utime
-from rtc import update_rtc_dict
 
 
 class ResetDevice:
@@ -12,6 +11,7 @@ class ResetDevice:
 
         self.reason = reason
 
+        from rtc import update_rtc_dict
         # Save reason in RTC RAM:
         update_rtc_dict(data={constants.RTC_KEY_RESET_REASON: reason})
 

@@ -1,7 +1,6 @@
 import gc
 
 import utime
-from pins import Pins
 
 
 def get_debounced_value(pin):
@@ -25,6 +24,7 @@ class Button:
 
     def irq_handler(self, pin):
         gc.collect()
+        from pins import Pins
         Pins.power_led.off()
         button_value = get_debounced_value(pin)
         gc.collect()

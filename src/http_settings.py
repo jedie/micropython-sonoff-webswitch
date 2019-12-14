@@ -1,8 +1,6 @@
 import gc
 import sys
 
-from template import render
-
 
 async def get_wifi(server, reader, writer, querystring, body):
     """
@@ -21,6 +19,7 @@ async def get_wifi(server, reader, writer, querystring, body):
             '%s: %s<br>' % (key, repr(value[0] + '*' * (len(value) - 2) + value[-1]))
         )
 
+    from template import render
     await server.send_html_page(
         writer,
         filename='webswitch.html',
@@ -42,6 +41,7 @@ async def get_set_name(server, reader, writer, querystring, body, device_name=No
         from device_name import get_device_name
         device_name = get_device_name()
 
+    from template import render
     await server.send_html_page(
         writer,
         filename='webswitch.html',
@@ -81,6 +81,7 @@ async def post_set_name(server, reader, writer, querystring, body):
 
 async def get_set_timezone(server, reader, writer, querystring, body):
     from timezone import restore_timezone
+    from template import render
     await server.send_html_page(
         writer,
         filename='webswitch.html',

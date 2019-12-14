@@ -2,7 +2,7 @@ import gc
 import sys
 
 import constants
-import uasyncio as asyncio
+import uasyncio
 
 
 class WebServer:
@@ -123,7 +123,7 @@ class WebServer:
             self.message = str(e)
             from http_utils import send_redirect
             await send_redirect(writer)
-            await asyncio.sleep(3)
+            await uasyncio.sleep(3)
             gc.collect()
             if isinstance(e, MemoryError):
                 from reset import ResetDevice
@@ -135,12 +135,12 @@ class WebServer:
     async def feed_watchdog(self):
         sleep_time = int(constants.WATCHDOG_TIMEOUT / 2)
         while True:
-            await asyncio.sleep(sleep_time)
+            await uasyncio.sleep(sleep_time)
             self.watchdog.feed()
 
     def run(self):
-        loop = asyncio.get_event_loop()
-        loop.create_task(asyncio.start_server(self.request_handler, '0.0.0.0', 80))
+        loop = uasyncio.get_event_loop()
+        loop.create_task(uasyncio.start_server(self.request_handler, '0.0.0.0', 80))
         loop.create_task(self.feed_watchdog())
 
         gc.collect()

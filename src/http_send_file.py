@@ -1,5 +1,4 @@
-import uos as os
-from http_utils import HTTP_LINE_200, HTTP_LINE_CACHE, send_error
+import uos
 from micropython import const
 
 _MIME_TYPES = {
@@ -17,14 +16,18 @@ async def send_file(server, reader, writer, url):
 
     mime_type = _MIME_TYPES.get(ext, None)
     if mime_type is None:
+        from http_utils import send_error
         await send_error(writer, reason='File type unknown!', http_code=404)
         return
 
     try:
-        os.stat(url)  # Check if file exists
+        uos.stat(url)  # Check if file exists
     except OSError:
+        from http_utils import send_error
         await send_error(writer, reason='File not found!', http_code=404)
         return
+
+    from http_utils import HTTP_LINE_200, HTTP_LINE_CACHE
 
     with open(url, 'rb') as f:
         await writer.awrite(HTTP_LINE_200)

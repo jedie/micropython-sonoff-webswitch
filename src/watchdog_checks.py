@@ -1,8 +1,8 @@
 import gc
 
 import constants
-import uerrno as errno
-import usocket as socket
+import uerrno
+import usocket
 import utime
 from micropython import const
 
@@ -19,7 +19,7 @@ def reset(reason):
 
 def can_bind_web_server_port():
     server_address = (constants.WEBSERVER_HOST, constants.WEBSERVER_PORT)
-    sock = socket.socket()
+    sock = usocket.socket()
     try:
         sock.settimeout(1)
         try:
@@ -27,7 +27,7 @@ def can_bind_web_server_port():
         except OSError as e:
             # If webserver is running:
             # [Errno 98] EADDRINUSE
-            if e.args[0] == errno.EADDRINUSE:
+            if e.args[0] == uerrno.EADDRINUSE:
                 return False
         else:
             print('ERROR: Web server not running! (Can bind to %s:%i)' % server_address)
