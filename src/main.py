@@ -38,6 +38,8 @@ def main():
         del update_rtc_dict
         del get_rtc_value
         del sys.modules['rtc']
+        del Pins
+        del sys.modules['pins']
         gc.collect()
 
         from webswitch import WebServer  # noqa isort:skip

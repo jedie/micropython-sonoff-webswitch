@@ -3,7 +3,6 @@ import sys
 
 import constants
 import uasyncio as asyncio
-from pins import Pins
 
 
 class WebServer:
@@ -31,6 +30,7 @@ class WebServer:
 
         from template import render
         from timezone import localtime_isoformat
+        from pins import Pins
         content = render(
             filename=filename,
             context={
@@ -138,6 +138,7 @@ class WebServer:
         gc.collect()
 
     async def request_handler(self, reader, writer):
+        from pins import Pins
         Pins.power_led.off()
         gc.collect()
         try:
@@ -167,6 +168,7 @@ class WebServer:
 
         gc.collect()
 
+        from pins import Pins
         Pins.power_led.on()
         print(self.message)
         loop.run_forever()
