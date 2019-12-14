@@ -1,1 +1,1 @@
-from re import compile  # noqa
+from re import compile, sub  # noqa

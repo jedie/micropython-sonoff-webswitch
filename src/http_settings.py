@@ -34,18 +34,21 @@ async def get_wifi(server, reader, writer, querystring, body):
     )
 
 
-async def get_set_name(server, reader, writer, querystring, body):
+async def get_set_name(server, reader, writer, querystring, body, device_name=None):
     """
     set the device name
     """
-    from device_name import get_device_name
+    if device_name is None:
+        from device_name import get_device_name
+        device_name = get_device_name()
+
     await server.send_html_page(
         writer,
         filename='webswitch.html',
         content_iterator=render(
             filename='http_settings_name.html',
             context={
-                'device_name': get_device_name()
+                'device_name': device_name
             },
             content_iterator=None
         ),
@@ -64,12 +67,16 @@ async def post_set_name(server, reader, writer, querystring, body):
 
     new_name = body['name']  # TODO: validate name
     from device_name import save_device_name
-    save_device_name(name=new_name)
+    try:
+        save_device_name(name=new_name)
+    except ValueError as cleaned_name:
+        server.message = 'Error: Device name contains not allowed characters!'
+        await get_set_name(server, reader, writer, querystring, body, device_name=cleaned_name)
+    else:
+        server.message = 'Device name %r saved.' % new_name
 
-    server.message = 'Device name %r saved.' % new_name
-
-    from http_utils import send_redirect
-    await send_redirect(writer, url='/settings/set_name/')
+        from http_utils import send_redirect
+        await send_redirect(writer, url='/settings/set_name/')
 
 
 async def get_set_timezone(server, reader, writer, querystring, body):
