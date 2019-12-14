@@ -13,11 +13,6 @@ class WebServer:
         self.message = 'Web server started...'
         self.minimal_modules = tuple(sorted(sys.modules.keys()))
 
-    async def error_redirect(self, writer, message):
-        self.message = str(message)
-        from http_utils import send_redirect
-        await send_redirect(writer)
-
     async def send_html_page(self, writer, filename, content_iterator=None):
         from http_utils import HTTP_LINE_200
         await writer.awrite(HTTP_LINE_200)
@@ -110,7 +105,9 @@ class WebServer:
             await self.send_response(reader, writer)
         except Exception as e:
             sys.print_exception(e)
-            await self.error_redirect(writer, message=e)
+            self.message = str(e)
+            from http_utils import send_redirect
+            await send_redirect(writer)
             await asyncio.sleep(3)
             gc.collect()
             if isinstance(e, MemoryError):
