@@ -86,7 +86,13 @@ def connect(station, verbose):
     del sys.modules['config_files']
     gc.collect()
 
-    known_ssid = get_known_ssid(station, wifi_configs, verbose=verbose)
+    try:
+        known_ssid = get_known_ssid(station, wifi_configs, verbose=verbose)
+    except OSError as e:
+        print('Error get known SSID:', e)  # e.g.: 'scan failed'
+        Pins.power_led.flash(sleep=0.4, count=20)
+        return
+
     if known_ssid is None:
         print('Skip Wifi connection.')
     else:
