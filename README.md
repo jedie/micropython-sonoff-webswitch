@@ -71,6 +71,18 @@ Very good information to get started can you found here: https://github.com/tsaa
 
 * Flash last MicroPython firmware to your device, see: http://docs.micropython.org/en/latest/esp8266/tutorial/intro.html
 
+overview:
+
+* Press and hold the power button before connecting
+* Connect device via UART-USB converter
+* Now you can release the button.
+* To erase the Flash with esptool, call: `./erase_flash.sh`
+* disconnect the device from PC and reconnect with pressed button again
+* To flash micropython call: `./flash_firmware.sh` (This script will download micropython, if not already done and compares the sha256 hash)
+* disconnect device and reconnect **without** pressing the power button
+
+Notes: In my experience flashing the S20 needs `-fs 1MB -fm dout 0x0`.
+
 
 ### WiFi config
 
