@@ -86,6 +86,9 @@ def connect(station, verbose):
     del sys.modules['config_files']
     gc.collect()
 
+    if wifi_configs is None:
+        raise RuntimeError('Empty WiFi settings! Please upload you WiFi config file!')
+
     try:
         known_ssid = get_known_ssid(station, wifi_configs, verbose=verbose)
     except OSError as e:
@@ -102,3 +105,9 @@ def connect(station, verbose):
             password=wifi_configs[known_ssid],
             verbose=verbose
         )
+
+
+if __name__ == '__main__':
+    sta_if = network.WLAN(network.STA_IF)
+    sta_if.active(True)
+    connect(station=sta_if, verbose=True)
