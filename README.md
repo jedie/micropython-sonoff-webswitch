@@ -7,6 +7,7 @@ Tested devices:
 * Sonoff S20 (Easy to connect. Solder joints prepared.)
 * Sonoff S26 (Harder to connect: Solder joints very small.)
 
+
 ## Features
 
 * web interface
@@ -27,6 +28,18 @@ The device will do this on every boot:
 * get current time via ntp
 * make OTA Update
 * serve web page
+
+Some notes about the timer functionality:
+
+The Device always tries to turn the power ON/OFF based on the current timer. Even after a power failure.
+However, this only works correctly if the current time is set correctly by the RTC.
+The current time is automatically retrieved from the Internet via NTP sync. At boot and also repeated after start.
+Of course, this can only work if the device is connected to the Internet via WiFi ;)
+
+You can "overwrite" the current timer at any time by pressing the button on the device.
+This overwrite will stay until the next timer.
+After a power failure the "overwrite" information is deleted and the timer regulates the power again.
+
 
 ## Roadmap
 
