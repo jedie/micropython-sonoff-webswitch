@@ -103,7 +103,7 @@ Notes: In my experience flashing the S20 needs `-fs 1MB -fm dout 0x0`.
 To connect the device with your WIFI it needs the SSID/password.
 Several WLAN network access data can be specified.
 
-Copy and edit [config-example.json](https://github.com/jedie/micropython-sonoff-webswitch/blob/master/config-example.json) to `src/_config_wifi.json`
+Copy and edit [_config_wifi-example.json](https://github.com/jedie/micropython-sonoff-webswitch/blob/master/_config_wifi-example.json) to `src/_config_wifi.json`
 
 
 ## bootstrap
