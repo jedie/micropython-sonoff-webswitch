@@ -11,12 +11,7 @@ async def get_form(server, reader, writer, querystring, timers=None):
         del pformat_timers
         del restore_timers
         del sys.modules['times_utils']
-
-    context = {
-        'timers': timers,
-        'on_selected': 'selected' if server.power_timer.active else '',
-        'off_selected': '' if server.power_timer.active else 'selected',
-    }
+        gc.collect()
 
     from times_utils import get_active_days
     active_days = get_active_days()
@@ -24,6 +19,11 @@ async def get_form(server, reader, writer, querystring, timers=None):
     del sys.modules['times_utils']
     gc.collect()
 
+    context = {
+        'timers': timers,
+        'on_selected': 'selected' if server.power_timer.active else '',
+        'off_selected': '' if server.power_timer.active else 'selected',
+    }
     for day_no in range(7):
         context['d%i' % day_no] = 'checked' if day_no in active_days else ''
 
@@ -65,6 +65,9 @@ async def get_submit(server, reader, writer, querystring, body):
         from rtc import update_rtc_dict
         update_rtc_dict(data={
             constants.POWER_TIMER_ACTIVE_KEY: power_timer_active,
+            #
+            # Deactivate manual overwrite, so that timers are used:
+            constants.RTC_KEY_MANUAL_OVERWRITE_TYPE: None,
         })
         del update_rtc_dict
     except ValueError as e:
@@ -82,11 +85,11 @@ async def get_submit(server, reader, writer, querystring, body):
     else:
         server.message = 'Timers saved and deactivated.'
 
-    # Force set 'active' and 'today_active' by schedule_next_switch() in update_power_timer():
+    # Force set 'active' and 'today_active' by update_relay_switch() in update_power_timer():
     server.power_timer.active = None
     server.power_timer.today_active = None
 
-    server.power_timer.schedule_next_switch()
+    server.power_timer.update_relay_switch()
     gc.collect()
 
     from http_utils import send_redirect

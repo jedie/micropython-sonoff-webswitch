@@ -16,7 +16,7 @@ def main():
 
     from wifi import WiFi
 
-    __version__ = 'v0.8.3'
+    __version__ = 'v0.9.0'
 
     # Init device button IRQ:
     Pins.button_pin.irq(Button().irq_handler)
@@ -47,14 +47,14 @@ def main():
         from power_timer import PowerTimer  # noqa isort:skip
 
         power_timer = PowerTimer()
-        power_timer.schedule_next_switch()
+        power_timer.update_relay_switch()
 
         gc.collect()
         WebServer(
             power_timer=power_timer,
             watchdog=Watchdog(
                 wifi=wifi,
-                check_callback=power_timer.schedule_next_switch
+                check_callback=power_timer.update_relay_switch
             ),
             version=__version__
         ).run()

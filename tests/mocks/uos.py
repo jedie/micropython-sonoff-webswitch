@@ -1,1 +1,1 @@
-from os import mkdir, stat  # noqa
+from os import mkdir, stat, remove  # noqa

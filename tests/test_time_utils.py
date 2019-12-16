@@ -126,20 +126,28 @@ class ParseTimesTestCase(MicropythonBaseTestCase):
         self.assertEqual(cm.exception.args[0], '19:-1 is not valid')
 
     def test_restore_times_without_existing_file(self):
-        assert restore_timers() == ()
+        with mock_py_config_context():
+            assert restore_timers() == ()
 
     def test_get_next_timer(self):
         with mock_py_config_context():
             save_timers((
-                ((1, 0), (2, 0)),
+                ((0, 0), (0, 1)),
+                ((0, 2), (0, 3)),
             ))
             rtc = machine.RTC()
-            rtc.datetime((2000, 1, 1, 5, 0, 0, 0, 0))
-            assert get_next_timer() == (True, 3600)
+            rtc.datetime((2000, 1, 1, 5, 0, 0, 0, 0))  # 00:00
+            assert get_next_timer() == (0, False, 60)
 
-            rtc.datetime((2000, 1, 1, 5, 1, 30, 0, 0))
-            assert get_next_timer() == (False, 7200)
+            rtc.datetime((2000, 1, 1, 5, 0, 1, 0, 0))  # 00:01
+            assert get_next_timer() == (60, True, 120)
+
+            rtc.datetime((2000, 1, 1, 5, 0, 2, 0, 0))  # 00:02
+            assert get_next_timer() == (120, False, 180)
+
+            rtc.datetime((2000, 1, 1, 5, 0, 3, 0, 0))  # 00:03 -> next timer is on next day!
+            assert get_next_timer() == (180, True, 86400)
 
     def test_get_next_timer_empty(self):
         with mock_py_config_context():
-            assert get_next_timer() == (None, None)
+            assert get_next_timer() == (None, None, None)

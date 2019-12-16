@@ -1,1 +1,1 @@
-from json import load, dump  # noqa
+from json import load, loads, dump, dumps  # noqa

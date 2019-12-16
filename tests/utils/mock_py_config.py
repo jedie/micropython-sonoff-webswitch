@@ -20,7 +20,7 @@ class NonCachesImporter:
 
     def mocked_import(self, module_name, *args, **kwargs):
         if args != (None, None):
-            print(f'\nReal import: {module_name!r}')
+            # print(f'\nReal import: {module_name!r}')
             return self.origin_import(module_name, **kwargs)
 
         print(f'\nMocked import: {module_name!r}')
