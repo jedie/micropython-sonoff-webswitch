@@ -26,7 +26,6 @@ class WiFi:
         print('Setup WiFi interfaces')
         self.access_point = network.WLAN(network.AP_IF)  # access-point interface
         self.station = network.WLAN(network.STA_IF)  # WiFi station interface
-        self.station.active(True)  # activate the interface
 
     @property
     def is_connected(self):

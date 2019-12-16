@@ -54,6 +54,7 @@ def connect2ssid(station, ssid, password, verbose):
 
         if verbose:
             print('Try again...')
+        station.disconnect()
         station.active(False)
         Pins.power_led.flash(sleep=0.1, count=20)
         Pins.power_led.off()
@@ -63,7 +64,22 @@ def connect2ssid(station, ssid, password, verbose):
     Pins.power_led.flash(sleep=0.2, count=20)
 
 
+def set_dhcp_hostname(station):
+    print('Set WiFi DHCP hostname to:', end=' ')
+    from device_name import get_device_name
+    device_name = get_device_name()
+
+    del get_device_name
+    del sys.modules['device_name']
+    gc.collect()
+
+    print(repr(device_name))
+    station.config(dhcp_hostname=device_name)
+
+
 def connect(station, verbose):
+    station.active(True)  # activate the interface
+
     from pins import Pins
     Pins.power_led.flash(sleep=0.1, count=5)
 
@@ -91,6 +107,8 @@ def connect(station, verbose):
     if wifi_configs is None:
         raise RuntimeError('Empty WiFi settings! Please upload you WiFi config file!')
 
+    set_dhcp_hostname(station)
+
     try:
         known_ssid = get_known_ssid(station, wifi_configs, verbose=verbose)
     except OSError as e:
@@ -110,6 +128,8 @@ def connect(station, verbose):
 
 
 if __name__ == '__main__':
+    # Connect or reconnect
     sta_if = network.WLAN(network.STA_IF)
-    sta_if.active(True)
+    sta_if.disconnect()
     connect(station=sta_if, verbose=True)
+    print('connected:', sta_if.isconnected())
