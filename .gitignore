@@ -1,4 +1,6 @@
 _config_*.*
+*.json
+!_config_wifi-example.json
 .idea
 /bdist/
 __pycache__

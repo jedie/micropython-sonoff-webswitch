@@ -29,3 +29,7 @@ CHUNK_SIZE = const(512)
 # constants will not be cleared from sys.modules
 # So this buffer should be not freed by garbage collection
 BUFFER = memoryview(bytearray(CHUNK_SIZE))
+
+# Save power state change via button or web page:
+RTC_KEY_MANUAL_OVERWRITE = 'manual'
+RTC_KEY_MANUAL_OVERWRITE_TYPE = 'manual-type'

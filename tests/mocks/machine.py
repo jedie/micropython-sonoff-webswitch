@@ -4,9 +4,17 @@ class Pin:
     OUT = 'out'
     IN = 'in'
 
+    state = {}
+
     def __init__(self, no, in_out):
         self.no = no
         self.in_out = in_out
+
+    def value(self, on_off=None):
+        if on_off is None:
+            return self.state[self.no]
+        else:
+            self.state[self.no] = on_off
 
 
 class Timer:

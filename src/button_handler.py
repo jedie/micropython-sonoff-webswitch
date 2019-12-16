@@ -1,5 +1,6 @@
 import gc
 
+import constants
 import utime
 
 
@@ -43,8 +44,17 @@ class Button:
                 from reset import ResetDevice
                 ResetDevice('After button long press')
 
-            print('old state:', Pins.relay)
-            Pins.relay.toggle()
-            print('new state:', Pins.relay)
+            if Pins.relay.is_off:
+                Pins.relay.on()
+                overwrite_type = constants.RTC_VALUE_MANUAL_POWER_ON
+            else:
+                Pins.relay.off()
+                overwrite_type = constants.RTC_VALUE_MANUAL_POWER_OFF
+
+            from rtc import update_rtc_dict
+            update_rtc_dict({
+                constants.RTC_KEY_MANUAL_OVERWRITE: utime.time(),
+                constants.RTC_KEY_MANUAL_OVERWRITE_TYPE: overwrite_type
+            })
 
         gc.collect()

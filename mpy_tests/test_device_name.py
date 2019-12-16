@@ -5,7 +5,7 @@
 from device_name import get_device_name, save_device_name
 
 
-def test_device_name():
+def run_all_device_name_tests():
     save_device_name('Test-1')
     assert get_device_name() == 'Test-1'
 
@@ -34,8 +34,9 @@ if __name__ == '__main__':
 
     origin_device_name = get_device_name()
     try:
-        test_device_name()
+        run_all_device_name_tests()
     finally:
-        save_device_name(origin_device_name)
+        if origin_device_name is not None:
+            save_device_name(origin_device_name)
 
     print('OK')

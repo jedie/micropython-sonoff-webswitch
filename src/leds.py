@@ -37,12 +37,3 @@ class Led:
 
     def __str__(self):
         return '%s %s: %s' % (self.name, self.pin, self.state)
-
-
-if __name__ == '__main__':
-    import machine
-    relay = Led(name='relay', pin=machine.Pin(12, machine.Pin.OUT), on=1, off=0)
-    relay.off()
-    print(relay)
-    relay.on()
-    print(relay)
