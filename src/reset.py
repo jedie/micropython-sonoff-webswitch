@@ -2,6 +2,7 @@ import sys
 
 import constants
 import machine
+import network
 import utime
 
 
@@ -17,6 +18,9 @@ class ResetDevice:
 
     def reset(self, timer=None):
         print('Reset device: %r' % self.reason)
+        utime.sleep(1)
+        # deactivate WiFi: So a change DHCP hostname will be used after reboot
+        network.WLAN(network.STA_IF).disconnect()
         utime.sleep(1)
         machine.reset()
         utime.sleep(1)

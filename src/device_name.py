@@ -1,3 +1,6 @@
+"""
+    Note: The device name will also be used as DHCP hostname!
+"""
 import gc
 import sys
 
