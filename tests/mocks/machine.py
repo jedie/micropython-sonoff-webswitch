@@ -17,6 +17,11 @@ class Pin:
             self.state[self.no] = on_off
 
 
+class PWM:
+    def __init__(self, pin, freq=500, duty=0):
+        self.pin = pin
+
+
 class Timer:
     ONE_SHOT = 'one shot'
 

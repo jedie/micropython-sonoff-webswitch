@@ -16,7 +16,7 @@ def main():
 
     from wifi import WiFi
 
-    __version__ = 'v0.9.2'
+    __version__ = 'v0.10.0'
 
     # Init device button IRQ:
     Pins.button_pin.irq(Button().irq_handler)
@@ -38,8 +38,6 @@ def main():
         del update_rtc_dict
         del get_rtc_value
         del sys.modules['rtc']
-        del Pins
-        del sys.modules['pins']
         gc.collect()
 
         from webswitch import WebServer  # noqa isort:skip
