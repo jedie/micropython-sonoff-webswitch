@@ -42,19 +42,20 @@ class Button:
             print('duration_ms:', duration_ms)
             if duration_ms > 2000:
                 from reset import ResetDevice
-                ResetDevice('After button long press')
-
-            if Pins.relay.is_off:
-                Pins.relay.on()
-                overwrite_type = constants.RTC_VALUE_MANUAL_POWER_ON
+                ResetDevice('After button long press').reset()
             else:
-                Pins.relay.off()
-                overwrite_type = constants.RTC_VALUE_MANUAL_POWER_OFF
+                print('Overwrite via button press')
+                if Pins.relay.is_on:
+                    Pins.relay.off()
+                    overwrite_type = False
+                else:
+                    Pins.relay.on()
+                    overwrite_type = True
 
-            from rtc import update_rtc_dict
-            update_rtc_dict({
-                constants.RTC_KEY_MANUAL_OVERWRITE: utime.time(),
-                constants.RTC_KEY_MANUAL_OVERWRITE_TYPE: overwrite_type
-            })
+                from rtc import update_rtc_dict
+                update_rtc_dict({
+                    constants.RTC_KEY_MANUAL_OVERWRITE: utime.time(),
+                    constants.RTC_KEY_MANUAL_OVERWRITE_TYPE: overwrite_type
+                })
 
         gc.collect()
