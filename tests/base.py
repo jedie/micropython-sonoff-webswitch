@@ -3,11 +3,15 @@ from unittest import TestCase
 
 import machine
 
+WIFI_EXAMPLE = '_config_wifi-example.json'
+
 
 def get_all_config_files(path='.'):
     path = Path(path)
-    config_files = list(path.glob('_config_*.py'))
-    config_files += list(path.glob('_config_*.json'))
+    config_files = [i.name for i in path.glob('_config_*.py')]
+    config_files += [i.name for i in path.glob('_config_*.json')]
+    if WIFI_EXAMPLE in config_files:
+        config_files.remove(WIFI_EXAMPLE)
     return config_files
 
 
