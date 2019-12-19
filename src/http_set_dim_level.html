@@ -1,0 +1,8 @@
+<fieldset><legend>Power LED dim level:</legend>
+    Current dim level: <strong>{value}</strong>
+    <form action="/set_dim_level/submit/" method="post">
+        <p>bright <input type="range" name="level" min=0 max={max} step=1 value={value}> dark</p>
+        <input type="submit">
+    </form>
+    <a href="/main/menu/"><button class="button">Cancel</button></a>
+</fieldset>

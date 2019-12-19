@@ -3,6 +3,7 @@ import sys
 
 import constants
 import uasyncio
+from pins import Pins
 
 
 class WebServer:
@@ -36,7 +37,6 @@ class WebServer:
         del sys.modules['device_name']
         gc.collect()
 
-        from pins import Pins
         from template import render
 
         content = render(
@@ -112,7 +112,6 @@ class WebServer:
         gc.collect()
 
     async def request_handler(self, reader, writer):
-        from pins import Pins
         Pins.power_led.off()
         gc.collect()
         try:
@@ -144,7 +143,11 @@ class WebServer:
 
         gc.collect()
 
-        from pins import Pins
+        from led_dim_level_cfg import restore_power_led_level
         Pins.power_led.on()
+        restore_power_led_level()
+        del restore_power_led_level
+        del sys.modules['led_dim_level_cfg']
+
         print(self.message)
         loop.run_forever()
