@@ -1,3 +1,4 @@
+import machine
 import utime
 
 
@@ -7,12 +8,16 @@ class Led:
         self.pin = pin
         self._on = on
         self._off = off
+        self.is_on = None
+        self.off()
 
     def on(self):
         self.pin.value(self._on)
+        self.is_on = True
 
     def off(self):
         self.pin.value(self._off)
+        self.is_on = False
 
     def toggle(self):
         if self.is_on:
@@ -20,16 +25,15 @@ class Led:
         else:
             self.on()
 
-    def flash(self, sleep=0.1, count=5):
-        old_value = self.pin.value()
+    def flash(self, sleep=0.5, count=6):
+        was_on = self.is_on
         for no in range(count):
             self.toggle()
             utime.sleep(sleep)
-        self.pin.value(old_value)
-
-    @property
-    def is_on(self):
-        return self.pin.value() == self._on
+        if was_on:
+            self.on()
+        else:
+            self.off()
 
     @property
     def state(self):
@@ -37,3 +41,43 @@ class Led:
 
     def __str__(self):
         return '%s %s: %s' % (self.name, self.pin, self.state)
+
+
+class PwmLed(Led):
+    def __init__(self, *args, **kwargs):
+        self.duty_values = (None, 700, 900, 1000)
+        self.duty = None  # Full ON as default
+
+        super().__init__(*args, **kwargs)
+
+        self.pwm = machine.PWM(self.pin, freq=100, duty=0)
+
+    def set_dim_level(self, dim_level):
+        assert 0 <= dim_level <= len(self.duty_values), 'level %r is not between 0 and %i' % (
+            dim_level, len(self.duty_values)
+        )
+
+        was_on = self.is_on
+        self.duty = self.duty_values[dim_level]
+        if self.duty is None:
+            self.off()
+            self.deinit_pwm()
+        if was_on:
+            self.on()
+
+    def on(self):
+        if self.duty is not None:
+            self.is_on = True
+            self.pwm.duty(self.duty)
+        else:
+            super().on()
+
+    def off(self):
+        super().off()
+        if self.duty is not None:
+            self.deinit_pwm()
+
+    def deinit_pwm(self):
+        self.pwm.duty(0)
+        self.pwm.freq(100)
+        self.pwm.deinit()
