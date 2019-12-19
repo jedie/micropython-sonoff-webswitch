@@ -6,6 +6,7 @@ import utime
 from micropython import const
 
 _h2sec = const(60 * 60)  # multiplier for calc hours into seconds
+_MIN_TIME_EPOCH = const(599616000)  # epoch 1.1.2019
 
 
 def rtc2local_time():
@@ -54,7 +55,7 @@ def ntp_sync():
             rtc2local_time()
             print('new local...:', localtime_isoformat(offset_h=offset_h, add_offset=True))
 
-            return True
+            return utime.time() > _MIN_TIME_EPOCH  # min 1.1.2019 ???
 
     from reset import ResetDevice
     ResetDevice(reason='Failed NTP sync').reset()

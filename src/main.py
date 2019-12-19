@@ -16,7 +16,7 @@ def main():
 
     from wifi import WiFi
 
-    __version__ = 'v0.9.1'
+    __version__ = 'v0.9.2'
 
     # Init device button IRQ:
     Pins.button_pin.irq(Button().irq_handler)

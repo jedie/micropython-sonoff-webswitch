@@ -6,7 +6,6 @@ import utime
 from micropython import const
 
 _NTP_SYNC_WAIT_TIME_SEC = const(1 * 60 * 60)  # sync NTP every 1 h
-_MIN_TIME_EPOCH = const(599616000)  # epoch 1.1.2019
 
 
 class WiFi:
@@ -48,6 +47,25 @@ class WiFi:
                 self.access_point.active(False)
 
             self.verbose = False
+
+            from timezone import localtime_isoformat
+
+            if self.next_ntp_sync < utime.time():
+                from ntp import ntp_sync
+                sync_done = ntp_sync()  # update RTC via NTP
+                del ntp_sync
+                del sys.modules['ntp']
+                if sync_done is True:
+                    self.next_ntp_sync = utime.time() + _NTP_SYNC_WAIT_TIME_SEC
+                    self.last_ntp_sync = localtime_isoformat()
+
+            from timezone import localtime_isoformat
+            self.last_refresh = localtime_isoformat()
+
+            del localtime_isoformat
+            del sys.modules['timezone']
+            gc.collect()
+
             return True
 
     def ensure_connection(self):
@@ -57,23 +75,6 @@ class WiFi:
         gc.collect()
         if self.is_connected:
             self.is_connected_count += 1
-
-            from timezone import localtime_isoformat
-
-            if self.next_ntp_sync < utime.time():
-                from ntp import ntp_sync
-                sync_done = ntp_sync()  # update RTC via NTP
-                del ntp_sync
-                del sys.modules['ntp']
-                if sync_done and utime.time() > _MIN_TIME_EPOCH:
-                    self.next_ntp_sync = utime.time() + _NTP_SYNC_WAIT_TIME_SEC
-                    self.last_ntp_sync = localtime_isoformat()
-
-            self.last_refresh = localtime_isoformat()
-
-            del localtime_isoformat
-            del sys.modules['timezone']
-            gc.collect()
             return
 
         self.not_connected_count += 1
@@ -91,7 +92,8 @@ class WiFi:
             ' - connected: %i'
             ' - not connected: %i'
             ' - last NTP sync: %s'
+            ' - next NTP sync: %.1f min.'
         ) % (
             self.last_refresh, self.is_connected_count, self.not_connected_count,
-            self.last_ntp_sync
+            self.last_ntp_sync, ((self.next_ntp_sync - utime.time()) / 60)
         )
