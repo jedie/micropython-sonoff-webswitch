@@ -49,7 +49,7 @@ class Timeout:
         )
 
     def _timer_callback(self, timer):
-        gc.collect()
+
         if not self.satisfied:
             reset(self.reason)
 
@@ -62,7 +62,6 @@ class OtaUpdate:
         self.timeout = None  # Will be set in run() and __call__()
 
     def run(self):
-        gc.collect()
 
         loop = asyncio.get_event_loop()
         loop.create_task(asyncio.start_server(self, '0.0.0.0', _PORT))
@@ -94,7 +93,7 @@ class OtaUpdate:
 
     async def __call__(self, reader, writer):
         self.timeout.deinit()
-        gc.collect()
+
         self.timeout = Timeout(reason='OTA timeout', timeout_sec=_OTA_TIMEOUT)
         address = writer.get_extra_info('peername')
         print('Accepted connection from %s:%s' % address)

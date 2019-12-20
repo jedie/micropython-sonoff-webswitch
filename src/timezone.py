@@ -5,8 +5,8 @@
     http://docs.micropython.org/en/latest/library/utime.html?highlight=datetime#utime.localtime
     year, month, mday, hour, minute, second, weekday, yearday
 """
-import gc
-import sys
+
+# import sys
 
 import utime
 from micropython import const
@@ -19,17 +19,16 @@ def save_timezone(offset_h):
     from config_files import save_py_config
     save_py_config(module_name=_TIMEZONE_PY_CFG_NAME, value=offset_h)
 
-    del save_py_config
-    del sys.modules['config_files']
-    gc.collect()
+    # del save_py_config
+    # del sys.modules['config_files']
 
 
 def restore_timezone():
     from config_files import restore_py_config
     offset_h = restore_py_config(module_name=_TIMEZONE_PY_CFG_NAME, default=_DEFAULT_OFFSET_H)
 
-    del restore_py_config
-    del sys.modules['config_files']
+    # del restore_py_config
+    # del sys.modules['config_files']
     return offset_h
 
 

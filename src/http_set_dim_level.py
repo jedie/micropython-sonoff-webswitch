@@ -1,5 +1,5 @@
-import gc
-import sys
+
+# import sys
 
 from pins import Pins
 
@@ -25,9 +25,8 @@ async def get_form(server, reader, writer, querystring, body):
 async def post_submit(server, reader, writer, querystring, body):
     from urllib_parse import request_query2dict
     body = request_query2dict(body)
-    del request_query2dict
-    del sys.modules['urllib_parse']
-    gc.collect()
+    # del request_query2dict
+    # del sys.modules['urllib_parse']
 
     from led_dim_level_cfg import set_power_led_level
 

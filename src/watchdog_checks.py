@@ -1,6 +1,9 @@
+
+
 import gc
 
 import constants
+import micropython
 import uerrno
 import usocket
 import utime
@@ -36,24 +39,36 @@ def can_bind_web_server_port():
         sock.close()
 
 
-def check(last_feed, wifi, check_callback):
-    if gc.mem_free() < _MIN_FREE:
-        reset(reason='RAM full')
+def check(context):
+    micropython.mem_info()
 
-    if not wifi.is_connected:
-        wifi.ensure_connection()
+    gc.collect()
+    # gc.threshold(gc.mem_free() // 4 + gc.mem_alloc())
 
-    if wifi.connected_time is None:
-        reset(reason='WiFi not connected')
+    micropython.mem_info()
 
-    last_connection = utime.time() - wifi.connected_time
-    if last_connection > constants.WIFI_TIMEOUT:
-        reset(reason='WiFi timeout')
+    try:
+        if gc.mem_free() < _MIN_FREE:
+            reset(reason='RAM full')
 
-    if can_bind_web_server_port():
-        reset(reason='Web Server down')
+        if utime.time() - context.watchdog_last_feed > constants.WATCHDOG_TIMEOUT:
+            reset(reason='Feed timeout')
 
-    if utime.time() - last_feed > constants.WATCHDOG_TIMEOUT:
-        reset(reason='Feed timeout')
+        from wifi import ensure_connection
+        if ensure_connection(context) is not True:
+            reset(reason='No Wifi connection')
 
-    check_callback()
+        if can_bind_web_server_port():
+            reset(reason='Web Server down')
+
+        from power_timer import update_power_timer
+        if update_power_timer(context) is not True:
+            reset(reason='Update power timer error')
+
+        from ntp import ntp_sync
+        if ntp_sync(context) is not True:
+            reset(reason='NTP sync error')
+    except MemoryError as e:
+        reset(reason='Memory error: %s' % e)
+
+    gc.collect()

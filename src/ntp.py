@@ -1,12 +1,12 @@
-
+# import sys
 
 import machine
-import ntptime
 import utime
 from micropython import const
 
 _h2sec = const(60 * 60)  # multiplier for calc hours into seconds
 _MIN_TIME_EPOCH = const(599616000)  # epoch 1.1.2019
+_NTP_SYNC_WAIT_TIME_SEC = const(1 * 60 * 60)  # sync NTP every 1 h
 
 
 def rtc2local_time():
@@ -32,7 +32,7 @@ def rtc2local_time():
     rtc.datetime(local_rtc_tuple)  # set RTC time
 
 
-def ntp_sync():
+def _ntp_sync():
 
     if utime.localtime()[0] < 2019:
         # time was never synced: assume it's default start time in UTC
@@ -41,6 +41,8 @@ def ntp_sync():
         offset_h = None  # load offset via restore_timezone()
 
     from timezone import localtime_isoformat
+
+    import ntptime
 
     print('Synchronize time from %r ...' % ntptime.host)
     print('old UTC.....:', localtime_isoformat(offset_h=offset_h, add_offset=True))
@@ -59,3 +61,23 @@ def ntp_sync():
 
     from reset import ResetDevice
     ResetDevice(reason='Failed NTP sync').reset()
+
+
+def ntp_sync(context):
+    """
+    will be called from watchdog_checks.check()
+    Must return True if everything is ok.
+    """
+    if context.ntp_next_sync > utime.time():
+        print('NTP sync not needed, yet.')
+        return True
+
+    sync_done = _ntp_sync()  # update RTC via NTP
+    if sync_done is True:
+        context.ntp_next_sync = utime.time() + _NTP_SYNC_WAIT_TIME_SEC
+        from timezone import localtime_isoformat
+        context.ntp_last_sync = localtime_isoformat()
+        # del localtime_isoformat
+        # del sys.modules['timezone']
+
+    return sync_done

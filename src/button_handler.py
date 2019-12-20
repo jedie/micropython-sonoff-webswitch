@@ -1,7 +1,7 @@
-import gc
 
 import constants
 import utime
+from pins import Pins
 
 
 def get_debounced_value(pin):
@@ -24,11 +24,10 @@ class Button:
     down_start = None
 
     def irq_handler(self, pin):
-        gc.collect()
-        from pins import Pins
+
         Pins.power_led.off()
         button_value = get_debounced_value(pin)
-        gc.collect()
+
         print('button_value:', button_value)
         if button_value == 0:
             # button pressed
@@ -57,5 +56,3 @@ class Button:
                     constants.RTC_KEY_MANUAL_OVERWRITE: utime.time(),
                     constants.RTC_KEY_MANUAL_OVERWRITE_TYPE: overwrite_type
                 })
-
-        gc.collect()

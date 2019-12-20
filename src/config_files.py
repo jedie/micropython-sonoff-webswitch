@@ -7,7 +7,8 @@
 
     https://forum.micropython.org/viewtopic.php?f=2&t=7386
 """
-import gc
+
+# import sys
 import sys
 
 _CFG_FILE_PREFIX = '_config_'
@@ -66,9 +67,10 @@ def restore_py_config(module_name, default=None):
 
     value = getattr(module, _PY_VALUE_ATTRIBUTE_NAME, default)
 
+    # Important to remove from module cache, to get a fresh value on next import ;)
     del module
     del sys.modules[module_name]
-    gc.collect()
+
     return value
 
 

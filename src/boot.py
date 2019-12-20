@@ -1,5 +1,4 @@
 print('boot.py')   # noqa isort:skip
-
 import gc
 
 import esp
@@ -16,6 +15,6 @@ esp.sleep_type(esp.SLEEP_NONE)  # Don't go into sleep mode
 micropython.alloc_emergency_exception_buf(128)
 
 gc.enable()
-gc.collect()
+
 
 print('boot.py END')

@@ -1,5 +1,5 @@
-import gc
-import sys
+
+# import sys
 
 import ure
 import utime
@@ -81,18 +81,17 @@ def save_timers(times):
     from config_files import save_py_config
     save_py_config(module_name=_TIMERS_PY_CFG_NAME, value=times)
 
-    del save_py_config
-    del sys.modules['config_files']
-    gc.collect()
+    # del save_py_config
+    # del sys.modules['config_files']
 
 
 def restore_timers():
     from config_files import restore_py_config
     timers = restore_py_config(module_name=_TIMERS_PY_CFG_NAME, default=())
 
-    del restore_py_config
-    del sys.modules['config_files']
-    gc.collect()
+    # del restore_py_config
+    # del sys.modules['config_files']
+
     return timers
 
 
@@ -100,9 +99,9 @@ def get_active_days():
     from config_files import restore_py_config
     active_days = restore_py_config(module_name=_ACTIVE_DAYS_PY_CFG_NAME, default=tuple(range(7)))
 
-    del restore_py_config
-    del sys.modules['config_files']
-    gc.collect()
+    # del restore_py_config
+    # del sys.modules['config_files']
+
     return active_days
 
 
@@ -110,9 +109,8 @@ def save_active_days(active_days):
     from config_files import save_py_config
     save_py_config(module_name=_ACTIVE_DAYS_PY_CFG_NAME, value=active_days)
 
-    del save_py_config
-    del sys.modules['config_files']
-    gc.collect()
+    # del save_py_config
+    # del sys.modules['config_files']
 
 
 def human_timer_duration(epoch):

@@ -4,13 +4,36 @@
     MicroPython {mpy_version}
 </fieldset>
 <fieldset><legend>Power Timer:</legend>
-    {power_timer}
+    <table>
+        <tr><td>Active:</td><td>{power_timer_active}</td></tr>
+        <tr><td>Today active:</td><td>{power_timer_today_active}</td></tr>
+        <tr><td>Turn on:</td><td>{power_timer_turn_on}</td></tr>
+        <tr><td>Next timer:</td><td>{power_timer_next_timer}</td></tr>
+        <tr><td>Last update:</td><td>{power_timer_last_update}</td></tr>
+    </table>
 </fieldset>
 <fieldset><legend>WiFi:</legend>
-    {wifi}
+    <table>
+        <tr><td>Last Update:</td><td>{wifi_last_update}</td></tr>
+        <tr><td>First connection time:</td><td>{wifi_first_connect_time}</td></tr>
+        <tr><td>Connected count:</td><td>{wifi_connected}</td></tr>
+        <tr><td>Not connected count:</td><td>{wifi_not_connected}</td></tr>
+    </table>
+</fieldset>
+<fieldset><legend>NTP sync:</legend>
+    <table>
+        <tr><td>Last sync:</td><td>{ntp_last_sync}</td></tr>
+        <tr><td>next sync:</td><td>{ntp_next_sync} sec.</td></tr>
+    </table>
 </fieldset>
 <fieldset><legend>Watchdog:</legend>
-    {watchdog}
+    <table>
+        <tr><td>Last check:</td><td>{watchdog_last_check}</td></tr>
+        <tr><td>Last feed:</td><td>{watchdog_last_feed}</td></tr>
+        <tr><td>Check count:</td><td>{watchdog_check_count}</td></tr>
+        <tr><td>Reset count:</td><td>{watchdog_reset_count}</td></tr>
+        <tr><td>Last reset reason:</td><td>{watchdog_last_reset_reason}</td></tr>
+    </table>
 </fieldset>
 <fieldset><legend>RTC RAM:</legend>
     {rtc_memory}

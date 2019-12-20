@@ -1,8 +1,8 @@
 """
     Note: The device name will also be used as DHCP hostname!
 """
-import gc
-import sys
+
+# import sys
 
 import machine
 import uos
@@ -25,9 +25,8 @@ def save_device_name(name):
 
     from config_files import save_json_config
     save_json_config(key=_CFG_KEY, cfg=name)
-    del save_json_config
-    del sys.modules['config_files']
-    gc.collect()
+    # del save_json_config
+    # del sys.modules['config_files']
 
 
 def get_device_name():

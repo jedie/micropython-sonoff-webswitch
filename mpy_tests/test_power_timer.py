@@ -1,6 +1,8 @@
 """
     Tests power timer on device
 """
+
+
 from power_timer import PowerTimer
 
 

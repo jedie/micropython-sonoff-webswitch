@@ -1,99 +1,53 @@
-import gc
-import sys
+
+# import sys
 
 import network
 import utime
-from micropython import const
-
-_NTP_SYNC_WAIT_TIME_SEC = const(1 * 60 * 60)  # sync NTP every 1 h
+from pins import Pins
 
 
-class WiFi:
-    connected_time = 0
-    next_ntp_sync = 0
-    last_ntp_sync = None
+def ensure_connection(context):
+    """
+    will be called from:
+        - main.py
+        - watchdog_checks.check()
 
-    not_connected_count = 0
-    is_connected_count = 0
-    last_refresh = None
-    verbose = True
+    Must return True if connected to WiFi.
+    """
+    station = network.WLAN(network.STA_IF)  # WiFi station interface
+    if not station.active():
+        station.active(True)
 
-    def __init__(self):
-        from pins import Pins
-        Pins.power_led.off()
+    context.wifi_last_update = utime.time()
 
-        print('Setup WiFi interfaces')
-        self.access_point = network.WLAN(network.AP_IF)  # access-point interface
-        self.station = network.WLAN(network.STA_IF)  # WiFi station interface
+    if station.isconnected():
+        print('Still connected:', station.ifconfig())
+        context.wifi_connected += 1
+        return True
 
-    @property
-    def is_connected(self):
-        if not self.station.isconnected():
-            if self.verbose:
-                print('Not connected to station!')
-            from pins import Pins
-            Pins.power_led.off()
-            return False
-        else:
-            self.connected_time = utime.time()
-            if self.verbose:
-                print('Connected to station IP/netmask/gw/DNS addresses:', self.station.ifconfig())
-            from pins import Pins
-            Pins.power_led.on()
+    context.wifi_not_connected += 1
+    Pins.power_led.off()
 
-            if self.access_point.active():
-                if self.verbose:
-                    print('deactivate access-point interface...')
-                self.access_point.active(False)
+    from wifi_connect import connect
+    connected_time = connect(station)
 
-            self.verbose = False
+    # del connect
+    # del sys.modules['wifi_connect']
 
-            from timezone import localtime_isoformat
+    if context.wifi_first_connect_time is None:
+        context.wifi_first_connect_time = connected_time
 
-            if self.next_ntp_sync < utime.time():
-                from ntp import ntp_sync
-                sync_done = ntp_sync()  # update RTC via NTP
-                del ntp_sync
-                del sys.modules['ntp']
-                if sync_done is True:
-                    self.next_ntp_sync = utime.time() + _NTP_SYNC_WAIT_TIME_SEC
-                    self.last_ntp_sync = localtime_isoformat()
+    return True
 
-            from timezone import localtime_isoformat
-            self.last_refresh = localtime_isoformat()
 
-            del localtime_isoformat
-            del sys.modules['timezone']
-            gc.collect()
+def init(context):
+    print('Setup WiFi interfaces')
 
-            return True
+    Pins.power_led.off()
 
-    def ensure_connection(self):
-        if self.verbose:
-            print('WiFi ensure connection...', end=' ')
+    access_point = network.WLAN(network.AP_IF)  # access-point interface
+    if access_point.active():
+        print('deactivate access-point interface...')
+        access_point.active(False)
 
-        gc.collect()
-        if self.is_connected:
-            self.is_connected_count += 1
-            return
-
-        self.not_connected_count += 1
-
-        from wifi_connect import connect
-        self.connected_time = connect(station=self.station, verbose=self.verbose)
-
-        del connect
-        del sys.modules['wifi_connect']
-        gc.collect()
-
-    def __str__(self):
-        return (
-            'last refresh: %s'
-            ' - connected: %i'
-            ' - not connected: %i'
-            ' - last NTP sync: %s'
-            ' - next NTP sync: %.1f min.'
-        ) % (
-            self.last_refresh, self.is_connected_count, self.not_connected_count,
-            self.last_ntp_sync, ((self.next_ntp_sync - utime.time()) / 60)
-        )
+    return ensure_connection(context)
