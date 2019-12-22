@@ -1,4 +1,4 @@
-import gc
+
 import sys
 
 from pins import Pins
@@ -14,7 +14,6 @@ def set_power_led_level(dim_level):
 
     del save_py_config
     del sys.modules['config_files']
-    gc.collect()
 
 
 def restore_power_led_level():
@@ -23,7 +22,6 @@ def restore_power_led_level():
 
     del restore_py_config
     del sys.modules['config_files']
-    gc.collect()
 
     Pins.power_led.set_dim_level(dim_level=dim_level)
 

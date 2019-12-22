@@ -1,4 +1,4 @@
-import gc
+
 import sys
 
 
@@ -11,7 +11,6 @@ async def get_wifi(server, reader, writer, querystring, body):
 
     del get_json_config
     del sys.modules['config_files']
-    gc.collect()
 
     settings = []
     for key, value in wifi_configs.items():
@@ -63,7 +62,6 @@ async def post_set_name(server, reader, writer, querystring, body):
     body = request_query2dict(body)
     del request_query2dict
     del sys.modules['urllib_parse']
-    gc.collect()
 
     new_name = body['name']  # TODO: validate name
     from device_name import save_device_name
@@ -100,7 +98,6 @@ async def post_set_timezone(server, reader, writer, querystring, body):
     body = request_query2dict(body)
     del request_query2dict
     del sys.modules['urllib_parse']
-    gc.collect()
 
     offset = int(body['offset'])
     if not -12 <= offset <= 12:
@@ -110,14 +107,12 @@ async def post_set_timezone(server, reader, writer, querystring, body):
         save_timezone(offset_h=int(offset))
         del save_timezone
         del sys.modules['timezone']
-        gc.collect()
 
         # Change the time to the right time zone
         from ntp import ntp_sync
         ntp_sync()
         del ntp_sync
         del sys.modules['ntp']
-        gc.collect()
 
         server.message = 'Save timezone %+i' % offset
 

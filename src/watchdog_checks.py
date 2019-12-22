@@ -1,3 +1,5 @@
+
+
 import gc
 
 import constants
@@ -30,30 +32,32 @@ def can_bind_web_server_port():
             if e.args[0] == uerrno.EADDRINUSE:
                 return False
         else:
-            print('ERROR: Web server not running! (Can bind to %s:%i)' % server_address)
+            # Web server not running, because we can bind the address
             return True
     finally:
         sock.close()
 
 
-def check(last_feed, wifi, check_callback):
-    if gc.mem_free() < _MIN_FREE:
-        reset(reason='RAM full')
+def check(context):
+    gc.collect()
+    try:
+        if gc.mem_free() < _MIN_FREE:
+            reset(reason='RAM full')
 
-    if not wifi.is_connected:
-        wifi.ensure_connection()
+        if utime.time() - context.watchdog_last_feed > constants.WATCHDOG_TIMEOUT:
+            reset(reason='Feed timeout')
 
-    if wifi.connected_time is None:
-        reset(reason='WiFi not connected')
+        from wifi import ensure_connection
+        if ensure_connection(context) is not True:
+            reset(reason='No Wifi connection')
 
-    last_connection = utime.time() - wifi.connected_time
-    if last_connection > constants.WIFI_TIMEOUT:
-        reset(reason='WiFi timeout')
+        gc.collect()
 
-    if can_bind_web_server_port():
-        reset(reason='Web Server down')
+        if can_bind_web_server_port():
+            reset(reason='Web Server down')
 
-    if utime.time() - last_feed > constants.WATCHDOG_TIMEOUT:
-        reset(reason='Feed timeout')
+    except MemoryError as e:
+        context.watchdog.garbage_collection()
+        reset(reason='Memory error: %s' % e)
 
-    check_callback()
+    gc.collect()

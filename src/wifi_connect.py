@@ -1,13 +1,15 @@
-import gc
+
 import sys
+
+import os
 
 import network
 import utime
+from pins import Pins
 
 
-def get_known_ssid(station, wifi_configs, verbose):
+def get_known_ssid(station, wifi_configs):
     print('Scan WiFi...')
-    from pins import Pins
 
     known_ssid = None
     for no in range(3):
@@ -15,12 +17,11 @@ def get_known_ssid(station, wifi_configs, verbose):
             Pins.power_led.toggle()
             ssid, bssid, channel, RSSI, auth_mode, hidden = info
             ssid = ssid.decode("UTF-8")
-            if verbose:
-                print(
-                    'SSID: %s (channel: %s authmode: %s hidden: %s)' % (
-                        ssid, channel, auth_mode, hidden
-                    )
-                )
+            # print(
+            #     'SSID: %s (channel: %s authmode: %s hidden: %s)' % (
+            #         ssid, channel, auth_mode, hidden
+            #     )
+            # )
             if ssid in wifi_configs:
                 known_ssid = ssid
         if known_ssid is not None:
@@ -30,37 +31,33 @@ def get_known_ssid(station, wifi_configs, verbose):
     Pins.power_led.flash(sleep=0.2, count=20)
 
 
-def connect2ssid(station, ssid, password, verbose):
-    from pins import Pins
+def connect2ssid(station, ssid, password):
     for no in range(0, 3):
-        if verbose:
-            print('PHY mode: %s' % network.phy_mode())
+        # print('PHY mode: %s' % network.phy_mode())
         # print('Connect to Wifi access point:', ssid, repr(password))
-        if verbose:
-            print('Connect to Wifi access point: %s' % ssid)
+        print('Connect to Wifi access point: %s' % ssid)
         Pins.power_led.toggle()
         station.connect(ssid, password)
         for wait_sec in range(30, 1, -1):
             status = station.status()
             if status == network.STAT_GOT_IP:
                 Pins.power_led.on()
+                print('Connected:', station.ifconfig())
                 return utime.time()
             elif status == network.STAT_WRONG_PASSWORD:
                 print('Wrong password!')
                 return
-            if verbose:
-                print('wait %i...' % wait_sec)
+            print('wait %i...' % wait_sec)
             Pins.power_led.flash(sleep=0.1, count=10)
 
-        if verbose:
-            print('Try again...')
+        print('Try again...')
         station.disconnect()
         station.active(False)
         Pins.power_led.flash(sleep=0.1, count=20)
         Pins.power_led.off()
         station.active(True)
 
-    print("ERROR: WiFi not connected! Password wrong?!?")
+    print('Not connected!')
     Pins.power_led.flash(sleep=0.2, count=20)
 
 
@@ -69,48 +66,38 @@ def set_dhcp_hostname(station):
     from device_name import get_device_name
     device_name = get_device_name()
 
-    del get_device_name
-    del sys.modules['device_name']
-    gc.collect()
-
     print(repr(device_name))
     station.config(dhcp_hostname=device_name)
 
 
-def connect(station, verbose):
+def connect(station):
     station.active(True)  # activate the interface
 
-    from pins import Pins
     Pins.power_led.flash(sleep=0.1, count=5)
 
-    if verbose:
-        print('read WiFi config...')
+    print('read WiFi config...')
 
     # Rename old 'config.json' to new '_config_wifi.json'
-    import os
     try:
         os.stat('config.json')  # Check if exists
     except OSError:
         pass
     else:
         os.rename('config.json', '_config_wifi.json')
-    del os
-    gc.collect()
 
     from config_files import get_json_config
     wifi_configs = get_json_config(key='wifi')
 
     del get_json_config
     del sys.modules['config_files']
-    gc.collect()
 
     if wifi_configs is None:
-        raise RuntimeError('Empty WiFi settings! Please upload you WiFi config file!')
+        raise RuntimeError('Empty WiFi settings!')
 
     set_dhcp_hostname(station)
 
     try:
-        known_ssid = get_known_ssid(station, wifi_configs, verbose=verbose)
+        known_ssid = get_known_ssid(station, wifi_configs)
     except OSError as e:
         print('Error get known SSID:', e)  # e.g.: 'scan failed'
         Pins.power_led.flash(sleep=0.4, count=20)
@@ -123,13 +110,4 @@ def connect(station, verbose):
             station=station,
             ssid=known_ssid,
             password=wifi_configs[known_ssid],
-            verbose=verbose
         )
-
-
-if __name__ == '__main__':
-    # Connect or reconnect
-    sta_if = network.WLAN(network.STA_IF)
-    sta_if.disconnect()
-    connect(station=sta_if, verbose=True)
-    print('connected:', sta_if.isconnected())

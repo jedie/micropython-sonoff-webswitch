@@ -10,7 +10,10 @@
 import asyncio
 import hashlib
 import socket
+import subprocess
 import time
+
+import mpy_cross
 
 SOCKET_TIMEOUT = 10
 
@@ -72,6 +75,29 @@ async def open_connection(host=None, port=None):
     return reader, writer
 
 
+def get_mpy_cross_version():
+    """
+    Returns 'mpy_cross' version as string e.g.:
+        'v1.12'
+    """
+    process = mpy_cross.run(
+        '--version',
+        stdout=subprocess.PIPE,
+        universal_newlines=True,
+    )
+    retcode = process.wait(timeout=1)
+    if retcode != 0:
+        raise AssertionError('Error getting mpy_cross version!')
+
+    # e.g.:
+    # 'MicroPython v1.12 on 2019-12-21; mpy-cross emitting mpy v5\n'
+    raw_mpy_cross_version = process.stdout.readline().strip()
+    print(f'Installed mpy_cross version is for {raw_mpy_cross_version}')
+    assert raw_mpy_cross_version.startswith('MicroPython v')
+    version = raw_mpy_cross_version.split(' ', 2)[1]
+    return version
+
+
 class OtaServer:
     def __init__(self, src_path, verbose=False):
         self.src_path = src_path.resolve()
@@ -94,6 +120,8 @@ class OtaServer:
         print(f'Send Updates to {peername[0]}:{peername[1]}')
 
         await self.request_ping(reader, writer)
+
+        await self.check_micropython_version(reader, writer)
         self.client_chunk_size = await self.get_client_chunk_size(reader, writer)
 
         print('-' * 100)
@@ -180,6 +208,23 @@ class OtaServer:
         client_chunk_size = int(client_chunk_size)
         print(f'Client chunk size: {client_chunk_size!r} Bytes')
         return client_chunk_size
+
+    async def check_micropython_version(self, reader, writer):
+        print('\nCheck micropython versions:')
+        mpy_cross_version = get_mpy_cross_version()
+
+        await writer.write_text_line('mpy_version')
+        raw_mpy_version = await reader.readline()  # e.g.: b'v1.12 on 2019-12-20\n'
+        raw_mpy_version = raw_mpy_version.decode('ASCII').strip()
+        print(f'Micropython version on device is: {raw_mpy_version}')
+        mpy_version = raw_mpy_version.split(' ', 1)[0]
+
+        if mpy_version != mpy_cross_version:
+            raise AssertionError(
+                'Version error! Device mpy version does not match with installed mpy_cross!'
+            )
+
+        print('Version matched, ok.\n')
 
     async def request_files_info(self, reader, writer):
         print('Request files info from device:')

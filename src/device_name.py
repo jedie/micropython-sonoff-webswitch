@@ -34,5 +34,9 @@ def get_device_name():
     from config_files import get_json_config
     name = get_json_config(key=_CFG_KEY)
     if not name:
-        return get_default_name()
+        name = get_default_name()
+
+    del get_json_config
+    del sys.modules['config_files']
+    gc.collect()
     return name

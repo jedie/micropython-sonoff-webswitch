@@ -4,25 +4,26 @@ import sys
 import constants
 
 
-async def get_form(server, reader, writer, querystring, timers=None):
-    if timers is None:
-        from times_utils import pformat_timers, restore_timers
-        timers = pformat_timers(restore_timers())
-        del pformat_timers
-        del restore_timers
-        del sys.modules['times_utils']
-        gc.collect()
+async def get_form(server, reader, writer, querystring, body):
+    import times_utils
+    timers = times_utils.pformat_timers(server.context.power_timer_timers)
 
-    from times_utils import get_active_days
-    active_days = get_active_days()
-    del get_active_days
-    del sys.modules['times_utils']
-    gc.collect()
+    active_days = times_utils.get_active_days()
+
+    # We need more free RAM to continue :-/
+    server.context.watchdog.garbage_collection()
+
+    # Maybe the timers was edited just before: Update the context with current informations:
+    from power_timer import update_power_timer
+    update_power_timer(server.context)
+
+    # We need more free RAM to continue :-/
+    server.context.watchdog.garbage_collection()
 
     context = {
         'timers': timers,
-        'on_selected': 'selected' if server.power_timer.active else '',
-        'off_selected': '' if server.power_timer.active else 'selected',
+        'on_selected': 'selected' if server.context.power_timer_active else '',
+        'off_selected': '' if server.context.power_timer_active else 'selected',
     }
     for day_no in range(7):
         context['d%i' % day_no] = 'checked' if day_no in active_days else ''
@@ -39,28 +40,35 @@ async def get_form(server, reader, writer, querystring, timers=None):
     )
 
 
-async def get_submit(server, reader, writer, querystring, body):
+async def post_submit(server, reader, writer, querystring, body):
     from urllib_parse import request_query2dict
-    get_parameters = request_query2dict(querystring)
+    body = request_query2dict(body)
+
     del request_query2dict
     del sys.modules['urllib_parse']
     gc.collect()
 
-    from times_utils import parse_timers, save_timers, save_active_days
+    import times_utils
     try:
-        timers = tuple(parse_timers(get_parameters['timers']))
-        del parse_timers
+        timers = tuple(times_utils.parse_timers(body['timers']))
+    except ValueError as e:
+        server.message = 'Timers error: %s' % e
+    else:
+        # Save timers to flash:
+        times_utils.save_timers(timers)
 
-        save_timers(timers)
-        del save_timers
+        # Update context with current timers:
+        server.context.power_timer_timers = timers
 
-        power_timer_active = get_parameters['active'] == 'on'
+        power_timer_active = body.get('active') == 'on'
 
-        save_active_days(tuple(sorted([
+        times_utils.save_active_days(tuple(sorted([
             no for no in range(7)
-            if 'd%i' % no in get_parameters
+            if 'd%i' % no in body
         ])))
-        del save_active_days
+
+        del sys.modules['times_utils']
+        gc.collect()
 
         from rtc import update_rtc_dict
         update_rtc_dict(data={
@@ -69,27 +77,21 @@ async def get_submit(server, reader, writer, querystring, body):
             # Deactivate manual overwrite, so that timers are used:
             constants.RTC_KEY_MANUAL_OVERWRITE_TYPE: None,
         })
+
         del update_rtc_dict
-    except ValueError as e:
-        server.message = 'Timers error: %s' % e
-        await get_form(server, reader, writer, querystring, timers=get_parameters['timers'])
-        return
+        del sys.modules['rtc']
+        gc.collect()
 
-    del get_parameters
-    del sys.modules['rtc']
-    gc.collect()
+        # Update power timer:
+        if power_timer_active:
+            server.message = 'Timers saved and activated.'
+        else:
+            server.message = 'Timers saved and deactivated.'
 
-    # Update power timer:
-    if power_timer_active:
-        server.message = 'Timers saved and activated.'
-    else:
-        server.message = 'Timers saved and deactivated.'
+        # Force set 'active' and 'today_active' by update_relay_switch() in update_power_timer():
+        server.context.power_timer_active = None
+        server.context.power_timer_today_active = None
 
-    # Force set 'active' and 'today_active' by update_relay_switch() in update_power_timer():
-    server.power_timer.active = None
-    server.power_timer.today_active = None
-
-    server.power_timer.update_relay_switch()
     gc.collect()
 
     from http_utils import send_redirect

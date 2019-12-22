@@ -45,11 +45,11 @@ print('Detected filesystem:', detect_filesystem())
 print('\nconvert to FAT...\n')  # only on ESP8266 and ESP32
 
 # os.umount('/')
-os.VfsFat.mkfs(flashbdev.bdev)
+# os.VfsFat.mkfs(flashbdev.bdev)
 # os.mount(flashbdev.bdev, '/')
-
-filesystem_hex_dump(line_count=5, chunk_size=16)
-print('Detected filesystem:', detect_filesystem())
+#
+# filesystem_hex_dump(line_count=5, chunk_size=16)
+# print('Detected filesystem:', detect_filesystem())
 
 print('\nconvert to littlefs2...\n')  # only on ESP8266 and ESP32
 

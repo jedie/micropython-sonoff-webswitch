@@ -28,7 +28,8 @@ async def _switch(server, writer, turn_on):
         constants.RTC_KEY_MANUAL_OVERWRITE_TYPE: turn_on
     })
 
-    server.power_timer.update_relay_switch()
+    from power_timer import update_power_timer
+    update_power_timer(context=server.context)
 
     from http_utils import send_redirect
     await send_redirect(writer)

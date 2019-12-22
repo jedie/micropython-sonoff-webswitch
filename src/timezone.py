@@ -30,6 +30,7 @@ def restore_timezone():
 
     del restore_py_config
     del sys.modules['config_files']
+    gc.collect()
     return offset_h
 
 
@@ -53,11 +54,21 @@ def localtime_isoformat(sep='T', dt=None, epoch=None, offset_h=None, add_offset=
 
 
 def get_local_epoch():
-    offset_sec = restore_timezone() * 60 * 60
-
-    # year, month, mday, hour, minute, second, weekday, yearday
-    utc_time_tuple = utime.localtime()
-    utc_now_epoch = utime.mktime(utc_time_tuple)
-
-    local_epoch = utc_now_epoch + (offset_sec * -1)
-    return local_epoch
+    return utime.mktime(
+        utime.localtime()  # year, month, mday, hour, minute, second, weekday, yearday
+    ) + (
+        abs(
+            restore_timezone() * 60 * 60  # offset in sec can be positive and negative!
+        )  # convert via abs() to a positive value
+    )
+    #
+    # in steps, it looks like:
+    #
+    # offset_sec = abs(restore_timezone() * 60 * 60)
+    #
+    # # year, month, mday, hour, minute, second, weekday, yearday
+    # utc_time_tuple = utime.localtime()
+    # utc_now_epoch = utime.mktime(utc_time_tuple)
+    #
+    # local_epoch = utc_now_epoch + offset_sec
+    # return local_epoch
