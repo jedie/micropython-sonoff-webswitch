@@ -111,6 +111,10 @@ overview:
 
 Notes: In my experience flashing the S20 needs `-fs 1MB -fm dout 0x0`.
 
+**Importand**:
+
+The micropython version and the `mpy_cross` version must be **the same**!
+Otherwise the compiled `.mpy` can't run on the device!
 
 ## WiFi config
 
@@ -177,6 +181,7 @@ If server runs: reboot device and look to the output of the OTA server.
 
 The OTA update implementation does:
 
+* compare device micropython version with installed `mpy_cross` version (If not match: deny update)
 * send only new/changed files
 * remove existing `.py` file on the device if `.mpy` file was send
 * replace existing files only after correct sha hash verify
