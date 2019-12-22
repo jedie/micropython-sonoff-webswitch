@@ -8,16 +8,15 @@ import gc
 import sys
 
 import machine
-import uasyncio as asyncio
-import ubinascii as binascii
-import uhashlib as hashlib
-import uos as os
+import uasyncio
+import ubinascii
+import uhashlib
+import uos
 import utime
 from micropython import const
 
-sys.modules.clear()
-
-gc.collect()
+sys.modules.clear()  # noqa isort:skip
+gc.collect()  # noqa isort:skip
 
 
 _CONNECTION_TIMEOUT = const(30)
@@ -63,8 +62,8 @@ class OtaUpdate:
 
     def run(self):
 
-        loop = asyncio.get_event_loop()
-        loop.create_task(asyncio.start_server(self, '0.0.0.0', _PORT))
+        loop = uasyncio.get_event_loop()
+        loop.create_task(uasyncio.start_server(self, '0.0.0.0', _PORT))
 
         print('Wait %i sec for OTA connection on port %i' % (_CONNECTION_TIMEOUT, _PORT))
         self.timeout = Timeout(reason='no connection', timeout_sec=_CONNECTION_TIMEOUT)
@@ -122,16 +121,19 @@ class OtaUpdate:
     async def command_chunk_size(self, reader, writer):
         await self.write_line_string(writer, '%i' % _CHUNK_SIZE)
 
+    async def command_mpy_version(self, reader, writer):
+        await self.write_line_string(writer, uos.uname().version)
+
     async def command_files_info(self, reader, writer):
         print('Send files info...')
-        for name, file_type, inode, size in os.ilistdir():
+        for name, file_type, inode, size in uos.ilistdir():
             if file_type != _FILE_TYPE:
                 print(' *** Skip: %s' % name)
                 continue
 
             await writer.awrite(b'%s\r%i\r' % (name, size))
 
-            sha256 = hashlib.sha256()
+            sha256 = uhashlib.sha256()
             with open(name, 'rb') as f:
                 while True:
                     count = f.readinto(_BUFFER, _CHUNK_SIZE)
@@ -141,7 +143,7 @@ class OtaUpdate:
                     else:
                         sha256.update(_BUFFER)
 
-            await writer.awrite(binascii.hexlify(sha256.digest()))
+            await writer.awrite(ubinascii.hexlify(sha256.digest()))
             await writer.awrite(b'\r\n')
         await writer.awrite(b'\n\n')
         print('Files info sended, ok.')
@@ -160,7 +162,7 @@ class OtaUpdate:
         temp_file_name = '%s.temp' % file_name
         try:
             with open(temp_file_name, 'wb') as f:
-                sha256 = hashlib.sha256()
+                sha256 = uhashlib.sha256()
                 received = 0
                 while True:
                     print('.', end='')
@@ -177,15 +179,15 @@ class OtaUpdate:
 
             print('Received %i Bytes' % received, end=' ')
 
-            local_file_size = os.stat(temp_file_name)[6]
+            local_file_size = uos.stat(temp_file_name)[6]
             if local_file_size != file_size:
                 await self.error(writer, 'Size error!')
 
-            hexdigest = binascii.hexlify(sha256.digest()).decode('utf-8')
+            hexdigest = ubinascii.hexlify(sha256.digest()).decode('utf-8')
             if hexdigest == file_sha256:
                 print('Hash OK:', hexdigest)
                 print('Compare written file content', end=' ')
-                sha256 = hashlib.sha256()
+                sha256 = uhashlib.sha256()
                 with open(temp_file_name, 'rb') as f:
                     while True:
                         count = f.readinto(_BUFFER, _CHUNK_SIZE)
@@ -195,20 +197,20 @@ class OtaUpdate:
                         else:
                             sha256.update(_BUFFER)
 
-                hexdigest = binascii.hexlify(sha256.digest()).decode('utf-8')
+                hexdigest = ubinascii.hexlify(sha256.digest()).decode('utf-8')
                 if hexdigest == file_sha256:
                     print('Hash OK:', hexdigest)
                     try:
-                        os.remove(file_name)
+                        uos.remove(file_name)
                     except OSError:
                         pass  # e.g.: new file that doesn't exist, yet.
 
-                    os.rename(temp_file_name, file_name)
+                    uos.rename(temp_file_name, file_name)
 
                     if file_name.endswith('.mpy'):
                         py_filename = '%s.py' % file_name.rsplit('.', 1)[0]
                         try:
-                            os.remove(py_filename)
+                            uos.remove(py_filename)
                         except OSError:
                             pass  # *.py file doesn't exists
 
@@ -219,7 +221,7 @@ class OtaUpdate:
         finally:
             print('Remove temp file')
             try:
-                os.remove(temp_file_name)
+                uos.remove(temp_file_name)
             except OSError:
                 pass
 
