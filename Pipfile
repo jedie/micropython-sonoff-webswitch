@@ -7,7 +7,7 @@ verify_ssl = true
 
 [packages]
 pttydev = "*"
-mpy-cross = "*"
+mpy-cross = "==1.12"
 flake8 = "*"
 pytest-cov = "*"
 pytest = "*"

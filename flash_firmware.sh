@@ -21,11 +21,11 @@
 
 set -ex
 
-FIRMWARE='esp8266-20190529-v1.11.bin'
+FIRMWARE='esp8266-20190529-v1.12.bin'
 
-wget --timestamp https://micropython.org/resources/firmware/esp8266-20190529-v1.11.bin
+wget --timestamp http://micropython.org/resources/firmware/${FIRMWARE}
 
-#sha256sum ${FIRMWARE} > ${FIRMWARE}.sha256
+sha256sum ${FIRMWARE} > ${FIRMWARE}.sha256
 sha256sum -c ${FIRMWARE}.sha256
 
 #pipenv run esptool.py --port /dev/ttyUSB0 erase_flash
