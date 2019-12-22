@@ -1,5 +1,5 @@
 
-# import sys
+import sys
 
 
 async def get_wifi(server, reader, writer, querystring, body):
@@ -9,8 +9,8 @@ async def get_wifi(server, reader, writer, querystring, body):
     from config_files import get_json_config
     wifi_configs = get_json_config(key='wifi')
 
-    # del get_json_config
-    # del sys.modules['config_files']
+    del get_json_config
+    del sys.modules['config_files']
 
     settings = []
     for key, value in wifi_configs.items():
@@ -60,8 +60,8 @@ async def post_set_name(server, reader, writer, querystring, body):
     """
     from urllib_parse import request_query2dict
     body = request_query2dict(body)
-    # del request_query2dict
-    # del sys.modules['urllib_parse']
+    del request_query2dict
+    del sys.modules['urllib_parse']
 
     new_name = body['name']  # TODO: validate name
     from device_name import save_device_name
@@ -96,8 +96,8 @@ async def get_set_timezone(server, reader, writer, querystring, body):
 async def post_set_timezone(server, reader, writer, querystring, body):
     from urllib_parse import request_query2dict
     body = request_query2dict(body)
-    # del request_query2dict
-    # del sys.modules['urllib_parse']
+    del request_query2dict
+    del sys.modules['urllib_parse']
 
     offset = int(body['offset'])
     if not -12 <= offset <= 12:
@@ -105,14 +105,14 @@ async def post_set_timezone(server, reader, writer, querystring, body):
     else:
         from timezone import save_timezone
         save_timezone(offset_h=int(offset))
-        # del save_timezone
-        # del sys.modules['timezone']
+        del save_timezone
+        del sys.modules['timezone']
 
         # Change the time to the right time zone
         from ntp import ntp_sync
         ntp_sync()
-        # del ntp_sync
-        # del sys.modules['ntp']
+        del ntp_sync
+        del sys.modules['ntp']
 
         server.message = 'Save timezone %+i' % offset
 

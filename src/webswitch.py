@@ -14,12 +14,11 @@ class WebServer:
         self.message = 'Web server started...'
         self.context.minimal_modules = tuple(sorted(sys.modules.keys()))
 
-        # don't wait until watchdog calls ntp_sync() and update_power_timer()
-        from ntp import ntp_sync
-        ntp_sync(context)
-
-        from power_timer import update_power_timer
-        update_power_timer(context)
+        # from ntp import ntp_sync
+        # ntp_sync(context)
+        #
+        # from power_timer import update_power_timer
+        # update_power_timer(context)
 
     async def send_html_page(self, writer, filename, content_iterator=None):
         # await writer.awrite(constants.HTTP_LINE_200)
@@ -31,14 +30,14 @@ class WebServer:
         from timezone import localtime_isoformat
         localtime = localtime_isoformat(sep=' ')
 
-        # del localtime_isoformat
-        # del sys.modules['timezone']
+        del localtime_isoformat
+        del sys.modules['timezone']
 
         from device_name import get_device_name
         device_name = get_device_name()
 
-        # del get_device_name
-        # del sys.modules['device_name']
+        del get_device_name
+        del sys.modules['device_name']
 
         from template import render
 
@@ -78,12 +77,12 @@ class WebServer:
         if func is None:
             raise AttributeError('Not found: %s.%s' % (module_name, func_name))
 
-        self.context.watchdog.garbage_collection()
+        gc.collect()
 
         await func(self, reader, writer, querystring, body)
-        # del func
-        # del module
-        # del sys.modules[module_name]
+        del func
+        del module
+        self.context.watchdog.garbage_collection()
 
     async def send_response(self, reader, writer):
         print('Request from:', writer.get_extra_info('peername'))
@@ -95,8 +94,9 @@ class WebServer:
             self.message = str(e)
             url = '/'  # redirect
 
-        # del parse_request
-        # del sys.modules['http_utils']
+        del parse_request
+        del sys.modules['http_utils']
+        gc.collect()
 
         if url == '/':
             from http_utils import send_redirect
@@ -122,6 +122,9 @@ class WebServer:
             if isinstance(e, MemoryError):
                 from reset import ResetDevice
                 ResetDevice(reason='MemoryError: %s' % e).schedule(period=5000)
+
+        print('close writer')
+        gc.collect()
         await writer.aclose()
 
         self.context.watchdog.garbage_collection()
@@ -129,10 +132,36 @@ class WebServer:
         print('----------------------------------------------------------------------------------')
 
     async def feed_watchdog(self):
+        """
+        Start some periodical tasks and feed the watchdog
+        """
         sleep_time = int(constants.WATCHDOG_TIMEOUT / 2)
         while True:
-            await uasyncio.sleep(sleep_time)
+
+            gc.collect()
+
+            from power_timer import update_power_timer
+            if update_power_timer(self.context) is not True:
+                from reset import ResetDevice
+                ResetDevice(reason='Update power timer error').reset()
+
+            del update_power_timer
+            del sys.modules['power_timer']
+            gc.collect()
+
+            from ntp import ntp_sync
+            if ntp_sync(self.context) is not True:
+                from reset import ResetDevice
+                ResetDevice(reason='NTP sync error').reset()
+
+            del ntp_sync
+            del sys.modules['ntp']
+            gc.collect()
+
             self.context.watchdog.feed()
+
+            gc.collect()
+            await uasyncio.sleep(sleep_time)
 
     def run(self):
         loop = uasyncio.get_event_loop()
@@ -142,8 +171,8 @@ class WebServer:
         from led_dim_level_cfg import restore_power_led_level
         Pins.power_led.on()
         restore_power_led_level()
-        # del restore_power_led_level
-        # del sys.modules['led_dim_level_cfg']
+        del restore_power_led_level
+        del sys.modules['led_dim_level_cfg']
 
         print(self.message)
         loop.run_forever()

@@ -1,5 +1,5 @@
 
-# import sys
+import sys
 
 import network
 import utime
@@ -31,8 +31,8 @@ def ensure_connection(context):
     from wifi_connect import connect
     connected_time = connect(station)
 
-    # del connect
-    # del sys.modules['wifi_connect']
+    del connect
+    del sys.modules['wifi_connect']
 
     if context.wifi_first_connect_time is None:
         context.wifi_first_connect_time = connected_time

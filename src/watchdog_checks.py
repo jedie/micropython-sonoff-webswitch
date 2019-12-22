@@ -3,7 +3,6 @@
 import gc
 
 import constants
-import micropython
 import uerrno
 import usocket
 import utime
@@ -33,20 +32,14 @@ def can_bind_web_server_port():
             if e.args[0] == uerrno.EADDRINUSE:
                 return False
         else:
-            print('ERROR: Web server not running! (Can bind to %s:%i)' % server_address)
+            # Web server not running, because we can bind the address
             return True
     finally:
         sock.close()
 
 
 def check(context):
-    micropython.mem_info()
-
     gc.collect()
-    # gc.threshold(gc.mem_free() // 4 + gc.mem_alloc())
-
-    micropython.mem_info()
-
     try:
         if gc.mem_free() < _MIN_FREE:
             reset(reason='RAM full')
@@ -58,17 +51,13 @@ def check(context):
         if ensure_connection(context) is not True:
             reset(reason='No Wifi connection')
 
+        gc.collect()
+
         if can_bind_web_server_port():
             reset(reason='Web Server down')
 
-        from power_timer import update_power_timer
-        if update_power_timer(context) is not True:
-            reset(reason='Update power timer error')
-
-        from ntp import ntp_sync
-        if ntp_sync(context) is not True:
-            reset(reason='NTP sync error')
     except MemoryError as e:
+        context.watchdog.garbage_collection()
         reset(reason='Memory error: %s' % e)
 
     gc.collect()

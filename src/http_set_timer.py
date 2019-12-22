@@ -1,15 +1,24 @@
-
+import gc
+import sys
 
 import constants
 
 
-async def get_form(server, reader, writer, querystring, timers=None):
-    if timers is None:
-        from times_utils import pformat_timers, restore_timers
-        timers = pformat_timers(restore_timers())
+async def get_form(server, reader, writer, querystring, body):
+    import times_utils
+    timers = times_utils.pformat_timers(server.context.power_timer_timers)
 
-    from times_utils import get_active_days
-    active_days = get_active_days()
+    active_days = times_utils.get_active_days()
+
+    # We need more free RAM to continue :-/
+    server.context.watchdog.garbage_collection()
+
+    # Maybe the timers was edited just before: Update the context with current informations:
+    from power_timer import update_power_timer
+    update_power_timer(server.context)
+
+    # We need more free RAM to continue :-/
+    server.context.watchdog.garbage_collection()
 
     context = {
         'timers': timers,
@@ -31,50 +40,59 @@ async def get_form(server, reader, writer, querystring, timers=None):
     )
 
 
-async def get_submit(server, reader, writer, querystring, body):
+async def post_submit(server, reader, writer, querystring, body):
     from urllib_parse import request_query2dict
-    get_parameters = request_query2dict(querystring)
+    body = request_query2dict(body)
 
-    from times_utils import parse_timers, save_timers, save_active_days
+    del request_query2dict
+    del sys.modules['urllib_parse']
+    gc.collect()
+
+    import times_utils
     try:
-        timers = tuple(parse_timers(get_parameters['timers']))
+        timers = tuple(times_utils.parse_timers(body['timers']))
     except ValueError as e:
         server.message = 'Timers error: %s' % e
-        await get_form(server, reader, writer, querystring, timers=get_parameters['timers'])
-        return
-
-    save_timers(timers)
-
-    power_timer_active = get_parameters['active'] == 'on'
-
-    save_active_days(tuple(sorted([
-        no for no in range(7)
-        if 'd%i' % no in get_parameters
-    ])))
-
-    # We need more free RAM to continue :-/
-    server.context.watchdog.garbage_collection()
-
-    from rtc import update_rtc_dict
-    update_rtc_dict(data={
-        constants.POWER_TIMER_ACTIVE_KEY: power_timer_active,
-        #
-        # Deactivate manual overwrite, so that timers are used:
-        constants.RTC_KEY_MANUAL_OVERWRITE_TYPE: None,
-    })
-
-    # Update power timer:
-    if power_timer_active:
-        server.message = 'Timers saved and activated.'
     else:
-        server.message = 'Timers saved and deactivated.'
+        # Save timers to flash:
+        times_utils.save_timers(timers)
 
-    # Force set 'active' and 'today_active' by update_relay_switch() in update_power_timer():
-    server.context.power_timer_active = None
-    server.context.power_timer_today_active = None
+        # Update context with current timers:
+        server.context.power_timer_timers = timers
 
-    # from power_timer import update_power_timer
-    # update_power_timer(server.context)
+        power_timer_active = body.get('active') == 'on'
+
+        times_utils.save_active_days(tuple(sorted([
+            no for no in range(7)
+            if 'd%i' % no in body
+        ])))
+
+        del sys.modules['times_utils']
+        gc.collect()
+
+        from rtc import update_rtc_dict
+        update_rtc_dict(data={
+            constants.POWER_TIMER_ACTIVE_KEY: power_timer_active,
+            #
+            # Deactivate manual overwrite, so that timers are used:
+            constants.RTC_KEY_MANUAL_OVERWRITE_TYPE: None,
+        })
+
+        del update_rtc_dict
+        del sys.modules['rtc']
+        gc.collect()
+
+        # Update power timer:
+        if power_timer_active:
+            server.message = 'Timers saved and activated.'
+        else:
+            server.message = 'Timers saved and deactivated.'
+
+        # Force set 'active' and 'today_active' by update_relay_switch() in update_power_timer():
+        server.context.power_timer_active = None
+        server.context.power_timer_today_active = None
+
+    gc.collect()
 
     from http_utils import send_redirect
     await send_redirect(writer, url='/set_timer/form/')

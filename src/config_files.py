@@ -8,7 +8,6 @@
     https://forum.micropython.org/viewtopic.php?f=2&t=7386
 """
 
-# import sys
 import sys
 
 _CFG_FILE_PREFIX = '_config_'
@@ -56,13 +55,9 @@ def restore_py_config(module_name, default=None):
         # e.g: py file not created, yet.
         return default
     except SyntaxError:
-        file_name = module_name + '.py'
-        print('Syntax error in:', file_name)
-        with open(file_name, 'r') as f:
-            print(f.read())
-        print('Remove file...')
+        print('Syntax error in:', module_name)
         import os
-        os.remove(file_name)
+        os.remove(module_name + '.py')
         return default
 
     value = getattr(module, _PY_VALUE_ATTRIBUTE_NAME, default)

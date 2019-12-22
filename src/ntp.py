@@ -1,5 +1,3 @@
-# import sys
-
 import machine
 import utime
 from micropython import const
@@ -74,10 +72,7 @@ def ntp_sync(context):
 
     sync_done = _ntp_sync()  # update RTC via NTP
     if sync_done is True:
-        context.ntp_next_sync = utime.time() + _NTP_SYNC_WAIT_TIME_SEC
-        from timezone import localtime_isoformat
-        context.ntp_last_sync = localtime_isoformat()
-        # del localtime_isoformat
-        # del sys.modules['timezone']
+        context.ntp_last_sync = utime.time()
+        context.ntp_next_sync = context.ntp_last_sync + _NTP_SYNC_WAIT_TIME_SEC
 
     return sync_done

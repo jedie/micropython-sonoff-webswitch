@@ -1,8 +1,9 @@
-
-# import sys
+import gc
+import sys
 
 import constants
 import utime
+from pins import Pins
 
 
 def get_info_text(context):
@@ -35,8 +36,8 @@ def active_today():
     """
     from times_utils import get_active_days
     active_days = get_active_days()
-    # del get_active_days
-    # del sys.modules['times_utils']
+    del get_active_days
+    del sys.modules['times_utils']
 
     today = utime.localtime()[6]
     print('Today:', today, 'active_days:', active_days)
@@ -50,49 +51,45 @@ def update_power_timer(context):
     Will be called from watchdog_checks.check()
     Must return True if everything is ok.
     """
-    from timezone import localtime_isoformat
+    gc.collect()
 
-    context.power_timer_last_update = localtime_isoformat(sep=' ')
-
-    print('Update power timer at', context.power_timer_last_update)
+    context.power_timer_last_update = utime.time()
+    print('Update power timer:', context.power_timer_last_update)
 
     from rtc import get_dict_from_rtc
-    from times_utils import get_next_timer
-
     rtc_memory_dict = get_dict_from_rtc()
-    # del get_dict_from_rtc
-    # del sys.modules['rtc']
+
+    if context.power_timer_timers is None:
+        # After a boot -> load timers from flash
+        from times_utils import restore_timers
+        context.power_timer_timers = restore_timers()
 
     context.power_timer_active = rtc_memory_dict.get(constants.POWER_TIMER_ACTIVE_KEY, True)
 
     manual_overwrite = rtc_memory_dict.get(constants.RTC_KEY_MANUAL_OVERWRITE, 0)
     current_state = rtc_memory_dict.get(constants.RTC_KEY_MANUAL_OVERWRITE_TYPE)
 
-    # del rtc_memory_dict
-
-    # def epoch2clock(epoch):
-    #     if epoch is None:
-    #         return '-'
-    #     return '%s (%i)' % (
-    #         ':'.join(['%02i' % i for i in utime.localtime(epoch)[3:5]]),
-    #         epoch
-    #     )
-    #
-    # print('manual overwrite:', epoch2clock(manual_overwrite), current_state)
+    del rtc_memory_dict
+    del sys.modules['rtc']
+    gc.collect()
 
     if context.power_timer_today_active is None:
         context.power_timer_today_active = active_today()
 
     if context.power_timer_active and context.power_timer_today_active:
         # Update power timer state
-        last_timer_epoch, turn_on, context.power_timer_next_timer_epoch = get_next_timer()
+        from times_utils import get_current_timer
+        last_timer_epoch, turn_on, context.power_timer_next_timer_epoch = get_current_timer(context)
+
+        del get_current_timer
+        del sys.modules['times_utils']
+        gc.collect()
+
         context.power_timer_turn_on = turn_on
 
         if last_timer_epoch is None:
             print('No timer scheduled')
         else:
-            # print('last timer......:', epoch2clock(last_timer_epoch))
-
             if current_state is None or manual_overwrite < last_timer_epoch:
                 print('Set state from timer')
                 # Note:
@@ -101,17 +98,12 @@ def update_power_timer(context):
                 # now in a "OFF" phase ;)
                 current_state = not turn_on
 
-    # print('next timer......:',
-    #       epoch2clock(context.power_timer_next_timer_epoch),
-    #       'ON' if context.power_timer_turn_on else 'OFF')
-
     context.power_timer_info_text = get_info_text(context)
 
     if current_state is None:
         # No timer to scheduled and no manual overwrite
         return True
 
-    from pins import Pins
     if current_state:
         print('Switch on')
         Pins.relay.on()
@@ -119,4 +111,5 @@ def update_power_timer(context):
         print('Switch off')
         Pins.relay.off()
 
+    gc.collect()
     return True

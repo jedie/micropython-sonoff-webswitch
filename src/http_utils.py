@@ -1,23 +1,29 @@
+import gc
+
 import constants
 
 
 async def send_redirect(writer, url='/main/menu/'):
-    print('redirect to: %r' % url)
+    print('redirect to: %r' % url, end=' ')
     await writer.awrite(constants.HTTP_LINE_303)
     await writer.awrite(constants.HTTP_LINE_LOCATION.format(url=url))
     await writer.awrite(b'\r\n')
+    gc.collect()
+    print('OK')
 
 
 async def send_error(writer, reason, http_code=404):
-    print('%s -> %i' % (reason, http_code))
+    print('%s -> %i' % (reason, http_code), end=' ')
     await writer.awrite(b'HTTP/1.0 %i\r\n' % http_code)
     await writer.awrite(b'Content-type: text/plain; charset=utf-8\r\n\r\n')
     await writer.awrite(str(reason))
+    gc.collect()
+    print('OK')
 
 
 async def parse_request(reader):
     method, url, http_version = (await reader.readline()).decode().strip().split()
-    # print(http_version)
+    print(method, url, http_version)
 
     if '?' in url:
         url, querystring = url.split('?', 1)

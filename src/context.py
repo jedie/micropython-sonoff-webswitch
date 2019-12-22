@@ -2,6 +2,7 @@
 class Context:
     power_timer_active = True
     power_timer_today_active = True
+    power_timer_timers = None
     power_timer_turn_on = None
     power_timer_next_timer = None  # epoch
     power_timer_last_update = None  # epoch
