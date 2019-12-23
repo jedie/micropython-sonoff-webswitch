@@ -42,6 +42,8 @@ def save_json_config(key, cfg):
 
     if get_json_config(key=key) != cfg:
         raise AssertionError('Json config verify error!')
+    else:
+        print('Json saved and verified, ok.')
 
 
 def restore_py_config(module_name, default=None):
@@ -90,3 +92,5 @@ def save_py_config(module_name, value):
     verify = restore_py_config(module_name)
     if verify != value:
         raise AssertionError('Py config verify error: %r != %r' % (verify, value))
+    else:
+        print('Py config saved and verified, ok.')
