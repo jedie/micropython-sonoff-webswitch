@@ -7,7 +7,6 @@ async def send_redirect(writer, url='/main/menu/'):
     print('redirect to: %r' % url, end=' ')
     await writer.awrite(constants.HTTP_LINE_303)
     await writer.awrite(constants.HTTP_LINE_LOCATION.format(url=url))
-    await writer.awrite(b'\r\n')
     gc.collect()
     print('OK')
 
