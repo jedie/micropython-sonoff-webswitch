@@ -85,10 +85,11 @@ class OtaUpdate:
     async def write_line_string(self, writer, text):
         await writer.awrite(b'%s\n' % text.encode('utf-8'))
 
-    async def error(self, writer, text):
+    async def error(self, writer, text, do_reset=True):
         print('ERROR: %s' % text)
         await self.write_line_string(writer, text)
-        reset(text)
+        if do_reset:
+            reset(text)
 
     async def __call__(self, reader, writer):
         self.timeout.deinit()
@@ -104,10 +105,10 @@ class OtaUpdate:
             try:
                 await getattr(self, 'command_%s' % command)(reader, writer)
             except AttributeError:
-                await self.error(writer, 'Command unknown')
+                await self.error(writer, 'Command unknown', do_reset=False)
             except Exception as e:
                 sys.print_exception(e)
-                await self.error(writer, 'Command error')
+                await self.error(writer, 'Command error', do_reset=False)
 
     async def command_send_ok(self, reader, writer):
         await self.write_line_string(writer, 'OK')
