@@ -8,7 +8,7 @@ _PIN_NO_BUTTON = const(0)
 
 
 class Led:
-    def __init__(self, name, pin, on, off):
+    def __init__(self, name, pin, on, off, pwm=False):
         self.name = name
         self.pin = pin
         self._on = on
@@ -17,11 +17,14 @@ class Led:
         self.duty_values = (None, 700, 900, 1000)
         self.duty = None  # Full ON as default
         self.is_on = None
-        self.off()
 
-        self.pwm = machine.PWM(self.pin, freq=100, duty=0)
+        if pwm:
+            self.pwm = machine.PWM(self.pin, freq=100, duty=0)
+        else:
+            self.pwm = None
 
     def set_dim_level(self, dim_level):
+        assert self.pwm is not None, 'no PWM!'
         assert 0 <= dim_level <= len(self.duty_values), 'level %r is not between 0 and %i' % (
             dim_level, len(self.duty_values)
         )
@@ -36,6 +39,7 @@ class Led:
 
     def on(self):
         if self.duty is not None:
+            assert self.pwm is not None
             self.pwm.duty(self.duty)
         else:
             self.pin.value(self._on)
@@ -45,9 +49,11 @@ class Led:
         self.pin.value(self._off)
         self.is_on = False
         if self.duty is not None:
+            assert self.pwm is not None
             self.deinit_pwm()
 
     def deinit_pwm(self):
+        assert self.pwm is not None
         self.pwm.duty(0)
         self.pwm.freq(100)
         self.pwm.deinit()
@@ -78,9 +84,9 @@ class Led:
 
 class Pins:
     power_led_pin = machine.Pin(_PIN_NO_POWER_LED, machine.Pin.OUT)
-    power_led = Led(name='power', pin=power_led_pin, on=0, off=1)
+    power_led = Led(name='power', pin=power_led_pin, on=0, off=1, pwm=True)
 
     relay_pin = machine.Pin(_PIN_NO_RELAY, machine.Pin.OUT)
-    relay = Led(name='relay', pin=relay_pin, on=1, off=0)
+    relay = Led(name='relay', pin=relay_pin, on=1, off=0, pwm=False)
 
     button_pin = machine.Pin(_PIN_NO_BUTTON, machine.Pin.IN)
