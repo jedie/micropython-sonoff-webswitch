@@ -110,7 +110,7 @@ async def post_set_timezone(server, reader, writer, querystring, body):
 
         # Change the time to the right time zone
         from ntp import ntp_sync
-        ntp_sync()
+        ntp_sync(server.context)
         del ntp_sync
         del sys.modules['ntp']
 
