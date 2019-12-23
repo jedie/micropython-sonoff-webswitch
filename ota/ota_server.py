@@ -214,14 +214,23 @@ class OtaServer:
         mpy_cross_version = get_mpy_cross_version()
 
         await writer.write_text_line('mpy_version')
-        raw_mpy_version = await reader.readline()  # e.g.: b'v1.12 on 2019-12-20\n'
+
+        # e.g.:
+        #   b'v1.12 on 2019-12-20\n'
+        #   b'v1.11-8-g48dcbbe60 on 2019-05-29\n'
+        raw_mpy_version = await reader.readline()
+
         raw_mpy_version = raw_mpy_version.decode('ASCII').strip()
         print(f'Micropython version on device is: {raw_mpy_version}')
+        raw_mpy_version = raw_mpy_version.split('-', 1)[0]
         mpy_version = raw_mpy_version.split(' ', 1)[0]
 
         if mpy_version != mpy_cross_version:
+            await self.request_exit(reader, writer)
             raise AssertionError(
-                'Version error! Device mpy version does not match with installed mpy_cross!'
+                f'Version error!'
+                f' Device mpy version does not match with installed mpy_cross!'
+                f' ({mpy_version!r} != {mpy_cross_version!r}'
             )
 
         print('Version matched, ok.\n')
