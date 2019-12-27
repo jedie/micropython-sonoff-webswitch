@@ -22,6 +22,8 @@ class Watchdog:
         )
 
     def _timer_callback(self, timer):
+        gc.collect()
+
         from watchdog_checks import check
         check(context=self.context)
 
