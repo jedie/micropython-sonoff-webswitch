@@ -2,6 +2,7 @@
 
 import machine
 from mpy_tests.test_times_utils import save_timers
+from power_timer import update_power_timer
 from src.times_utils import (get_current_timer, parse_timers, pformat_timers, restore_timers,
                              validate_times)
 from tests.base import MicropythonBaseTestCase
@@ -136,19 +137,22 @@ class ParseTimesTestCase(MicropythonBaseTestCase):
                 ((0, 0), (0, 1)),
                 ((0, 2), (0, 3)),
             ))
+            update_power_timer(self.context)
+
             rtc = machine.RTC()
             rtc.datetime((2000, 1, 1, 5, 0, 0, 0, 0))  # 00:00
-            assert get_current_timer() == (0, False, 60)
+            assert get_current_timer(self.context) == (0, False, 60)
 
             rtc.datetime((2000, 1, 1, 5, 0, 1, 0, 0))  # 00:01
-            assert get_current_timer() == (60, True, 120)
+            assert get_current_timer(self.context) == (60, True, 120)
 
             rtc.datetime((2000, 1, 1, 5, 0, 2, 0, 0))  # 00:02
-            assert get_current_timer() == (120, False, 180)
+            assert get_current_timer(self.context) == (120, False, 180)
 
             rtc.datetime((2000, 1, 1, 5, 0, 3, 0, 0))  # 00:03 -> next timer is on next day!
-            assert get_current_timer() == (180, True, 86400)
+            assert get_current_timer(self.context) == (180, True, 86400)
 
     def test_get_current_timer_empty(self):
         with mock_py_config_context():
-            assert get_current_timer() == (None, None, None)
+            self.context.power_timer_timers = []
+            assert get_current_timer(self.context) == (None, None, None)

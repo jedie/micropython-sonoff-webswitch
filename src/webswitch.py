@@ -136,7 +136,6 @@ class WebServer:
         """
         Start some periodical tasks and feed the watchdog
         """
-        sleep_time = int(constants.WATCHDOG_TIMEOUT / 2)
         while True:
 
             gc.collect()
@@ -162,7 +161,7 @@ class WebServer:
             self.context.watchdog.feed()
 
             gc.collect()
-            await uasyncio.sleep(sleep_time)
+            await uasyncio.sleep(constants.WATCHDOG_TIMEOUT)
 
     def run(self):
         loop = uasyncio.get_event_loop()

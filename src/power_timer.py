@@ -48,7 +48,17 @@ def update_power_timer(context):
     Must return True if everything is ok.
     """
     gc.collect()
-    print('Update power timer:', utime.time())
+    if __debug__:
+        print('Update power timer:', utime.time())
+
+    if context.power_timer_timers is None:
+        if __debug__:
+            print('restore timers')
+        from times_utils import restore_timers
+        context.power_timer_timers = restore_timers()
+        del restore_timers
+        del sys.modules['times_utils']
+        gc.collect()
 
     from rtc import get_dict_from_rtc
     rtc_memory_dict = get_dict_from_rtc()
@@ -67,7 +77,7 @@ def update_power_timer(context):
     if context.power_timer_active and context.power_timer_today_active:
         # Update power timer state
         from times_utils import get_current_timer
-        last_timer_epoch, turn_on, context.power_timer_next_timer_epoch = get_current_timer()
+        last_timer_epoch, turn_on, context.power_timer_next_timer_epoch = get_current_timer(context)
 
         del get_current_timer
         del sys.modules['times_utils']

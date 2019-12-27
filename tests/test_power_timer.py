@@ -20,12 +20,12 @@ class PowerTimerTestCase(MicropythonBaseTestCase):
         super().setUp()
         machine.RTC().datetime((2019, 5, 1, 4, 13, 12, 11, 0))
         self.context = Context
+        self.context.power_timer_timers = None
 
     def test_update_relay_switch_without_timers(self):
-
         update_power_timer(self.context)
         print(get_info_text(self.context))
-        self.assertEqual(get_current_timer(), (None, None, None))
+        self.assertEqual(get_current_timer(self.context), (None, None, None))
 
     def test_update_relay_switch_in_1min(self):
         machine.RTC().deinit()  # start time from 1.1.2000 00:00
@@ -68,7 +68,8 @@ class PowerTimerTestCase(MicropythonBaseTestCase):
 
             assert_current_timer(  # Turn ON at 10:00
                 '72000 -4 h 20:00 2000-01-01T20:00:00'
-                ' -> 122400 10 h 10:00 2000-01-02T10:00:00 -> ON'
+                ' -> 122400 10 h 10:00 2000-01-02T10:00:00 -> ON',
+                self.context
             )
 
             # init relay in state 'OFF'

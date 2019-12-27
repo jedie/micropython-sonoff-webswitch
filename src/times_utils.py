@@ -124,12 +124,13 @@ class Timers:
             utime.time() + 1  # use the time 1sec in the future as reference ;)
         )
 
-    def get_current_timer(self):
+    def get_current_timer(self, context):
         """
         return last and next switching point in "(hours, minutes)"
         and if the next point turns ON or OFF
         """
-        turn_on_times = tuple(iter_times(restore_timers()))
+        assert context.power_timer_timers is not None, 'Timers not loaded, yet?!?'
+        turn_on_times = tuple(iter_times(context.power_timer_timers))
 
         now_hour_minute_sec = (self.hour, self.minute, self.second)
         # print('%02i:%02i:%02i' % now_hour_minute_sec)
@@ -180,7 +181,7 @@ class Timers:
         )
 
 
-def get_current_timer():
-    current_timer = Timers().get_current_timer()
+def get_current_timer(context):
+    current_timer = Timers().get_current_timer(context)
     gc.collect()
     return current_timer
