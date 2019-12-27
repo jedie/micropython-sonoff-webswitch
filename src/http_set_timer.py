@@ -72,7 +72,7 @@ async def get_submit(server, reader, writer, querystring, body):
 
         power_timer_active = data.get('active') == 'on'
 
-        data = None  # can be collected
+        del data  # can be collected
         gc.collect()
 
         from rtc import update_rtc_dict

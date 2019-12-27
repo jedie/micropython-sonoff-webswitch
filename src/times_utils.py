@@ -57,7 +57,7 @@ def parse_timers(data):
         start_time = parse_time(match.group(1))
         end_time = parse_time(match.group(2))
 
-        match = None  # collect match object
+        del match  # collect match object
         gc.collect()
 
         if start_time >= end_time or (last_time is not None and start_time <= last_time):
