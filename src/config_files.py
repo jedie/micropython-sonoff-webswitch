@@ -51,10 +51,14 @@ def restore_py_config(module_name, default=None):
     IMPORTANT: Enables code injections! So use with care!
     """
     module_name = _PY_MODULE_NAME_PATTERN % module_name
+    if __debug__:
+        print('restore py config', module_name)
     try:
         module = __import__(module_name, None, None)
-    except ImportError:
-        # e.g: py file not created, yet.
+    except ImportError as e:
+        if __debug__:
+            print('Import error:', e)
+            # e.g: py file not created, yet.
         return default
     except SyntaxError:
         print('Syntax error in:', module_name)
@@ -81,6 +85,10 @@ def save_py_config(module_name, value):
         return
 
     file_name = _PY_FILE_PATTERN % module_name
+
+    if __debug__:
+        print('save py config', module_name, value, file_name)
+
     with open(file_name, 'w') as f:
         print('Store in %r: %r' % (file_name, value))
         if isinstance(value, int):

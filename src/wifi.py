@@ -1,8 +1,7 @@
-
+import gc
 import sys
 
 import network
-import utime
 from pins import Pins
 
 
@@ -18,8 +17,6 @@ def ensure_connection(context):
     if not station.active():
         station.active(True)
 
-    context.wifi_last_update = utime.time()
-
     if station.isconnected():
         print('Still connected:', station.ifconfig())
         context.wifi_connected += 1
@@ -29,7 +26,7 @@ def ensure_connection(context):
     Pins.power_led.off()
 
     from wifi_connect import connect
-    connected_time = connect(station)
+    connected_time = connect(context, station)
 
     del connect
     del sys.modules['wifi_connect']
@@ -44,6 +41,13 @@ def init(context):
     print('Setup WiFi interfaces')
 
     Pins.power_led.off()
+
+    from device_name import get_device_name
+    context.device_name = get_device_name()
+
+    del get_device_name
+    del sys.modules['device_name']
+    gc.collect()
 
     access_point = network.WLAN(network.AP_IF)  # access-point interface
     if access_point.active():

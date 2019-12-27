@@ -1,10 +1,6 @@
+import constants
 import machine
 import utime
-from micropython import const
-
-_h2sec = const(60 * 60)  # multiplier for calc hours into seconds
-_MIN_TIME_EPOCH = const(599616000)  # epoch 1.1.2019
-_NTP_SYNC_WAIT_TIME_SEC = const(1 * 60 * 60)  # sync NTP every 1 h
 
 
 def rtc2local_time():
@@ -20,7 +16,7 @@ def rtc2local_time():
     from timezone import restore_timezone
     local_time_tuple = utime.localtime(
         utime.mktime(utc_time_tuple) + (
-            restore_timezone() * _h2sec * -1
+            restore_timezone() * constants.H2SEC * -1
         )
     )
 
@@ -55,7 +51,7 @@ def _ntp_sync():
             rtc2local_time()
             print('new local...:', localtime_isoformat(offset_h=offset_h, add_offset=True))
 
-            return utime.time() > _MIN_TIME_EPOCH  # min 1.1.2019 ???
+            return utime.time() > constants.MIN_TIME_EPOCH  # min 1.1.2019 ???
 
     from reset import ResetDevice
     ResetDevice(reason='Failed NTP sync').reset()
@@ -72,7 +68,6 @@ def ntp_sync(context):
 
     sync_done = _ntp_sync()  # update RTC via NTP
     if sync_done is True:
-        context.ntp_last_sync = utime.time()
-        context.ntp_next_sync = context.ntp_last_sync + _NTP_SYNC_WAIT_TIME_SEC
+        context.ntp_next_sync = utime.time() + constants.NTP_SYNC_WAIT_TIME_SEC
 
     return sync_done

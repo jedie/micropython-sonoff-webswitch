@@ -1,14 +1,9 @@
 import gc
 import sys
 
+import constants
 import ure
 import utime
-from micropython import const
-
-_TIMERS_PY_CFG_NAME = 'timers'
-_ACTIVE_DAYS_PY_CFG_NAME = 'timer_days'
-_SEC2MS = const(60 * 1000)
-_ONE_DAY_SEC = const(1 * 24 * 60 * 60)
 
 
 def parse_time(clock_time):
@@ -44,6 +39,7 @@ def validate_times(times):
 
 
 def parse_timers(data):
+    print('parse_timers:', repr(data))
     regex = ure.compile(r'^\D*(\d+:\d+)\D+(\d+:\d+)\D*$')
     data = data.strip().split('\n')
 
@@ -81,18 +77,12 @@ def pformat_timers(times):
     )
 
 
-def save_timers(times):
-    from config_files import save_py_config
-    save_py_config(module_name=_TIMERS_PY_CFG_NAME, value=times)
-
-    del save_py_config
-    del sys.modules['config_files']
-    gc.collect()
-
-
 def restore_timers():
     from config_files import restore_py_config
-    timers = restore_py_config(module_name=_TIMERS_PY_CFG_NAME, default=())
+    timers = restore_py_config(
+        module_name=constants.TIMERS_PY_CFG_NAME,
+        default=()
+    )
 
     del restore_py_config
     del sys.modules['config_files']
@@ -103,22 +93,16 @@ def restore_timers():
 
 def get_active_days():
     from config_files import restore_py_config
-    active_days = restore_py_config(module_name=_ACTIVE_DAYS_PY_CFG_NAME, default=tuple(range(7)))
+    active_days = restore_py_config(
+        module_name=constants.ACTIVE_DAYS_PY_CFG_NAME,
+        default=tuple(range(7))
+    )
 
     del restore_py_config
     del sys.modules['config_files']
     gc.collect()
 
     return active_days
-
-
-def save_active_days(active_days):
-    from config_files import save_py_config
-    save_py_config(module_name=_ACTIVE_DAYS_PY_CFG_NAME, value=active_days)
-
-    del save_py_config
-    del sys.modules['config_files']
-    gc.collect()
 
 
 def human_timer_duration(epoch):
@@ -140,12 +124,12 @@ class Timers:
             utime.time() + 1  # use the time 1sec in the future as reference ;)
         )
 
-    def get_current_timer(self, context):
+    def get_current_timer(self):
         """
         return last and next switching point in "(hours, minutes)"
         and if the next point turns ON or OFF
         """
-        turn_on_times = tuple(iter_times(context.power_timer_timers))
+        turn_on_times = tuple(iter_times(restore_timers()))
 
         now_hour_minute_sec = (self.hour, self.minute, self.second)
         # print('%02i:%02i:%02i' % now_hour_minute_sec)
@@ -165,16 +149,19 @@ class Timers:
         if next_timer is None:
             print('Next timer is on next day:', turn_on_times[0][1])
             return (
-                self.hour_minute_sec2epoch(turn_on_times[-1][1]),  # Previous timer is the last
-                True,  # Turn ON next day
-                self.hour_minute_sec2epoch(turn_on_times[0][1]) + _ONE_DAY_SEC,  # Shift to next day
+                # Previous timer is the last:
+                self.hour_minute_sec2epoch(turn_on_times[-1][1]),
+                # Turn ON next day:
+                True,
+                # Shift to next day:
+                self.hour_minute_sec2epoch(turn_on_times[0][1]) + constants.ONE_DAY_SEC,
             )
         else:
             print('Next timer found:', next_timer)
             previous_timer = self.hour_minute_sec2epoch(turn_on_times[no - 1][1])
             if no == 0:
                 # previous timer was on last day -> shift one day back
-                previous_timer -= _ONE_DAY_SEC
+                previous_timer -= constants.ONE_DAY_SEC
 
             return (
                 previous_timer,
@@ -193,7 +180,7 @@ class Timers:
         )
 
 
-def get_current_timer(context):
-    current_timer = Timers().get_current_timer(context)
+def get_current_timer():
+    current_timer = Timers().get_current_timer()
     gc.collect()
     return current_timer

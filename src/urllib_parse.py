@@ -1,3 +1,5 @@
+import gc
+
 _HEX = '0123456789ABCDEF'
 
 
@@ -42,4 +44,6 @@ def parse_qsl(qs):
 
 
 def request_query2dict(qs):
-    return dict(parse_qsl(qs))
+    query_dict = dict(parse_qsl(qs))
+    gc.collect()
+    return query_dict

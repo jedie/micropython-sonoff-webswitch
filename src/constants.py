@@ -14,6 +14,9 @@ WIFI_TIMEOUT = const(20 * 1000)  # 20 sec
 POWER_TIMER_ACTIVE_KEY = 'active'
 POWER_TIMER_WEEKDAYS_KEY = 'days'
 
+TIMERS_PY_CFG_NAME = 'timers'
+ACTIVE_DAYS_PY_CFG_NAME = 'timer_days'
+
 MIME_TYPES = {
     'ico': b'image/x-icon',
     'css': b'text/css',
@@ -33,3 +36,11 @@ BUFFER = memoryview(bytearray(CHUNK_SIZE))
 # Save power state change via button or web page:
 RTC_KEY_MANUAL_OVERWRITE = 'manual'
 RTC_KEY_MANUAL_OVERWRITE_TYPE = 'manual-type'
+
+H2SEC = const(60 * 60)  # multiplier for calc hours into seconds
+ONE_DAY_SEC = const(1 * 24 * 60 * 60)
+NTP_MIN_TIME_EPOCH = const(599616000)  # epoch 1.1.2019
+NTP_SYNC_WAIT_TIME_SEC = const(1 * 60 * 60)  # sync NTP every 1 h
+
+TIMEZONE_PY_CFG_NAME = 'timezone'
+DEFAULT_OFFSET_H = const(0)

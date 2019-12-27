@@ -8,16 +8,16 @@
 import gc
 import sys
 
+import constants
 import utime
-from micropython import const
-
-_TIMEZONE_PY_CFG_NAME = 'timezone'
-_DEFAULT_OFFSET_H = const(0)
 
 
 def save_timezone(offset_h):
     from config_files import save_py_config
-    save_py_config(module_name=_TIMEZONE_PY_CFG_NAME, value=offset_h)
+    save_py_config(
+        module_name=constants.TIMEZONE_PY_CFG_NAME,
+        value=offset_h
+    )
 
     del save_py_config
     del sys.modules['config_files']
@@ -26,7 +26,10 @@ def save_timezone(offset_h):
 
 def restore_timezone():
     from config_files import restore_py_config
-    offset_h = restore_py_config(module_name=_TIMEZONE_PY_CFG_NAME, default=_DEFAULT_OFFSET_H)
+    offset_h = restore_py_config(
+        module_name=constants.TIMEZONE_PY_CFG_NAME,
+        default=constants.DEFAULT_OFFSET_H
+    )
 
     del restore_py_config
     del sys.modules['config_files']

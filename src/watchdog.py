@@ -26,28 +26,27 @@ class Watchdog:
         check(context=self.context)
 
         self.context.watchdog_check_count += 1
-        self.context.watchdog_last_check = utime.time()
 
         self.garbage_collection()
 
     def feed(self):
         self.context.watchdog_last_feed = utime.time()
 
-    def garbage_collection(self):
-        print('\n')
-        # micropython.mem_info(1)
-        previous = gc.mem_free()
-
+    def collect_import_cache(self):
         if self.context.minimal_modules is not None:
-            for module_name in [
-                    name for name in sys.modules.keys()
-                    if name not in self.context.minimal_modules
-            ]:
-                print('remove:', module_name)
-                del sys.modules[module_name]
+            return
 
+        for module_name in [
+                name for name in sys.modules.keys()
+                if name not in self.context.minimal_modules
+        ]:
+            print('remove:', module_name)
+            del sys.modules[module_name]
+
+    def garbage_collection(self):
+        print('\nWatchdog.garbage_collection():')
+        previous = gc.mem_free()
+        self.collect_import_cache()
         gc.collect()
         free = gc.mem_free()
         print('freed up %i bytes -> %i bytes free' % (free - previous, free))
-
-        # micropython.mem_info(1)

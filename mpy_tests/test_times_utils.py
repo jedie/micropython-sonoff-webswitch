@@ -6,11 +6,13 @@
 
     Note: Will overwrite existing saved timers!
 """
+import constants
 import machine
 import uos
 import utime
-from times_utils import (get_active_days, get_next_timer, human_timer_duration, parse_timers,
-                         restore_timers, save_active_days, save_timers)
+from config_files import save_py_config
+from times_utils import (get_active_days, get_current_timer, human_timer_duration, parse_timers,
+                         restore_timers)
 from timezone import localtime_isoformat
 
 
@@ -20,10 +22,26 @@ def epoch_info(epoch):
 
 
 def assert_current_timer(reference):
-    previous_epoch, turn_on, next_epoch = get_next_timer()
+    previous_epoch, turn_on, next_epoch = get_current_timer()
     text = '%i %s %02i:%02i %s -> %i %s %02i:%02i %s -> %s' % ((previous_epoch,) + epoch_info(
         previous_epoch) + (next_epoch, ) + epoch_info(next_epoch) + ('ON' if turn_on else 'OFF',))
     assert text == reference
+
+
+def save_timers(times):
+    print('save_timers():', times)
+    save_py_config(
+        module_name=constants.TIMERS_PY_CFG_NAME,
+        value=times
+    )
+
+
+def save_active_days(active_days):
+    print('save_active_days():', active_days)
+    save_py_config(
+        module_name=constants.ACTIVE_DAYS_PY_CFG_NAME,
+        value=tuple(active_days)
+    )
 
 
 def run_all_times_utils_tests():
@@ -72,7 +90,7 @@ def run_all_times_utils_tests():
     save_timers([])
     results = tuple(restore_timers())
     assert results == (), results
-    assert get_next_timer() == (None, None, None)
+    assert get_current_timer() == (None, None, None)
 
     save_timers([
         ((6, 0), (7, 0)),
