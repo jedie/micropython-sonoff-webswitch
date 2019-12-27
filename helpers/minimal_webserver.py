@@ -21,7 +21,8 @@ _HTML_SUFFIX = b"""
     <form action="/test/post/" method="post">
         <p>
             Set gc.threshold():
-            <input type="number" id="threshold" name="threshold" value="{threshold}"><label for="threshold">threshold</label>
+            <input type="number" id="threshold" name="threshold" value="{threshold}">
+            <label for="threshold">threshold</label>
         </p>
         <p>Some dummy forms:</p>
         <textarea name="text" rows="4" cols="20">POST text
@@ -37,7 +38,8 @@ from textarea!</textarea>
     <form action="/test/get/" method="get">
         <p>
             Set gc.threshold():
-            <input type="number" id="threshold" name="threshold" value="{threshold}"><label for="threshold">threshold</label>
+            <input type="number" id="threshold" name="threshold" value="{threshold}">
+            <label for="threshold">threshold</label>
         </p>
         <p>Some dummy forms:</p>
         <textarea name="text" rows="4" cols="20">POST text
@@ -202,6 +204,7 @@ class WebServer:
         gc.collect()
         if __debug__:
             micropython.mem_info(1)
+        print('----------------------------------------------------------------------------------')
 
     def run(self):
         loop = uasyncio.get_event_loop()
@@ -235,7 +238,6 @@ if __name__ == '__main__':
     import machine
     machine.reset()
 
-    import utime
     utime.sleep(1)
 
     print('sys.exit()')
