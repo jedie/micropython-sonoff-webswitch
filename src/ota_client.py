@@ -19,7 +19,7 @@ sys.modules.clear()  # noqa isort:skip
 gc.collect()  # noqa isort:skip
 
 
-_CONNECTION_TIMEOUT = const(30)
+_CONNECTION_TIMEOUT = const(15)
 _OTA_TIMEOUT = const(60)
 _PORT = const(8266)
 _CHUNK_SIZE = const(512)
@@ -28,7 +28,7 @@ _FILE_TYPE = const(0x8000)
 
 
 def reset(reason):
-    for no in range(3, 0, -1):
+    for no in range(2, 0, -1):
         print('%i Reset because: %s' % (no, reason))
         utime.sleep(1)
     machine.reset()
