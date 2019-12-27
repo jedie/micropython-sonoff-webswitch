@@ -51,7 +51,7 @@ def _ntp_sync():
             rtc2local_time()
             print('new local...:', localtime_isoformat(offset_h=offset_h, add_offset=True))
 
-            return utime.time() > constants.MIN_TIME_EPOCH  # min 1.1.2019 ???
+            return utime.time() > constants.NTP_MIN_TIME_EPOCH  # min 1.1.2019 ???
 
     from reset import ResetDevice
     ResetDevice(reason='Failed NTP sync').reset()
