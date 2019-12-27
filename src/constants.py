@@ -44,3 +44,7 @@ NTP_SYNC_WAIT_TIME_SEC = const(1 * 60 * 60)  # sync NTP every 1 h
 
 TIMEZONE_PY_CFG_NAME = 'timezone'
 DEFAULT_OFFSET_H = const(0)
+
+JSON_CFG_FILE_PATTERN = '_config_%s.json'  # e.g.: _config_foobar.json
+PY_MODULE_NAME_PATTERN = '_config_%s'  # e.g.: _config_foobar
+PY_FILE_PATTERN = '_config_%s.py'  # e.g.: _config_foobar.py
