@@ -1,4 +1,4 @@
 [flake8]
-exclude = bdist
+exclude = bdist, micropython, micropython-lib, xtensa-lx106-elf, manifest.py
 ignore = E402
 max-line-length = 100
