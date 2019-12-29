@@ -19,7 +19,7 @@ sys.modules.clear()  # noqa isort:skip
 gc.collect()  # noqa isort:skip
 
 
-_CONNECTION_TIMEOUT = const(30)
+_CONNECTION_TIMEOUT = const(15)
 _OTA_TIMEOUT = const(60)
 _PORT = const(8266)
 _CHUNK_SIZE = const(512)
@@ -28,7 +28,7 @@ _FILE_TYPE = const(0x8000)
 
 
 def reset(reason):
-    for no in range(3, 0, -1):
+    for no in range(2, 0, -1):
         print('%i Reset because: %s' % (no, reason))
         utime.sleep(1)
     machine.reset()
@@ -85,10 +85,11 @@ class OtaUpdate:
     async def write_line_string(self, writer, text):
         await writer.awrite(b'%s\n' % text.encode('utf-8'))
 
-    async def error(self, writer, text):
+    async def error(self, writer, text, do_reset=True):
         print('ERROR: %s' % text)
         await self.write_line_string(writer, text)
-        reset(text)
+        if do_reset:
+            reset(text)
 
     async def __call__(self, reader, writer):
         self.timeout.deinit()
@@ -104,10 +105,10 @@ class OtaUpdate:
             try:
                 await getattr(self, 'command_%s' % command)(reader, writer)
             except AttributeError:
-                await self.error(writer, 'Command unknown')
+                await self.error(writer, 'Command unknown', do_reset=False)
             except Exception as e:
                 sys.print_exception(e)
-                await self.error(writer, 'Command error')
+                await self.error(writer, 'Command error', do_reset=False)
 
     async def command_send_ok(self, reader, writer):
         await self.write_line_string(writer, 'OK')

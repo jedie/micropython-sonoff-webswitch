@@ -1,5 +1,7 @@
 import machine
 import utime
+
+from context import Context
 from ntp import ntp_sync
 
 
@@ -13,7 +15,8 @@ def print_times():
 
 
 if __name__ == '__main__':
-    ntp_sync()
+    context = Context
+    ntp_sync(context)
 
     print_times()
 

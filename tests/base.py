@@ -2,6 +2,7 @@ from pathlib import Path
 from unittest import TestCase
 
 import machine
+from context import Context
 
 WIFI_EXAMPLE = '_config_wifi-example.json'
 
@@ -21,6 +22,8 @@ class MicropythonBaseTestCase(TestCase):
         machine.RTC().datetime((2019, 5, 1, 4, 13, 12, 11, 0))
         config_files = get_all_config_files()
         assert not config_files, f'Config files exists before test start: %s' % config_files
+        self.context = Context
+        self.context.power_timer_timers = None
 
     def tearDown(self):
         config_files = get_all_config_files()

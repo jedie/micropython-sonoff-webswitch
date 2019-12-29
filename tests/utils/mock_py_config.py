@@ -5,7 +5,6 @@ from contextlib import contextmanager
 from pathlib import Path
 from unittest import mock
 
-from config_files import _PY_VALUE_ATTRIBUTE_NAME
 from tests.utils.isolates_filesystem import IsolatedFilesystem
 
 
@@ -15,6 +14,7 @@ class NonCachesImporter:
 
     https://docs.python.org/3/library/importlib.html#importing-a-source-file-directly
     """
+
     def __init__(self):
         self.origin_import = __import__
 
@@ -46,10 +46,7 @@ class NonCachesImporter:
         # module = importlib.reload(module) # will fail!
 
         print('imported:', module, id(module))
-        print('%s.%s: %r' % (
-            module_name, _PY_VALUE_ATTRIBUTE_NAME,
-            getattr(module, _PY_VALUE_ATTRIBUTE_NAME, '-')
-        ))
+        print('%s.value: %r' % (module_name, getattr(module, 'value', '-')))
 
         return module
 

@@ -1,7 +1,6 @@
-print('main.py')
 
 
-__version__ = 'v0.10.0'
+__version__ = 'v0.10.2'
 
 
 def main():
@@ -59,5 +58,7 @@ def main():
 
 if __name__ == '__main__':
     import utime
-    utime.sleep(1)
+    for no in range(2, 0, -1):
+        print('%i main.py wait...' % no)
+        utime.sleep(1)
     main()

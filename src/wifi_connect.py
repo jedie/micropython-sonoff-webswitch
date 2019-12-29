@@ -1,7 +1,6 @@
 
-import sys
-
 import os
+import sys
 
 import network
 import utime
@@ -61,16 +60,7 @@ def connect2ssid(station, ssid, password):
     Pins.power_led.flash(sleep=0.2, count=20)
 
 
-def set_dhcp_hostname(station):
-    print('Set WiFi DHCP hostname to:', end=' ')
-    from device_name import get_device_name
-    device_name = get_device_name()
-
-    print(repr(device_name))
-    station.config(dhcp_hostname=device_name)
-
-
-def connect(station):
+def connect(context, station):
     station.active(True)  # activate the interface
 
     Pins.power_led.flash(sleep=0.1, count=5)
@@ -94,7 +84,8 @@ def connect(station):
     if wifi_configs is None:
         raise RuntimeError('Empty WiFi settings!')
 
-    set_dhcp_hostname(station)
+    print('Set WiFi DHCP hostname to:', context.device_name)
+    station.config(dhcp_hostname=context.device_name)
 
     try:
         known_ssid = get_known_ssid(station, wifi_configs)

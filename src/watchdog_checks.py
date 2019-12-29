@@ -6,16 +6,13 @@ import constants
 import uerrno
 import usocket
 import utime
-from micropython import const
-
-_MIN_FREE = const(2 * 1024)
+from reset import ResetDevice
 
 
 def reset(reason):
     print('Watchdog reset reason: %s' % reason)
     from rtc import incr_rtc_count
     incr_rtc_count(key=constants.RTC_KEY_WATCHDOG_COUNT)
-    from reset import ResetDevice
     ResetDevice(reason=reason).reset()
 
 
@@ -41,9 +38,6 @@ def can_bind_web_server_port():
 def check(context):
     gc.collect()
     try:
-        if gc.mem_free() < _MIN_FREE:
-            reset(reason='RAM full')
-
         if utime.time() - context.watchdog_last_feed > constants.WATCHDOG_TIMEOUT:
             reset(reason='Feed timeout')
 

@@ -27,7 +27,7 @@ The device will do this on every boot:
 * boot
 * connect to your WiFi
 * get current time via ntp
-* make OTA Update
+* make OTA Update (timeout: 15sec.)
 * serve web page
 
 Some notes about the timer functionality:

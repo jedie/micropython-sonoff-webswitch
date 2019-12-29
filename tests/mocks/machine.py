@@ -42,6 +42,8 @@ class RTC:
     http://docs.micropython.org/en/latest/esp8266/quickref.html#real-time-clock-rtc
     https://github.com/micropython/micropython/blob/master/lib/timeutils/timeutils.c
     https://github.com/micropython/micropython/blob/master/ports/esp8266/machine_rtc.c
+
+    year, month, day, weekday, hour, minute, second, msecs
     """
 
     __shared_state = {

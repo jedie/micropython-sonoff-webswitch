@@ -5,20 +5,14 @@ import constants
 
 
 async def get_form(server, reader, writer, querystring, body):
-    import times_utils
-    timers = times_utils.pformat_timers(server.context.power_timer_timers)
-
-    active_days = times_utils.get_active_days()
-
-    # We need more free RAM to continue :-/
-    server.context.watchdog.garbage_collection()
-
-    # Maybe the timers was edited just before: Update the context with current informations:
-    from power_timer import update_power_timer
-    update_power_timer(server.context)
-
-    # We need more free RAM to continue :-/
-    server.context.watchdog.garbage_collection()
+    from times_utils import restore_timers, pformat_timers, get_active_days
+    timers = pformat_timers(restore_timers())
+    active_days = get_active_days()
+    del restore_timers
+    del pformat_timers
+    del get_active_days
+    del sys.modules['times_utils']
+    gc.collect()
 
     context = {
         'timers': timers,
@@ -40,34 +34,45 @@ async def get_form(server, reader, writer, querystring, body):
     )
 
 
-async def post_submit(server, reader, writer, querystring, body):
+async def get_submit(server, reader, writer, querystring, body):
+    """
+    Note: POST request doesn't work:
+    https://forum.micropython.org/viewtopic.php?f=2&t=7432
+    """
     from urllib_parse import request_query2dict
-    body = request_query2dict(body)
+    data = request_query2dict(querystring)
 
     del request_query2dict
-    del sys.modules['urllib_parse']
     gc.collect()
 
     import times_utils
     try:
-        timers = tuple(times_utils.parse_timers(body['timers']))
+        timers = tuple(times_utils.parse_timers(data['timers']))
+        gc.collect()
     except ValueError as e:
+        gc.collect()
         server.message = 'Timers error: %s' % e
     else:
+        print('Save timers:', timers)
         # Save timers to flash:
-        times_utils.save_timers(timers)
+        from config_files import save_py_config
 
-        # Update context with current timers:
-        server.context.power_timer_timers = timers
+        save_py_config(
+            module_name=constants.TIMERS_PY_CFG_NAME,
+            value=timers
+        )
+        save_py_config(
+            module_name=constants.ACTIVE_DAYS_PY_CFG_NAME,
+            value=tuple([no for no in range(7) if 'd%i' % no in data])
+        )
 
-        power_timer_active = body.get('active') == 'on'
+        del save_py_config
+        del sys.modules['config_files']
+        gc.collect()
 
-        times_utils.save_active_days(tuple(sorted([
-            no for no in range(7)
-            if 'd%i' % no in body
-        ])))
+        power_timer_active = data.get('active') == 'on'
 
-        del sys.modules['times_utils']
+        del data  # can be collected
         gc.collect()
 
         from rtc import update_rtc_dict
@@ -88,10 +93,9 @@ async def post_submit(server, reader, writer, querystring, body):
         else:
             server.message = 'Timers saved and deactivated.'
 
-        # Force set 'active' and 'today_active' by update_relay_switch() in update_power_timer():
+        # Force set values by update_relay_switch() in update_power_timer():
         server.context.power_timer_active = None
         server.context.power_timer_today_active = None
-
     gc.collect()
 
     from http_utils import send_redirect

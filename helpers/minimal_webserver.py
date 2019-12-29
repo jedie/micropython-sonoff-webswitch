@@ -1,7 +1,9 @@
 import gc
 import sys
 
-import uasyncio as asyncio
+import micropython
+import uasyncio
+import utime
 
 _HEX = '0123456789ABCDEF'
 
@@ -17,22 +19,34 @@ _HTML_SUFFIX = b"""
     <hr>
     <h2>POST test form:</h2>
     <form action="/test/post/" method="post">
+        <p>
+            Set gc.threshold():
+            <input type="number" id="threshold" name="threshold" value="{threshold}">
+            <label for="threshold">threshold</label>
+        </p>
+        <p>Some dummy forms:</p>
         <textarea name="text" rows="4" cols="20">POST text
 from textarea!</textarea>
         <p>
-            <input type="checkbox" id="c1" name="c1" checked><label for="c1">c1</label>
-            <input type="checkbox" id="c2" name="c2"><label for="c2">c2</label>
+            <input type="checkbox" id="foo" name="foo" checked><label for="foo">foo</label>
+            <input type="checkbox" id="bar" name="bar" checked><label for="bar">bar</label>
         </p>
         <input type="submit">
     </form>
     <hr>
     <h2>GET test form:</h2>
     <form action="/test/get/" method="get">
-        <textarea name="text" rows="4" cols="20">GET text
+        <p>
+            Set gc.threshold():
+            <input type="number" id="threshold" name="threshold" value="{threshold}">
+            <label for="threshold">threshold</label>
+        </p>
+        <p>Some dummy forms:</p>
+        <textarea name="text" rows="4" cols="20">POST text
 from textarea!</textarea>
         <p>
-            <input type="checkbox" id="c1" name="c1"><label for="c1">c1</label>
-            <input type="checkbox" id="c2" name="c2" checked><label for="c2">c2</label>
+            <input type="checkbox" id="foo" name="foo" checked><label for="foo">foo</label>
+            <input type="checkbox" id="bar" name="bar" checked><label for="bar">bar</label>
         </p>
         <input type="submit">
     </form>
@@ -144,48 +158,68 @@ class WebServer:
         await writer.awrite(b'\n')
 
         method, url, querystring, body = await self.parse_request(reader)
+        parsed_querystring = request_query2dict(querystring)
+        parsed_body = request_query2dict(body)
 
         await writer.awrite(b'Method: %s\n' % method)
         await writer.awrite(b'URL: %s\n' % url)
         await writer.awrite(b'querystring: %s\n' % querystring)
-        await writer.awrite(b'parsed querystring: %s\n' % request_query2dict(querystring))
+        await writer.awrite(b'parsed querystring: %s\n' % parsed_querystring)
         await writer.awrite(b'body: %s\n' % body)
-        await writer.awrite(b'parsed body: %s\n' % request_query2dict(body))
+        await writer.awrite(b'parsed body: %s\n' % parsed_body)
 
-        await writer.awrite(_HTML_SUFFIX)
+        threshold = parsed_querystring.get('threshold')
+        if threshold is None:
+            threshold = parsed_body.get('threshold')
+        if threshold is not None:
+            threshold = int(threshold)
+            await writer.awrite(b'Set gc.threshold() to: %i Bytes\n' % threshold)
+            gc.threshold(threshold)
+
+        await writer.awrite(_HTML_SUFFIX.format(
+            threshold=gc.threshold()
+        ))
 
         alloc = gc.mem_alloc() / 1024
         free = gc.mem_free() / 1024
 
         await writer.awrite(
-            b'RAM total: {total:.2f} KB, used: {alloc:.2f} KB, free: {free:.2f} KB'.format(
+            b'<p>RAM total: {total:.2f} KB, used: {alloc:.2f} KB, free: {free:.2f} KB</p>'.format(
                 total=alloc + free,
                 alloc=alloc,
                 free=free
             )
+        )
+        await writer.awrite(b'<p>gc.threshold(): %i Bytes</p>' % gc.threshold())
+        await writer.awrite(
+            b'<p>Render time: %i ms</p>' % utime.ticks_diff(utime.ticks_ms(), self.start_time)
         )
 
         await writer.awrite(_HTML_FOOTER)
         await writer.aclose()
 
     async def request_handler(self, reader, writer):
+        self.start_time = utime.ticks_ms()
         await self.send_response(reader, writer)
         gc.collect()
+        if __debug__:
+            micropython.mem_info(1)
+        print('----------------------------------------------------------------------------------')
 
     def run(self):
-        loop = asyncio.get_event_loop()
-        loop.create_task(asyncio.start_server(self.request_handler, '0.0.0.0', 80))
+        loop = uasyncio.get_event_loop()
+        loop.create_task(uasyncio.start_server(self.request_handler, '0.0.0.0', 80))
         print('\nWeb server started...')
         loop.run_forever()
 
 
 def main():
-    from wifi import WiFi
-    wifi = WiFi()
-    if not wifi.is_connected:
-        wifi.ensure_connection()
-    del wifi
-    del WiFi
+    from context import Context
+
+    context = Context
+
+    import wifi
+    wifi.init(context)
     del sys.modules['wifi']
     gc.collect()
 
@@ -204,7 +238,6 @@ if __name__ == '__main__':
     import machine
     machine.reset()
 
-    import utime
     utime.sleep(1)
 
     print('sys.exit()')

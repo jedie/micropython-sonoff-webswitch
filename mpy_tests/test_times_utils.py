@@ -6,11 +6,15 @@
 
     Note: Will overwrite existing saved timers!
 """
+import constants
 import machine
 import uos
 import utime
-from times_utils import (get_active_days, get_next_timer, human_timer_duration, parse_timers,
-                         restore_timers, save_active_days, save_timers)
+from config_files import save_py_config
+from context import Context
+from power_timer import update_power_timer
+from times_utils import (get_active_days, get_current_timer, human_timer_duration, parse_timers,
+                         restore_timers)
 from timezone import localtime_isoformat
 
 
@@ -19,11 +23,32 @@ def epoch_info(epoch):
     return human_timer_duration(epoch), hour, minute, localtime_isoformat(epoch=epoch)
 
 
-def assert_current_timer(reference):
-    previous_epoch, turn_on, next_epoch = get_next_timer()
+def assert_current_timer(reference, context):
+    # Load timers:
+    context.power_timer_timers = None
+    update_power_timer(context)
+
+    previous_epoch, turn_on, next_epoch = get_current_timer(context)
+    assert next_epoch is not None, 'No timers?!?'
     text = '%i %s %02i:%02i %s -> %i %s %02i:%02i %s -> %s' % ((previous_epoch,) + epoch_info(
         previous_epoch) + (next_epoch, ) + epoch_info(next_epoch) + ('ON' if turn_on else 'OFF',))
     assert text == reference
+
+
+def save_timers(times):
+    print('save_timers():', times)
+    save_py_config(
+        module_name=constants.TIMERS_PY_CFG_NAME,
+        value=times
+    )
+
+
+def save_active_days(active_days):
+    print('save_active_days():', active_days)
+    save_py_config(
+        module_name=constants.ACTIVE_DAYS_PY_CFG_NAME,
+        value=tuple(active_days)
+    )
 
 
 def run_all_times_utils_tests():
@@ -69,10 +94,13 @@ def run_all_times_utils_tests():
     assert results == (0, 1, 2, 3, 4), results
     print('OK\n')
 
+    context = Context
+
     save_timers([])
     results = tuple(restore_timers())
     assert results == (), results
-    assert get_next_timer() == (None, None, None)
+    update_power_timer(context)
+    assert get_current_timer(context) == (None, None, None)
 
     save_timers([
         ((6, 0), (7, 0)),
@@ -85,27 +113,32 @@ def run_all_times_utils_tests():
     rtc = machine.RTC()
     rtc.datetime((2000, 1, 2, 6, 0, 0, 0, 0))  # set RTC time: 2.1.2000 00:00:00
     assert_current_timer(  # Turn ON at 06:00
-        '25200 -17 h 07:00 2000-01-01T07:00:00 -> 108000 6 h 06:00 2000-01-02T06:00:00 -> ON'
+        '25200 -17 h 07:00 2000-01-01T07:00:00 -> 108000 6 h 06:00 2000-01-02T06:00:00 -> ON',
+        context
     )
 
     rtc.datetime((2000, 1, 2, 6, 5, 59, 59, 0))  # set RTC time: 2.1.2000 05:59:59
     assert_current_timer(  # Turn ON at 06:00
-        '25200 -22 h 07:00 2000-01-01T07:00:00 -> 108000 1 sec 06:00 2000-01-02T06:00:00 -> ON'
+        '25200 -22 h 07:00 2000-01-01T07:00:00 -> 108000 1 sec 06:00 2000-01-02T06:00:00 -> ON',
+        context
     )
 
     rtc.datetime((2000, 1, 2, 6, 6, 0, 0, 0))  # set RTC time: 2.1.2000 06:00:00
     assert_current_timer(  # Turn ON at 06:00
-        '108000 0 sec 06:00 2000-01-02T06:00:00 -> 111600 60 min 07:00 2000-01-02T07:00:00 -> OFF'
+        '108000 0 sec 06:00 2000-01-02T06:00:00 -> 111600 60 min 07:00 2000-01-02T07:00:00 -> OFF',
+        context
     )
 
     rtc.datetime((2000, 1, 2, 6, 6, 59, 59, 0))  # set RTC time: 2.1.2000 06:59:59
     assert_current_timer(  # Turn OFF at 07:00
-        '108000 -59 min 06:00 2000-01-02T06:00:00 -> 111600 1 sec 07:00 2000-01-02T07:00:00 -> OFF'
+        '108000 -59 min 06:00 2000-01-02T06:00:00 -> 111600 1 sec 07:00 2000-01-02T07:00:00 -> OFF',
+        context
     )
 
     rtc.datetime((2000, 1, 2, 6, 7, 0, 0, 0))  # set RTC time: 2.1.2000 07:00:00
     assert_current_timer(  # Turn ON next day at 06:00
-        '111600 0 sec 07:00 2000-01-02T07:00:00 -> 194400 23 h 06:00 2000-01-03T06:00:00 -> ON'
+        '111600 0 sec 07:00 2000-01-02T07:00:00 -> 194400 23 h 06:00 2000-01-03T06:00:00 -> ON',
+        context
     )
 
     save_timers([
@@ -114,22 +147,26 @@ def run_all_times_utils_tests():
     ])
     rtc.datetime((2000, 1, 2, 6, 0, 0, 0, 0))  # set RTC time: 2.1.2000 00:00:00
     assert_current_timer(  # Turn ON at 06:00
-        '81000 -90 min 22:30 2000-01-01T22:30:00 -> 108000 6 h 06:00 2000-01-02T06:00:00 -> ON'
+        '81000 -90 min 22:30 2000-01-01T22:30:00 -> 108000 6 h 06:00 2000-01-02T06:00:00 -> ON',
+        context
     )
 
     rtc.datetime((2000, 1, 2, 6, 7, 0, 1, 0))  # set RTC time: 2.1.2000 07:00:01
     assert_current_timer(  # Turn ON at 19:30
-        '111600 -1 sec 07:00 2000-01-02T07:00:00 -> 156600 12 h 19:30 2000-01-02T19:30:00 -> ON'
+        '111600 -1 sec 07:00 2000-01-02T07:00:00 -> 156600 12 h 19:30 2000-01-02T19:30:00 -> ON',
+        context
     )
 
     rtc.datetime((2000, 1, 2, 6, 20, 12, 0, 0))  # set RTC time: 2.1.2000 20:12:00
     assert_current_timer(  # Turn OFF at 22:30
-        '156600 -42 min 19:30 2000-01-02T19:30:00 -> 167400 2 h 22:30 2000-01-02T22:30:00 -> OFF'
+        '156600 -42 min 19:30 2000-01-02T19:30:00 -> 167400 2 h 22:30 2000-01-02T22:30:00 -> OFF',
+        context
     )
 
     rtc.datetime((2000, 1, 2, 6, 22, 30, 1, 0))  # set RTC time: 2.1.2000 22:30:01
     assert_current_timer(  # Turn ON next day at 06:00
-        '167400 -1 sec 22:30 2000-01-02T22:30:00 -> 194400 7 h 06:00 2000-01-03T06:00:00 -> ON'
+        '167400 -1 sec 22:30 2000-01-02T22:30:00 -> 194400 7 h 06:00 2000-01-03T06:00:00 -> ON',
+        context
     )
 
 
