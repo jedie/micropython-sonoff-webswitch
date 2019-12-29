@@ -5,3 +5,5 @@ _config_*.*
 /bdist/
 __pycache__
 /.coverage
+
+/xtensa-lx106-elf/

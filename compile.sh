@@ -2,11 +2,22 @@
 
 set -x
 
-FROZEN_MANIFEST='$(pwd)/manifest.py'
-FWBIN='$(pwd)/build/firmware-combined.bin'
+PWD=$(pwd)
 
-cd micropython/ports/esp8266
+FROZEN_MANIFEST=${PWD}/manifest.py
+FWBIN=${PWD}/build/firmware-combined.bin
 
-make clean
-make -j 8 FROZEN_MANIFEST=${FROZEN_MANIFEST} FWBIN=${FWBIN}
+
+export PATH=${PATH}:${PWD}/xtensa-lx106-elf/bin
+
+(
+    cd micropython
+    make -C mpy-cross
+)
+(
+    cd micropython/ports/esp8266
+    make clean
+    make -j 8 FROZEN_MANIFEST=${FROZEN_MANIFEST} FWBIN=${FWBIN}
+)
 ls -la build
+
