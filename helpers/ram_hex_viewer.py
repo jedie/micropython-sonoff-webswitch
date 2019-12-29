@@ -2,9 +2,9 @@ import gc
 import sys
 
 import esp
-import micropython
 import uasyncio
 import utime
+from micropython import const
 
 _HTML_PREFIX = b"""
 <html>
