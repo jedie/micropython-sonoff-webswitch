@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-set -x
+set -ex
 
 pipenv update --dev
-git submodule update --init
+git submodule update --init --recursive
 
 (
     cd micropython
@@ -16,8 +16,8 @@ git submodule update --init
     git fetch
     git checkout origin/master
 )
-
-wget --timestamp https://github.com/jepler/esp-open-sdk/releases/download/2018-06-10/xtensa-lx106-elf-standalone.tar.gz
-#sha256sum xtensa-lx106-elf-standalone.tar.gz > xtensa-lx106-elf-standalone.tar.gz.sha256
-sha256sum -c xtensa-lx106-elf-standalone.tar.gz.sha256
-zcat xtensa-lx106-elf-standalone.tar.gz | tar x
+(
+    cd esp-open-sdk
+    git fetch
+    git checkout origin/master
+)

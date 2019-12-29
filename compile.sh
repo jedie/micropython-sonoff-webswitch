@@ -1,14 +1,17 @@
 #!/usr/bin/env bash
 
-set -x
+set -ex
 
 PWD=$(pwd)
 
 FROZEN_MANIFEST=${PWD}/manifest.py
 FWBIN=${PWD}/build/firmware-combined.bin
 
-
-export PATH=${PATH}:${PWD}/xtensa-lx106-elf/bin
+(
+    cd esp-open-sdk
+    make STANDALONE=y
+)
+export PATH=${PATH}:${PWD}/esp-open-sdk/xtensa-lx106-elf/bin
 
 (
     cd micropython

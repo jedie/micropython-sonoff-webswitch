@@ -4,3 +4,6 @@
 [submodule "micropython-lib"]
 	path = micropython-lib
 	url = https://github.com/micropython/micropython-lib.git
+[submodule "esp-open-sdk"]
+	path = esp-open-sdk
+	url = https://github.com/pfalcon/esp-open-sdk.git
