@@ -3,9 +3,10 @@
     micropython/ports/esp8266/boards/manifest_release.py
 """
 
-freeze('src')
-
 freeze('$(PORT_DIR)/modules')
+
+freeze('$(PORT_DIR)/sdist')  # project sources, mounted via docker
+
 #freeze('$(MPY_DIR)/tools', ('upip.py', 'upip_utarfile.py'))
 #freeze('$(MPY_DIR)/drivers/dht', 'dht.py')
 #freeze('$(MPY_DIR)/drivers/onewire')

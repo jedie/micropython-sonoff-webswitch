@@ -17,9 +17,8 @@ RUN set -x \
     && addgroup --system -gid $DOCKER_UGID mpy \
     && adduser --system --shell="/bin/bash" --uid $DOCKER_UID -gid $DOCKER_UGID mpy \
     && mkdir -p /mpy/firmware_scripts/ \
-    && chown mpy:mpy -Rf /mpy/firmware_scripts/ \
-    && mkdir -p /mpy/micropython/ports/esp8266/src/ \
-    && chown mpy:mpy -Rf /mpy/micropython/ports/esp8266/src/ \
+    && mkdir -p /mpy/micropython/ports/esp8266/sdist/ \
+    && chown mpy:mpy -Rf /mpy/ \
     && mkdir -p /build/ \
     && chown mpy:mpy -Rf /build/
 

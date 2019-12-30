@@ -13,6 +13,6 @@ echo "build the esp8266 firmware"
 (
     set -ex
     cd /mpy/micropython/ports/esp8266/
-    make -j12 FROZEN_MANIFEST=${FROZEN_MANIFEST} FWBIN=${FWBIN}
+    make -j12 FROZEN_MANIFEST=${FROZEN_MANIFEST} FWBIN=${FWBIN} MICROPY_VFS_FAT=0 MICROPY_VFS_LFS2=1
 )
 exit 0
