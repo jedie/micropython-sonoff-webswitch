@@ -36,7 +36,8 @@ jobs:
       run: |
         pipenv run pytest
 
-    - name: 'compile'
+    - name: 'compile firmware'
       run: |
-        ./update.sh
-        ./compile.sh
+        ./docker_pull_build.sh
+        ./compile_firmware.sh
+        ls -la build

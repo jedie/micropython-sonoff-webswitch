@@ -1,9 +1,8 @@
 _config_*.*
+*.bin
 *.json
 !_config_wifi-example.json
 .idea
 /bdist/
 __pycache__
 /.coverage
-
-/xtensa-lx106-elf/
