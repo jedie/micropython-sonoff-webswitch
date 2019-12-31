@@ -9,9 +9,9 @@ jobs:
     - uses: actions/checkout@v1
     - name: 'Compile MicroPython Firmware via docker'
       run: |
-        make rsa-keys
+        make yaota8266-rsa-keys
         cp docker-yaota8266/yaota8266/config.h.example docker-yaota8266/yaota8266/config.h
-        make compile
+        make yaota8266-compile
         ls -la build/
         file build/yaota8266.bin
 
