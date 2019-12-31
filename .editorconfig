@@ -17,3 +17,12 @@ insert_final_newline = false
 
 [*.py]
 line_length = 100
+
+[{Makefile,**.mk}]
+indent_style = tab
+trim_trailing_whitespace = true
+insert_final_newline = false
+
+[*.{yml}]
+indent_style = space
+indent_size = 2

@@ -1,0 +1,3 @@
+[submodule "docker-yaota8266"]
+	path = docker-yaota8266
+	url = https://github.com/jedie/docker-yaota8266.git

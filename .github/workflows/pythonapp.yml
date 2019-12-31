@@ -38,6 +38,5 @@ jobs:
 
     - name: 'compile firmware'
       run: |
-        ./docker_pull_build.sh
-        ./compile_firmware.sh
+        make compile_firmware
         ls -la build
