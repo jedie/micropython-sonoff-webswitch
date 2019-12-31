@@ -1,0 +1,15 @@
+name: Compile MicroPython Firmware
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: 'Compile MicroPython Firmware via docker'
+      run: |
+        make compile_firmware
+        ls -la build/
+        file build/firmware-ota.bin
+

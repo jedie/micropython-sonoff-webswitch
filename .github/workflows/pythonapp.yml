@@ -1,4 +1,4 @@
-name: Python application
+name: Run Tests
 
 on: [push]
 
@@ -35,8 +35,3 @@ jobs:
         PYTHONPATH: src
       run: |
         pipenv run pytest
-
-    - name: 'compile firmware'
-      run: |
-        make compile_firmware
-        ls -la build
