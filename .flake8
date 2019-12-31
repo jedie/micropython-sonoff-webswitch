@@ -1,4 +1,4 @@
 [flake8]
-exclude = bdist, micropython, micropython-lib, xtensa-lx106-elf, manifest.py
+exclude = bdist, sdist, micropython, micropython-lib, xtensa-lx106-elf, manifest.py, docker-yaota8266
 ignore = E402
 max-line-length = 100

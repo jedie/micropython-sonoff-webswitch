@@ -1,13 +1,12 @@
 import esp
-import lwip
-import network
 import uctypes
 from flashbdev import bdev
+from micropython import const
 
 FIRMWARE_START = const(0x40200000)
 
-def main():
 
+def main():
     print('sector size:', bdev.SEC_SIZE)
 
     ROM = uctypes.bytearray_at(FIRMWARE_START, 16)
@@ -34,8 +33,6 @@ def main():
 
     ROM = uctypes.bytearray_at(FIRMWARE_START, 16)
     print(repr(ROM))
-
-    import errno
 
 
 if __name__ == '__main__':
