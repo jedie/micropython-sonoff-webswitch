@@ -79,3 +79,25 @@ yaota8266-rsa-keys: update  ## Pull/build yaota8266 docker images and Generate R
 yaota8266-compile: update  ## Compile ota bootloader and store it here: build/yaota8266.bin
 	$(MAKE) -C docker-yaota8266 compile
 	cp -u docker-yaota8266/yaota8266/yaota8266.bin build/yaota8266.bin
+
+
+flash-yaota8266:  ## Flash build/yaota8266.bin to location 0x0 via esptool.py
+	@if [ -f build/yaota8266.bin ] ; \
+	then \
+		echo -n "\nbuild/yaota8266.bin exists, ok.\n\n" ; \
+	else \
+		echo -n "\nERROR: Please run 'make yaota8266-compile' first to create 'build/yaota8266.bin' !\n\n" ; \
+		exit 1 ; \
+	fi
+	pipenv run esptool.py --port /dev/ttyUSB0 --baud 460800 write_flash -fs 1MB -fm dout 0x0 build/yaota8266.bin
+
+
+flash-firmware:  ## Flash build/firmware-ota.bin to location 0x3c000 via esptool.py
+	@if [ -f build/firmware-ota.bin ] ; \
+	then \
+		echo -n "\nbuild/firmware-ota.bin exists, ok.\n\n" ; \
+	else \
+		echo -n "\nERROR: Please run 'make compile-firmware' first to create 'build/firmware-ota.bin' !\n\n" ; \
+		exit 1 ; \
+	fi
+	pipenv run esptool.py --port /dev/ttyUSB0 --baud 460800 write_flash -fs 1MB -fm dout 0x3c000 build/firmware-ota.bin

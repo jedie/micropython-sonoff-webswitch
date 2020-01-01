@@ -115,6 +115,8 @@ make targets:
   compile-firmware   compiles the micropython firmware and store it here: /build/firmware-ota.bin
   yaota8266-rsa-keys Pull/build yaota8266 docker images and Generate RSA keys and/or print RSA modulus line for copy&paste into config.h
   yaota8266-compile  Compile ota bootloader and store it here: build/yaota8266.bin
+  flash-yaota8266    Flash build/yaota8266.bin to location 0x0 via esptool.py
+  flash-firmware     Flash build/firmware-ota.bin to location 0x3c000 via esptool.py
 ```
 
 ### docker-yaota8266/yaota8266/config.h
@@ -143,6 +145,15 @@ The compiled files are stored here:
 
 * `~/micropython-sonoff-webswitch/build/yaota8266.bin`
 * `~/micropython-sonoff-webswitch/build/firmware-ota.bin`
+
+### flash yaota8266 and firmware
+
+After you have called `make yaota8266-compile` and `make compile-firmware` you can flash your device:
+
+```bash
+~/micropython-sonoff-webswitch$ make flash-yaota8266
+~/micropython-sonoff-webswitch$ make flash-firmware
+```
 
 
 ## flash micropython
