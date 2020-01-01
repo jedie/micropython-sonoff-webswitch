@@ -257,6 +257,11 @@ The OTA update implementation does:
 
 ## Links
 
+### sub project links
+
+* Compile `yaota8266.bin` via docker: https://github.com/jedie/docker-yaota8266
+* Compile micropython firmware via docker: https://github.com/jedie/docker-micropython
+
 ### Forum links
 
 * OTA updates: https://forum.micropython.org/viewtopic.php?f=2&t=7300
