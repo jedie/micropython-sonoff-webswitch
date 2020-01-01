@@ -1,5 +1,4 @@
 _config_*.*
-*.bin
 *.json
 !_config_wifi-example.json
 .idea
@@ -7,3 +6,6 @@ _config_*.*
 __pycache__
 /.coverage
 /sdist/
+
+build
+!build/.gitkeep

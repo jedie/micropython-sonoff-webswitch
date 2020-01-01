@@ -74,6 +74,12 @@ compile-firmware: docker-build  ## compiles the micropython firmware and store i
 				MICROPY_VFS_FAT=0 \
 				MICROPY_VFS_LFS2=1 \
 			&& cp -u /mpy/micropython/ports/esp8266/build-GENERIC/firmware-ota.bin /mpy/build/firmware-ota.bin"
+	@echo -n "\n"
+	python3 docker-yaota8266/yaota8266/ota-client/ota_client.py sign build/firmware-ota.bin
+	@echo -n "\n"
+	ls -la build
+	@echo -n "\n"
+	file build/firmware-ota.bin
 
 
 yaota8266-rsa-keys: docker-build  ## Pull/build yaota8266 docker images and Generate RSA keys and/or print RSA modulus line for copy&paste into config.h
@@ -82,7 +88,11 @@ yaota8266-rsa-keys: docker-build  ## Pull/build yaota8266 docker images and Gene
 
 yaota8266-compile: docker-build  ## Compile ota bootloader and store it here: build/yaota8266.bin
 	$(MAKE) -C docker-yaota8266 compile
+	@echo -n "\n"
 	cp -u docker-yaota8266/yaota8266/yaota8266.bin build/yaota8266.bin
+	ls -la build
+	@echo -n "\n"
+	file build/yaota8266.bin
 
 
 flash-yaota8266:  ## Flash build/yaota8266.bin to location 0x0 via esptool.py
