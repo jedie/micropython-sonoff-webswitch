@@ -120,3 +120,6 @@ flash-firmware:  ## Flash build/firmware-ota.bin to location 0x3c000 via esptool
 		exit 1 ; \
 	fi
 	pipenv run esptool.py --port /dev/ttyUSB0 --baud 460800 write_flash -fs 1MB -fm dout 0x3c000 build/firmware-ota.bin
+
+live-ota:  ## Start ota_client.py to OTA Update the firmware file build/firmware-ota.bin via yaota8266
+	python3 docker-yaota8266/yaota8266/ota-client/ota_client.py live-ota build/firmware-ota.bin.ota
