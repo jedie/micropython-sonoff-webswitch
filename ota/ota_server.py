@@ -1,6 +1,6 @@
 """
-    OTA Server
-    ~~~~~~~~~~
+    'soft' OTA Server
+    ~~~~~~~~~~~~~~~~~
     Answering requests from devices micropython devices,
     to update all files on device.
 
@@ -10,10 +10,11 @@
 import asyncio
 import hashlib
 import socket
-import subprocess
 import time
+from pathlib import Path
 
-import mpy_cross
+from ota import mpy_cross
+from utils import constants
 
 SOCKET_TIMEOUT = 10
 
@@ -75,45 +76,23 @@ async def open_connection(host=None, port=None):
     return reader, writer
 
 
-def get_mpy_cross_version():
-    """
-    Returns 'mpy_cross' version as string e.g.:
-        'v1.12'
-    """
-    process = mpy_cross.run(
-        '--version',
-        stdout=subprocess.PIPE,
-        universal_newlines=True,
-    )
-    retcode = process.wait(timeout=1)
-    if retcode != 0:
-        raise AssertionError('Error getting mpy_cross version!')
-
-    # e.g.:
-    # 'MicroPython v1.12 on 2019-12-21; mpy-cross emitting mpy v5\n'
-    raw_mpy_cross_version = process.stdout.readline().strip()
-    print(f'Installed mpy_cross version is for {raw_mpy_cross_version}')
-    assert raw_mpy_cross_version.startswith('MicroPython v')
-    version = raw_mpy_cross_version.split(' ', 2)[1]
-    return version
-
-
 class OtaServer:
-    def __init__(self, src_path, verbose=False):
-        self.src_path = src_path.resolve()
+    def __init__(self, verbose=False):
         self.verbose = verbose
 
         if self.verbose:
             print('Verbose mode activated.')
 
-        assert self.src_path.is_dir(), 'Directory not found: %s' % self.src_path
+        assert constants.SRC_PATH.is_dir(), 'Directory not found: %s' % constants.SRC_PATH
+        assert constants.BDIST_PATH.is_dir(), 'Directory not found: %s' % constants.BDIST_PATH
 
         self.own_ip = get_ip_address()
         print(f'Own IP....: {self.own_ip}')
 
         self.client_socket = None  # Client socked, created in self.run()
         self.client_chunk_size = None  # Change by client on connection in self.run()
-        self.files_info = None  # Requested in self.update_device()
+        self.frozen_info = None  # Requested in self.update_device()
+        self.flash_info = None  # Requested in self.update_device()
 
     async def update_device(self, reader, writer):
         peername = writer.get_extra_info('peername')
@@ -121,26 +100,29 @@ class OtaServer:
 
         await self.request_ping(reader, writer)
 
-        await self.check_micropython_version(reader, writer)
         self.client_chunk_size = await self.get_client_chunk_size(reader, writer)
 
         print('-' * 100)
-        self.files_info = await self.request_files_info(reader, writer)
+        self.frozen_info = await self.request_frozen_info(reader, writer)
         print('-' * 100)
+        self.flash_info = await self.request_flash_info(reader, writer)
+        print('-' * 100)
+
+        await self.check_micropython_version(reader, writer)
 
         file_count = 0
         updated = []
         up2date = 0
-        for item in self.src_path.iterdir():
+        for item in constants.BDIST_PATH.iterdir():
             if item.is_dir():
                 print(f'Directories not supported, skip: %s' % item)
                 continue
             elif not item.is_file():
-                print(f'Skip not file: %s' % item)
+                print(f'Skip not a file: %s' % item)
                 continue
 
             file_count += 1
-            print(item.name, end=' ', flush=True)
+            print(item.name)
 
             if not self.client_file_outdated(item):
                 # local <-> device file are the same -> skip
@@ -210,14 +192,19 @@ class OtaServer:
         return client_chunk_size
 
     async def check_micropython_version(self, reader, writer):
+        """
+        TODO: How to compare the mpy version???
+        See: https://forum.micropython.org/viewtopic.php?f=2&t=7506
+        """
         print('\nCheck micropython versions:')
-        mpy_cross_version = get_mpy_cross_version()
+        mpy_cross_version = mpy_cross.version()
 
         await writer.write_text_line('mpy_version')
 
         # e.g.:
         #   b'v1.12 on 2019-12-20\n'
         #   b'v1.11-8-g48dcbbe60 on 2019-05-29\n'
+        #   b'1070984 on 2020-01-01\n'
         raw_mpy_version = await reader.readline()
 
         raw_mpy_version = raw_mpy_version.decode('ASCII').strip()
@@ -235,14 +222,14 @@ class OtaServer:
 
         print('Version matched, ok.\n')
 
-    async def request_files_info(self, reader, writer):
-        print('Request files info from device:')
+    async def request_device_info(self, reader, writer, info_type):
+        print(f'Request "{info_type}" from device:')
 
-        await writer.write_text_line('files_info')
+        await writer.write_text_line(info_type)
         data = await self.receive_all(reader)
         data = data.rstrip('\r\n')
 
-        files_info = {}
+        info = {}
         for file_info in data.split('\r\n'):
             try:
                 name, size, hash = file_info.split('\r')
@@ -253,35 +240,58 @@ class OtaServer:
             else:
                 size = int(size)
                 print(f'{name:25s} {size:4} Bytes - SHA256: {hash}')
-                files_info[name] = (size, hash)
-        return files_info
+                info[name] = (size, hash)
+        return info
+
+    async def request_frozen_info(self, reader, writer):
+        """
+        Request information about own frozen modules.
+        """
+        return await self.request_device_info(reader, writer, info_type='frozen_info')
+
+    async def request_flash_info(self, reader, writer):
+        """
+        Request information about files stored in flash filesystem
+        """
+        return await self.request_device_info(reader, writer, info_type='flash_info')
 
     def client_file_outdated(self, file_path):
         try:
-            device_file_size, device_sha256 = self.files_info[file_path.name]
+            device_file_size, device_sha256 = self.flash_info[file_path.name]
         except KeyError:
-            print('\nFile does not exist on device -> upload file.')
-            return True
+            print('\tFile does not exist on flash filesystem.')
+            if file_path.suffix == '.mpy':
+                # We must compare the ./src/*.py file with self.frozen_info ;)
+                file_path = Path(constants.SRC_PATH, file_path.with_suffix('.py').name)
+
+            try:
+                device_file_size, device_sha256 = self.frozen_info[file_path.name]
+            except KeyError:
+                print('\tFile does also not exist as frozen modules -> upload file.')
+                return True
+
+        # compare file size
 
         local_file_size = file_path.stat().st_size
         if device_file_size != local_file_size:
             print()
-            print(f'Device file size..: {device_file_size} Bytes')
-            print(f'Local file size...: {local_file_size} Bytes')
-            print('File size not the same -> upload file.')
+            print(f'\tDevice file size..: {device_file_size} Bytes')
+            print(f'\tLocal file size...: {local_file_size} Bytes')
+            print('\tFile size not the same -> upload file.')
             return True
+
+        # compare SHA256 hash
 
         with file_path.open('rb') as f:
             local_sha256 = hashlib.sha256(f.read()).hexdigest()
-
         if local_sha256 != device_sha256:
             print()
-            print(f'Device file SHA256...: {device_sha256!r}')
-            print(f'Local file SHA256....: {local_sha256!r}')
-            print('File SHA256 hash not the same -> upload file.')
+            print(f'\tDevice file SHA256...: {device_sha256!r}')
+            print(f'\tLocal file SHA256....: {local_sha256!r}')
+            print('\tFile SHA256 hash not the same -> upload file.')
             return True
 
-        print('Skip file: Size + SHA256 are same')
+        print('\tSkip file: Size + SHA256 are same')
         return False
 
     async def send_file(self, file_path, reader, writer):

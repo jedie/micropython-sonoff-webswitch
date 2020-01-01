@@ -16,10 +16,22 @@ docker-pull:  ## pull docker images
 
 docker-build: docker-pull  ## pull and build docker images
 	docker build \
-    --build-arg "DOCKER_UID=${DOCKER_UID}" \
-    --build-arg "DOCKER_UGID=${DOCKER_UGID}" \
-    . \
-    -t local/micropython:latest
+		--build-arg "DOCKER_UID=${DOCKER_UID}" \
+		--build-arg "DOCKER_UGID=${DOCKER_UGID}" \
+		. \
+		-t local/micropython:latest
+	#
+	# Just "extract" compiled "mpy-cross" from docker image and store it here: ./build/mpy-cross
+	# So we can use it locally for 'soft' OTA Updates
+	docker run \
+		-e "DOCKER_UID=${DOCKER_UID}" \
+		-e "DOCKER_UGID=${DOCKER_UGID}" \
+		--mount type=bind,src=${PWD}/build/,dst=/mpy/build/ \
+		local/micropython:latest \
+		/bin/bash -c "cp /mpy/micropython/mpy-cross/mpy-cross /mpy/build/mpy-cross"
+	#
+	# Print version info:
+	build/mpy-cross --version
 
 
 update: docker-build  ## update git repositories/submodules, virtualenv, docker images and build local docker image

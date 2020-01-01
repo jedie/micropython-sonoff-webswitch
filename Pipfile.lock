@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "c9c63a24bbd84d45c1e400b6a7b5d783d1a281039541e442667e222d64879eb4"
+            "sha256": "d34a4fe6b1d5aabda20109d16a982cafeb93af9b6253956a46204ab9596caeeb"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -109,17 +109,6 @@
                 "sha256:c833ef592a0324bcc6a60e48440da07645063c453880c9477ceb22490aec1564"
             ],
             "version": "==8.0.2"
-        },
-        "mpy-cross": {
-            "hashes": [
-                "sha256:14be23507f39516b2ec869faae00726c92f5dc8df753390407653e37ba6b0783",
-                "sha256:14d14fdb1afbd700a91da50a6c35b43467d97c30ee8003c3212938a494968927",
-                "sha256:2199dfc4858ef60860c2a7d538eb50ea21c161620b5309e80af6e536bf474086",
-                "sha256:2ff19640c1320ea2c387b02e790043bbcb1f4b07e489d08aa73736e7f553a0cd",
-                "sha256:b870014c6ba8974aab880747ff762eb8bef3550f18f66f5cfdae4a6443332cd3"
-            ],
-            "index": "pypi",
-            "version": "==1.12"
         },
         "mpycntrl": {
             "hashes": [

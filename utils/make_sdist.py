@@ -72,10 +72,3 @@ if __name__ == '__main__':
         src_path=Path(BASE_PATH, 'src'),
         sdist_path=Path(BASE_PATH, 'sdist')
     )
-
-    # 	mkdir -p sdist
-# 	cp -u src/*.py sdist/
-#
-# 	rm sdist/__init__.py
-# 	rm sdist/boot.py
-# 	rm sdist/main.py
