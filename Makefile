@@ -34,8 +34,8 @@ micropython_shell: docker-build  ## start a bash shell in docker container "loca
 		-e "DOCKER_UID=${DOCKER_UID}" \
 		-e "DOCKER_UGID=${DOCKER_UGID}" \
 		--mount type=bind,src=${PWD}/firmware_scripts/,dst=/mpy/firmware_scripts/ \
-		--mount type=bind,src=${PWD}/src/,dst=/mpy/micropython/ports/esp8266/src/ \
-		--mount type=bind,src=${PWD}/build/,dst=/build/ \
+		--mount type=bind,src=${PWD}/sdist/,dst=/mpy/micropython/ports/esp8266/sdist/ \
+		--mount type=bind,src=${PWD}/build/,dst=/mpy/build/ \
 		local/micropython:latest \
 		/bin/bash
 
@@ -61,14 +61,14 @@ compile-firmware: docker-build  ## compiles the micropython firmware and store i
 		-e "DOCKER_UGID=${DOCKER_UGID}" \
 		--mount type=bind,src=${PWD}/firmware_scripts/,dst=/mpy/firmware_scripts/ \
 		--mount type=bind,src=${PWD}/sdist/,dst=/mpy/micropython/ports/esp8266/sdist/ \
-		--mount type=bind,src=${PWD}/build/,dst=/build/ \
+		--mount type=bind,src=${PWD}/build/,dst=/mpy/build/ \
 		local/micropython:latest \
 		/bin/bash -c "cd /mpy/micropython/ports/esp8266/ \
 			&& make -j12 ota \
 				FROZEN_MANIFEST=/mpy/firmware_scripts/manifest.py \
 				MICROPY_VFS_FAT=0 \
 				MICROPY_VFS_LFS2=1 \
-			&& cp -u /mpy/micropython/ports/esp8266/build-GENERIC/firmware-ota.bin /build/firmware-ota.bin"
+			&& cp -u /mpy/micropython/ports/esp8266/build-GENERIC/firmware-ota.bin /mpy/build/firmware-ota.bin"
 
 
 yaota8266-rsa-keys:  ## Pull/build yaota8266 docker images and Generate RSA keys and/or print RSA modulus line for copy&paste into config.h
