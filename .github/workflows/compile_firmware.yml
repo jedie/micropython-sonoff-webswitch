@@ -18,6 +18,7 @@ jobs:
         PIPENV_NOSPIN: 1
       run: |
         make update
+        cp docker-yaota8266/yaota8266/config.h.example docker-yaota8266/yaota8266/config.h
 
     - name: 'Compile MicroPython Firmware via docker'
       run: |
