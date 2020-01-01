@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - name: 'Compile MicroPython Firmware via docker'
+    - name: 'Compile yaota8266.bin via docker'
       run: |
         make yaota8266-rsa-keys
         cp docker-yaota8266/yaota8266/config.h.example docker-yaota8266/yaota8266/config.h
