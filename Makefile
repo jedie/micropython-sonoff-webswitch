@@ -18,7 +18,7 @@ docker-build: docker-pull  ## pull and build docker images
 	docker build \
     --build-arg "DOCKER_UID=${DOCKER_UID}" \
     --build-arg "DOCKER_UGID=${DOCKER_UGID}" \
-    firmware_scripts/. \
+    . \
     -t local/micropython:latest
 
 
