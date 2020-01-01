@@ -74,6 +74,7 @@ compile-firmware: sdist docker-build  ## compiles the micropython firmware and s
 			&& make clean \
 			&& make -j12 ota \
 				FROZEN_MANIFEST=/mpy/micropython_config/manifest.py \
+				MICROPY_PY_BTREE=0 \
 				MICROPY_VFS_FAT=0 \
 				MICROPY_VFS_LFS2=1 \
 			&& cp -u /mpy/micropython/ports/esp8266/build-GENERIC/firmware-ota.bin /mpy/build/firmware-ota.bin"
