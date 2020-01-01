@@ -1,0 +1,29 @@
+name: Compile yaota8266.bin
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: 'Set up Python v3'
+      uses: actions/setup-python@v1
+      with:
+        python-version: '3.x'
+
+    - name: 'Init environment'
+      env:
+        PIPENV_NOSPIN: 1
+      run: |
+        make update
+
+    - name: 'Compile yaota8266.bin via docker'
+      run: |
+        make yaota8266-rsa-keys
+        cp docker-yaota8266/yaota8266/config.h.example docker-yaota8266/yaota8266/config.h
+        make yaota8266-compile
+        ls -la build/
+        file build/yaota8266.bin
+

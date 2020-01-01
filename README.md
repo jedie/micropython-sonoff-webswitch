@@ -1,6 +1,6 @@
 # micropython-sonoff-webswitch
 
-Minimal MicroPython project to get a webserver on Sonoff WiFi Smart Socket.
+MicroPython project to free the Sonoff WiFi Smart Socket from the cloud by run a webserver on the device.
 
 Tested devices:
 
@@ -90,8 +90,63 @@ Clone the sources, and setup virtualenv via `pipenv`:
 ```bash
 ~$ git clone https://github.com/jedie/micropython-sonoff-webswitch.git
 ~$ cd micropython-sonoff-webswitch
-~/micropython-sonoff-webswitch$ pipenv sync
-~/micropython-sonoff-webswitch$ pipenv run start_ota_server.py
+~/micropython-sonoff-webswitch$ make update
+```
+
+## compile own firmware
+
+To see all make targets, just call make, e.g.:
+```bash
+~/micropython-sonoff-webswitch$ make
+make targets:
+  help               This help page
+  docker-pull        pull docker images
+  docker-build       pull and build docker images
+  update             update git repositories/submodules, virtualenv, docker images and build local docker image
+  test               Run pytest
+  micropython_shell  start a bash shell in docker container "local/micropython:latest"
+  unix-port-shell    start micropython unix port interpreter
+  compile-firmware   compiles the micropython firmware and store it here: /build/firmware-ota.bin
+  yaota8266-rsa-keys Pull/build yaota8266 docker images and Generate RSA keys and/or print RSA modulus line for copy&paste into config.h
+  yaota8266-compile  Compile ota bootloader and store it here: build/yaota8266.bin
+  flash-yaota8266    Flash build/yaota8266.bin to location 0x0 via esptool.py
+  flash-firmware     Flash build/firmware-ota.bin to location 0x3c000 via esptool.py
+```
+
+### docker-yaota8266/yaota8266/config.h
+
+You must create `docker-yaota8266/yaota8266/config.h` and insert your RSA modulus line.
+
+To generate your RSA keys and display the needed line for `config.h` just call:
+```bash
+~/micropython-sonoff-webswitch$ make yaota8266-rsa-keys
+...
+Copy&paste this RSA modulus line into your config.h:
+----------------------------------------------------------------------------------------------------
+#define MODULUS "\xce\x4a\xaf\x65\x0d\x4a\x74\xda\xc1\x30\x59\x80\xcf\xdd\xe8\x2a\x2e\x1d\xf7\xa8\xc9\x6c\xa9\x4a\x2c\xb7\x8a\x5a\x2a\x25\xc0\x2b\x7b\x2f\x58\x4c\xa8\xcb\x82\x07\x06\x08\x7e\xff\x1f\xce\x47\x13\x67\x94\x5f\x9a\xac\x5e\x7d\xcf\x63\xf0\x08\xe9\x51\x98\x95\x01"
+----------------------------------------------------------------------------------------------------
+```
+
+### compile
+
+After you have created your own RSA keys and `config.h`, you can compile `yaota8266.bin` and `firmware-ota.bin`, e.g.:
+```bash
+~/micropython-sonoff-webswitch$ make yaota8266-compile
+~/micropython-sonoff-webswitch$ make compile-firmware
+```
+
+The compiled files are stored here:
+
+* `~/micropython-sonoff-webswitch/build/yaota8266.bin`
+* `~/micropython-sonoff-webswitch/build/firmware-ota.bin`
+
+### flash yaota8266 and firmware
+
+After you have called `make yaota8266-compile` and `make compile-firmware` you can flash your device:
+
+```bash
+~/micropython-sonoff-webswitch$ make flash-yaota8266
+~/micropython-sonoff-webswitch$ make flash-firmware
 ```
 
 
