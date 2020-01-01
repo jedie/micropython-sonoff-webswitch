@@ -27,5 +27,27 @@ def hex_dump(offset=0):
     gc.collect()
 
 
+def search(offset, text):
+    print('search for', repr(text))
+    next_update = utime.time() + 1
+    while True:
+        try:
+            esp.flash_read(offset, BUFFER)
+        except OSError as e:
+            print(b'Error: %s' % e)
+            return 0
+
+        if text in BUFFER:
+            print('Found in block:', offset)
+            return offset
+
+        offset += CHUNK_SIZE
+
+        if utime.time() >= next_update:
+            print('Search:', offset)
+            next_update = utime.time() + 1
+
+
 if __name__ == '__main__':
-    hex_dump(offset=0)
+    offset = search(offset=0, text='micropython')
+    hex_dump(offset=offset)
