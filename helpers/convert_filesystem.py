@@ -42,21 +42,14 @@ def detect_filesystem():
 filesystem_hex_dump(line_count=5, chunk_size=16)
 print('Detected filesystem:', detect_filesystem())
 
-print('\nconvert to FAT...\n')  # only on ESP8266 and ESP32
-
-# os.umount('/')
+# print('\nconvert to FAT...\n')  # only on ESP8266 and ESP32
 # os.VfsFat.mkfs(flashbdev.bdev)
-# os.mount(flashbdev.bdev, '/')
 #
 # filesystem_hex_dump(line_count=5, chunk_size=16)
 # print('Detected filesystem:', detect_filesystem())
 
 print('\nconvert to littlefs2...\n')  # only on ESP8266 and ESP32
-
-# os.umount('/')
-# os.VfsLfs.mkfs(flashbdev.bdev)  # AttributeError: 'module' object has no attribute 'VfsLfs'
-# os.VfsLfs2.mkfs(flashbdev.bdev)  # AttributeError: 'module' object has no attribute 'VfsLfs2'
-# os.mount(flashbdev.bdev, '/')
+os.VfsLfs2.mkfs(flashbdev.bdev)
 
 filesystem_hex_dump(line_count=5, chunk_size=16)
 print('Detected filesystem:', detect_filesystem())
