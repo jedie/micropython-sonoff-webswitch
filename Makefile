@@ -24,7 +24,12 @@ docker-build: docker-pull  ## pull and build docker images
 
 update: docker-build  ## update git repositories/submodules, virtualenv, docker images and build local docker image
 	git pull origin master
-	git submodule update --init --recursive
+	@if [ -d docker-yaota8266/yaota8266/ota-server/lib/axtls ] ; \
+	then \
+		echo -n "\nGit submodules exists, ok.\n\n" ; \
+	else \
+		git submodule update --init --recursive ; \
+	fi
 	python3 -m pip install --upgrade pipenv
 	pipenv sync
 
