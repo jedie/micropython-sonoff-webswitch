@@ -64,6 +64,7 @@ compile-firmware: docker-build  ## compiles the micropython firmware and store i
 		--mount type=bind,src=${PWD}/build/,dst=/mpy/build/ \
 		local/micropython:latest \
 		/bin/bash -c "cd /mpy/micropython/ports/esp8266/ \
+			&& make clean \
 			&& make -j12 ota \
 				FROZEN_MANIFEST=/mpy/firmware_scripts/manifest.py \
 				MICROPY_VFS_FAT=0 \
