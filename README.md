@@ -90,6 +90,13 @@ Clone the sources, and setup virtualenv via `pipenv`:
 ```bash
 ~$ git clone https://github.com/jedie/micropython-sonoff-webswitch.git
 ~$ cd micropython-sonoff-webswitch
+
+# You need 'pipenv', install e.g.:
+
+~/micropython-sonoff-webswitch$ python3 -m pip install --upgrade pipenv
+
+# install requirements:
+
 ~/micropython-sonoff-webswitch$ pipenv sync
 ```
 
