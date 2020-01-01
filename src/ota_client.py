@@ -21,7 +21,7 @@ gc.collect()  # noqa isort:skip
 
 _CONNECTION_TIMEOUT = const(15)
 _OTA_TIMEOUT = const(60)
-_PORT = const(8266)
+_PORT = const(8267)
 _CHUNK_SIZE = const(512)
 _BUFFER = bytearray(_CHUNK_SIZE)
 _FILE_TYPE = const(0x8000)

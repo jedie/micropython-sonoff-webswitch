@@ -3,7 +3,7 @@ from pathlib import Path
 from ota.ota_server import OtaServer
 from utils.main import lint_and_compile
 
-PORT = 8266
+PORT = 8267
 
 if __name__ == '__main__':
     src_path = Path('src')
