@@ -8,7 +8,7 @@ default: help
 
 help:  ## This help page
 	@echo 'make targets:'
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-17s %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-18s %s\n", $$1, $$2}'
 
 
 docker-pull:  ## pull docker images
@@ -40,7 +40,7 @@ micropython_shell: docker-build  ## start a bash shell in docker container "loca
 		/bin/bash
 
 
-unix_port_shell: docker-build  ## start micropython unix port interpreter
+unix-port-shell: docker-build  ## start micropython unix port interpreter
 	docker run -it \
 		-e "DOCKER_UID=${DOCKER_UID}" \
 		-e "DOCKER_UGID=${DOCKER_UGID}" \
@@ -48,7 +48,7 @@ unix_port_shell: docker-build  ## start micropython unix port interpreter
 		/mpy/micropython/ports/unix/micropython
 
 
-compile_firmware: docker-build  ## compiles the micropython firmware and store it here: /build/firmware-ota.bin
+compile-firmware: docker-build  ## compiles the micropython firmware and store it here: /build/firmware-ota.bin
 	mkdir -p sdist
 	cp -u src/*.py sdist/
 
