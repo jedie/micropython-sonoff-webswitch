@@ -18,6 +18,7 @@ jobs:
         PIPENV_NOSPIN: 1
       run: |
         make update
+        make yaota8266-rsa-keys
         cp docker-yaota8266/yaota8266/config.h.example docker-yaota8266/yaota8266/config.h
 
     - name: 'Compile MicroPython Firmware via docker'
