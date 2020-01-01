@@ -228,6 +228,15 @@ sta_if.connect('your-ssid', 'Your-WiFi-Password')
 
 ### OTA updates
 
+**Note**: There are two kinds of OTA updates:
+
+* 'hard' OTA update via **yaota8266** bootloader that will replace the complete firmware.
+* 'soft' OTA updates via pure micropython script that will only upload new files to the flash filesystem.
+
+The 'hard' OTA via **yaota8266** is work-in-progress and will currenlty not work, see: https://github.com/jedie/micropython-sonoff-webswitch/issues/33
+
+#### 'soft' OTA updates
+
 After the initial setup and when everything is working and the device is connected to your wlan, you can use OTA updates.
 
 The device will run the [/src/ota_client.py](https://github.com/jedie/micropython-sonoff-webswitch/blob/master/src/ota_client.py) on every boot.
