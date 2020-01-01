@@ -26,7 +26,7 @@ docker-build: docker-pull  ## pull and build docker images
 update: docker-build  ## update git repositories/submodules, docker images and build local docker images
 	git pull origin master
 	git submodule update --init --recursive
-	pipenv update --dev
+	pipenv sync
 
 
 micropython_shell: docker-build  ## start a bash shell in docker container "local/micropython:latest"
