@@ -1,8 +1,6 @@
 import gc
-import sys
 
 import esp
-import uasyncio
 import utime
 from micropython import const
 
