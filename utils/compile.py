@@ -2,22 +2,21 @@ import shutil
 import sys
 from pathlib import Path
 
-import mpy_cross
+from ota import mpy_cross
+from utils import constants
 
-# mpy_cross.run('--help')
 
-
-def compile(src_path, dst_path, skip_files):
+def compile(skip_files):
     cwd = Path().cwd()
 
-    print('Compile files from:', src_path)
-    for file_path in sorted(src_path.glob('*.py')):
+    print('Compile files from:', constants.SRC_PATH)
+    for file_path in sorted(constants.SRC_PATH.glob('*.py')):
         file_path = file_path.relative_to(cwd)
 
         if file_path.name in skip_files:
             continue
 
-        output_path = Path(dst_path, file_path.name).with_suffix('.mpy')
+        output_path = Path(constants.BDIST_PATH, file_path.name).with_suffix('.mpy')
         output_path = output_path.relative_to(cwd)
 
         print(f' + {file_path} -> {output_path}')
@@ -36,28 +35,27 @@ def compile(src_path, dst_path, skip_files):
         )
 
 
-def create_bdist(src_path, dst_path, ignore_files, copy_files, copy_file_pattern):
-    src_path = src_path.resolve()
-    dst_path = dst_path.resolve()
-    dst_path.mkdir(exist_ok=True)
+def create_bdist(ignore_files, copy_files, copy_file_pattern):
+    if constants.BDIST_PATH.is_dir():
+        shutil.rmtree(constants.BDIST_PATH)
+    constants.BDIST_PATH.mkdir(exist_ok=False)
+
     compile(
-        src_path=src_path,
-        dst_path=dst_path,
         skip_files=list(copy_files) + list(ignore_files),
     )
     print(' -' * 50)
     print('Copy files...')
     cwd = Path().cwd()
-    files2copy = set([Path(src_path, n) for n in copy_files])
+    files2copy = set([Path(constants.SRC_PATH, n) for n in copy_files])
     for pattern in copy_file_pattern:
-        files2copy.update(set(src_path.glob(pattern)))
+        files2copy.update(set(constants.SRC_PATH.glob(pattern)))
 
     for file_path in files2copy:
         if file_path.name in ignore_files:
             continue
 
         file_path = file_path.resolve().relative_to(cwd)
-        output_path = Path(dst_path, file_path.name).relative_to(cwd)
+        output_path = Path(constants.BDIST_PATH, file_path.name).relative_to(cwd)
         print(f' + {file_path} -> {output_path}')
         try:
             shutil.copyfile(file_path, output_path)

@@ -31,8 +31,8 @@ def reset(reason):
     for no in range(2, 0, -1):
         print('%i Reset because: %s' % (no, reason))
         utime.sleep(1)
-    machine.reset()
-    utime.sleep(1)
+    # machine.reset()
+    # utime.sleep(1)
     sys.exit(-1)
 
 
@@ -123,9 +123,27 @@ class OtaUpdate:
         await self.write_line_string(writer, '%i' % _CHUNK_SIZE)
 
     async def command_mpy_version(self, reader, writer):
+        """
+        TODO: How to compare the mpy version???
+        See: https://forum.micropython.org/viewtopic.php?f=2&t=7506
+        """
         await self.write_line_string(writer, uos.uname().version)
 
-    async def command_files_info(self, reader, writer):
+    async def command_frozen_info(self, reader, writer):
+        """
+        Send information about own frozen modules.
+        """
+        print('Send frozen modules info...')
+        from frozen_modules_info import FROZEN_FILE_INFO
+        for filename, size, sha256 in FROZEN_FILE_INFO:
+            await writer.awrite(b'%s\r%i\r%s\r\n' % (filename, size, sha256))
+        await writer.awrite(b'\n\n')
+        print('Frozen modules info send, ok.')
+
+    async def command_flash_info(self, reader, writer):
+        """
+        Send information about files stored in flash filesystem
+        """
         print('Send files info...')
         for name, file_type, inode, size in uos.ilistdir():
             if file_type != _FILE_TYPE:
@@ -147,7 +165,7 @@ class OtaUpdate:
             await writer.awrite(ubinascii.hexlify(sha256.digest()))
             await writer.awrite(b'\r\n')
         await writer.awrite(b'\n\n')
-        print('Files info sended, ok.')
+        print('Files info send, ok.')
 
     async def command_receive_file(self, reader, writer):
         """
