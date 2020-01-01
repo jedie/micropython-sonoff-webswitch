@@ -127,6 +127,14 @@ Copy&paste this RSA modulus line into your config.h:
 ----------------------------------------------------------------------------------------------------
 ```
 
+The generated RSA key files are here:
+
+* `docker-yaota8266/yaota8266/ota-client/priv.key`
+* `docker-yaota8266/yaota8266/ota-client/pub.key`
+
+You should backup theses files;
+
+
 ### compile
 
 After you have created your own RSA keys and `config.h`, you can compile `yaota8266.bin` and `firmware-ota.bin`, e.g.:
