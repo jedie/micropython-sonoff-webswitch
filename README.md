@@ -90,14 +90,7 @@ Clone the sources, and setup virtualenv via `pipenv`:
 ```bash
 ~$ git clone https://github.com/jedie/micropython-sonoff-webswitch.git
 ~$ cd micropython-sonoff-webswitch
-
-# You need 'pipenv', install e.g.:
-
-~/micropython-sonoff-webswitch$ python3 -m pip install --upgrade pipenv
-
-# install requirements:
-
-~/micropython-sonoff-webswitch$ pipenv sync
+~/micropython-sonoff-webswitch$ make update
 ```
 
 ## compile own firmware
@@ -109,7 +102,7 @@ make targets:
   help               This help page
   docker-pull        pull docker images
   docker-build       pull and build docker images
-  update             update git repositories/submodules, docker images and build local docker images
+  update             update git repositories/submodules, virtualenv, docker images and build local docker image
   micropython_shell  start a bash shell in docker container "local/micropython:latest"
   unix-port-shell    start micropython unix port interpreter
   compile-firmware   compiles the micropython firmware and store it here: /build/firmware-ota.bin

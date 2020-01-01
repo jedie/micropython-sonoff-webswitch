@@ -11,7 +11,6 @@ jobs:
       env:
         PIPENV_NOSPIN: 1
       run: |
-        python3 -m pip install --upgrade pipenv
         make compile-firmware
         ls -la build/
         file build/firmware-ota.bin

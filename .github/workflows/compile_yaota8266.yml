@@ -11,7 +11,6 @@ jobs:
       env:
         PIPENV_NOSPIN: 1
       run: |
-        python3 -m pip install --upgrade pipenv
         make yaota8266-rsa-keys
         cp docker-yaota8266/yaota8266/config.h.example docker-yaota8266/yaota8266/config.h
         make yaota8266-compile

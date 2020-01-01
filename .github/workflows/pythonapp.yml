@@ -20,7 +20,6 @@ jobs:
       env:
         PIPENV_NOSPIN: 1
       run: |
-        python3 -m pip install --upgrade pipenv
         pipenv sync --dev
 
     - name: 'Lint with flake8'

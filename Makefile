@@ -23,9 +23,10 @@ docker-build: docker-pull  ## pull and build docker images
     -t local/micropython:latest
 
 
-update: docker-build  ## update git repositories/submodules, docker images and build local docker images
+update: docker-build  ## update git repositories/submodules, virtualenv, docker images and build local docker image
 	git pull origin master
 	git submodule update --init --recursive
+	python3 -m pip install --upgrade pipenv
 	pipenv sync
 
 
