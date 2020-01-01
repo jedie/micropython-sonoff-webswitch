@@ -100,6 +100,10 @@ yaota8266-compile: docker-build  ## Compile ota bootloader and store it here: bu
 	file build/yaota8266.bin
 
 
+erase-flash:  ## call esptool.py erase_flash
+	pipenv run esptool.py --port /dev/ttyUSB0 erase_flash
+
+
 flash-yaota8266:  ## Flash build/yaota8266.bin to location 0x0 via esptool.py
 	@if [ -f build/yaota8266.bin ] ; \
 	then \
