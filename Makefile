@@ -2,7 +2,6 @@ DOCKER_UID=$(shell id -u)
 DOCKER_UGID=$(shell id -g)
 PWD=$(shell pwd)
 
-
 default: help
 
 
@@ -28,6 +27,10 @@ update: docker-build  ## update git repositories/submodules, virtualenv, docker 
 	git submodule update --init --recursive
 	python3 -m pip install --upgrade pipenv
 	pipenv sync
+
+
+test: update  ## Run pytest
+	PYTHONPATH=src pipenv run pytest
 
 
 micropython_shell: docker-build  ## start a bash shell in docker container "local/micropython:latest"
@@ -73,11 +76,11 @@ compile-firmware: docker-build  ## compiles the micropython firmware and store i
 			&& cp -u /mpy/micropython/ports/esp8266/build-GENERIC/firmware-ota.bin /mpy/build/firmware-ota.bin"
 
 
-yaota8266-rsa-keys: update  ## Pull/build yaota8266 docker images and Generate RSA keys and/or print RSA modulus line for copy&paste into config.h
+yaota8266-rsa-keys: docker-build  ## Pull/build yaota8266 docker images and Generate RSA keys and/or print RSA modulus line for copy&paste into config.h
 	$(MAKE) -C docker-yaota8266 rsa-keys
 
 
-yaota8266-compile: update  ## Compile ota bootloader and store it here: build/yaota8266.bin
+yaota8266-compile: docker-build  ## Compile ota bootloader and store it here: build/yaota8266.bin
 	$(MAKE) -C docker-yaota8266 compile
 	cp -u docker-yaota8266/yaota8266/yaota8266.bin build/yaota8266.bin
 

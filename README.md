@@ -1,6 +1,6 @@
 # micropython-sonoff-webswitch
 
-Minimal MicroPython project to get a webserver on Sonoff WiFi Smart Socket.
+MicroPython project to free the Sonoff WiFi Smart Socket from the cloud by run a webserver on the device.
 
 Tested devices:
 
@@ -103,6 +103,7 @@ make targets:
   docker-pull        pull docker images
   docker-build       pull and build docker images
   update             update git repositories/submodules, virtualenv, docker images and build local docker image
+  test               Run pytest
   micropython_shell  start a bash shell in docker container "local/micropython:latest"
   unix-port-shell    start micropython unix port interpreter
   compile-firmware   compiles the micropython firmware and store it here: /build/firmware-ota.bin
