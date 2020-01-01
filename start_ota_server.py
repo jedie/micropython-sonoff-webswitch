@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from pathlib import Path
 
 from ota.ota_server import OtaServer
