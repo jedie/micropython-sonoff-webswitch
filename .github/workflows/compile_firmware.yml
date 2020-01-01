@@ -9,7 +9,7 @@ jobs:
     - uses: actions/checkout@v1
     - name: 'Compile MicroPython Firmware via docker'
       run: |
-        make compile_firmware
+        make compile-firmware
         ls -la build/
         file build/firmware-ota.bin
 
