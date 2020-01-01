@@ -62,7 +62,26 @@ unix-port-shell: docker-build  ## start micropython unix port interpreter
 		/mpy/micropython/ports/unix/micropython
 
 
-compile-firmware: sdist docker-build  ## compiles the micropython firmware and store it here: /build/firmware-ota.bin
+assert-yaota8266-setup:
+	@if [ -f docker-yaota8266/yaota8266/config.h ] ; \
+	then \
+		echo -n "\ndocker-yaota8266/yaota8266/config.h exists, ok.\n\n" ; \
+	else \
+		echo -n "\nERROR: Please create 'docker-yaota8266/yaota8266/config.h' first!\n\n" ; \
+		exit 1 ; \
+	fi
+
+	@if [ -f docker-yaota8266/yaota8266/ota-client/priv.key ] ; \
+	then \
+		echo -n "\ndocker-yaota8266/yaota8266/ota-client/priv.key exists, ok.\n\n" ; \
+	else \
+		echo -n "\nERROR: Please call 'make yaota8266-rsa-keys' first!\n\n" ; \
+		exit 1 ; \
+	fi
+
+
+compile-firmware: sdist docker-build assert-yaota8266-setup  ## compiles the micropython firmware and store it here: /build/firmware-ota.bin
+
 	docker run \
 		-e "DOCKER_UID=${DOCKER_UID}" \
 		-e "DOCKER_UGID=${DOCKER_UGID}" \
@@ -90,7 +109,7 @@ yaota8266-rsa-keys: docker-build  ## Pull/build yaota8266 docker images and Gene
 	$(MAKE) -C docker-yaota8266 rsa-keys
 
 
-yaota8266-compile: docker-build  ## Compile ota bootloader and store it here: build/yaota8266.bin
+yaota8266-compile: docker-build assert-yaota8266-setup  ## Compile ota bootloader and store it here: build/yaota8266.bin
 	$(MAKE) -C docker-yaota8266 compile
 	@echo -n "\n"
 	cp -u docker-yaota8266/yaota8266/yaota8266.bin build/yaota8266.bin
