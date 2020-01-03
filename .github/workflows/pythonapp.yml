@@ -30,6 +30,10 @@ jobs:
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         pipenv run flake8 . --count --exit-zero --max-complexity=10 --statistics
 
+    - name: 'build docker'
+      run: |
+        make docker-build
+
     - name: 'Run pytest'
       env:
         PYTHONPATH: src
