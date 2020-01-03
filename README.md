@@ -1,5 +1,7 @@
 # micropython-sonoff-webswitch
 
+![badge.svg](https://github.com/jedie/micropython-sonoff-webswitch/workflows/Run%20Tests/badge.svg?branch=master)
+
 MicroPython project to free the Sonoff WiFi Smart Socket from the cloud by run a webserver on the device.
 
 Tested devices:
