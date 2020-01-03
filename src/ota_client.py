@@ -102,13 +102,15 @@ class OtaUpdate:
             print('Receive command:', command)
 
             gc.collect()
-            try:
-                await getattr(self, 'command_%s' % command)(reader, writer)
-            except AttributeError:
-                await self.error(writer, 'Command unknown', do_reset=False)
-            except Exception as e:
-                sys.print_exception(e)
-                await self.error(writer, 'Command error', do_reset=False)
+            command = 'command_%s' % command
+            if not hasattr(self, command):
+                await self.error(writer, 'Command unknown!', do_reset=False)
+            else:
+                try:
+                    await getattr(self, command)(reader, writer)
+                except Exception as e:
+                    sys.print_exception(e)
+                    await self.error(writer, 'Command error', do_reset=False)
 
     async def command_send_ok(self, reader, writer):
         await self.write_line_string(writer, 'OK')
@@ -124,10 +126,13 @@ class OtaUpdate:
 
     async def command_mpy_version(self, reader, writer):
         """
-        TODO: How to compare the mpy version???
-        See: https://forum.micropython.org/viewtopic.php?f=2&t=7506
+        Return sys.implementation.mpy that contains all information about
+        current mpy version and flags supported by your MicroPython system.
+        See:
+            http://docs.micropython.org/en/latest/reference/mpyfiles.html
+            https://forum.micropython.org/viewtopic.php?f=2&t=7506
         """
-        await self.write_line_string(writer, uos.uname().version)
+        await self.write_line_string(writer, '%i' % sys.implementation.mpy)
 
     async def command_frozen_info(self, reader, writer):
         """
