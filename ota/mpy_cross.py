@@ -26,8 +26,7 @@ def check_output(*args, universal_newlines=True, **kwargs):
 
 def version():
     """
-    Returns 'mpy_cross' version as string e.g.:
-        'v1.12'
+    Returns 'mpy_cross' emitting mpy version as number
     """
     # official build, e.g.:
     #   'MicroPython v1.12 on 2019-12-21; mpy-cross emitting mpy v5\n'
@@ -37,8 +36,8 @@ def version():
     raw_mpy_cross_version = check_output('--version').strip()
     print(f'Installed mpy_cross version is for {raw_mpy_cross_version}')
     assert raw_mpy_cross_version.startswith('MicroPython ')
-    version = raw_mpy_cross_version.split(' ', 2)[1]
-    return version
+    mpy_version = int(raw_mpy_cross_version.rsplit(' v', 1)[1])
+    return mpy_version
 
 
 if __name__ == '__main__':

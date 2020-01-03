@@ -124,10 +124,13 @@ class OtaUpdate:
 
     async def command_mpy_version(self, reader, writer):
         """
-        TODO: How to compare the mpy version???
-        See: https://forum.micropython.org/viewtopic.php?f=2&t=7506
+        Return sys.implementation.mpy that contains all information about
+        current mpy version and flags supported by your MicroPython system.
+        See:
+            http://docs.micropython.org/en/latest/reference/mpyfiles.html
+            https://forum.micropython.org/viewtopic.php?f=2&t=7506
         """
-        await self.write_line_string(writer, uos.uname().version)
+        await self.write_line_string(writer, '%i' % sys.implementation.mpy)
 
     async def command_frozen_info(self, reader, writer):
         """

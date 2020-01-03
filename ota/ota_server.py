@@ -193,31 +193,27 @@ class OtaServer:
 
     async def check_micropython_version(self, reader, writer):
         """
-        TODO: How to compare the mpy version???
+        Request sys.implementation.mpy from device and compare is with mpy_cross version
         See: https://forum.micropython.org/viewtopic.php?f=2&t=7506
         """
         print('\nCheck micropython versions:')
         mpy_cross_version = mpy_cross.version()
 
         await writer.write_text_line('mpy_version')
-
-        # e.g.:
-        #   b'v1.12 on 2019-12-20\n'
-        #   b'v1.11-8-g48dcbbe60 on 2019-05-29\n'
-        #   b'1070984 on 2020-01-01\n'
         raw_mpy_version = await reader.readline()
+        sys_mpy = int(raw_mpy_version.decode('ASCII').strip())
 
-        raw_mpy_version = raw_mpy_version.decode('ASCII').strip()
-        print(f'Micropython version on device is: {raw_mpy_version}')
-        raw_mpy_version = raw_mpy_version.split('-', 1)[0]
-        mpy_version = raw_mpy_version.split(' ', 1)[0]
+        # sys.implementation.mpy & 0xff
+        device_mpy_version = sys_mpy & 0xff
 
-        if mpy_version != mpy_cross_version:
+        print(f'mpv version on device is: v{device_mpy_version}')
+
+        if device_mpy_version != mpy_cross_version:
             await self.request_exit(reader, writer)
             raise AssertionError(
                 f'Version error!'
                 f' Device mpy version does not match with installed mpy_cross!'
-                f' ({mpy_version!r} != {mpy_cross_version!r}'
+                f' ({device_mpy_version!r} != {mpy_cross_version!r}'
             )
 
         print('Version matched, ok.\n')
