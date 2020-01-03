@@ -102,13 +102,15 @@ class OtaUpdate:
             print('Receive command:', command)
 
             gc.collect()
-            try:
-                await getattr(self, 'command_%s' % command)(reader, writer)
-            except AttributeError:
-                await self.error(writer, 'Command unknown', do_reset=False)
-            except Exception as e:
-                sys.print_exception(e)
-                await self.error(writer, 'Command error', do_reset=False)
+            command = 'command_%s' % command
+            if not hasattr(self, command):
+                await self.error(writer, 'Command unknown!', do_reset=False)
+            else:
+                try:
+                    await getattr(self, command)(reader, writer)
+                except Exception as e:
+                    sys.print_exception(e)
+                    await self.error(writer, 'Command error', do_reset=False)
 
     async def command_send_ok(self, reader, writer):
         await self.write_line_string(writer, 'OK')
