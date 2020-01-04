@@ -92,7 +92,7 @@ assert-yaota8266-setup:
 	fi
 
 
-compile-firmware: sdist docker-build assert-yaota8266-setup  ## compiles the micropython firmware and store it here: /build/firmware-ota.bin
+build-firmware: sdist docker-build assert-yaota8266-setup  ## compiles the micropython firmware and store it here: /build/firmware-ota.bin
 
 	docker run \
 		-e "DOCKER_UID=${DOCKER_UID}" \
@@ -121,8 +121,8 @@ yaota8266-rsa-keys: docker-build  ## Pull/build yaota8266 docker images and Gene
 	$(MAKE) -C docker-yaota8266 rsa-keys
 
 
-yaota8266-compile: docker-build assert-yaota8266-setup  ## Compile ota bootloader and store it here: build/yaota8266.bin
-	$(MAKE) -C docker-yaota8266 compile
+yaota8266-build: docker-build assert-yaota8266-setup  ## Compile ota bootloader and store it here: build/yaota8266.bin
+	$(MAKE) -C docker-yaota8266 build
 	@echo -n "\n"
 	cp -u docker-yaota8266/yaota8266/yaota8266.bin build/yaota8266.bin
 	ls -la build
@@ -139,7 +139,7 @@ flash-yaota8266:  ## Flash build/yaota8266.bin to location 0x0 via esptool.py
 	then \
 		echo -n "\nbuild/yaota8266.bin exists, ok.\n\n" ; \
 	else \
-		echo -n "\nERROR: Please run 'make yaota8266-compile' first to create 'build/yaota8266.bin' !\n\n" ; \
+		echo -n "\nERROR: Please run 'make yaota8266-build' first to create 'build/yaota8266.bin' !\n\n" ; \
 		exit 1 ; \
 	fi
 	pipenv run esptool.py --port /dev/ttyUSB0 --baud 460800 write_flash -fs 1MB -fm dout 0x0 build/yaota8266.bin
@@ -150,7 +150,7 @@ flash-firmware:  ## Flash build/firmware-ota.bin to location 0x3c000 via esptool
 	then \
 		echo -n "\nbuild/firmware-ota.bin exists, ok.\n\n" ; \
 	else \
-		echo -n "\nERROR: Please run 'make compile-firmware' first to create 'build/firmware-ota.bin' !\n\n" ; \
+		echo -n "\nERROR: Please run 'make build-firmware' first to create 'build/firmware-ota.bin' !\n\n" ; \
 		exit 1 ; \
 	fi
 	pipenv run esptool.py --port /dev/ttyUSB0 --baud 460800 write_flash -fs 1MB -fm dout 0x3c000 build/firmware-ota.bin

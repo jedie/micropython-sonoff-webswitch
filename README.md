@@ -110,9 +110,9 @@ make targets:
   test               Run pytest
   micropython_shell  start a bash shell in docker container "local/micropython:latest"
   unix-port-shell    start micropython unix port interpreter
-  compile-firmware   compiles the micropython firmware and store it here: /build/firmware-ota.bin
+  build-firmware     compiles the micropython firmware and store it here: /build/firmware-ota.bin
   yaota8266-rsa-keys Pull/build yaota8266 docker images and Generate RSA keys and/or print RSA modulus line for copy&paste into config.h
-  yaota8266-compile  Compile ota bootloader and store it here: build/yaota8266.bin
+  yaota8266-build    Compile ota bootloader and store it here: build/yaota8266.bin
   flash-yaota8266    Flash build/yaota8266.bin to location 0x0 via esptool.py
   flash-firmware     Flash build/firmware-ota.bin to location 0x3c000 via esptool.py
   live-ota           Start ota_client.py to OTA Update the firmware file build/firmware-ota.bin via yaota8266
@@ -144,8 +144,8 @@ You should backup theses files;
 
 After you have created your own RSA keys and `config.h`, you can compile `yaota8266.bin` and `firmware-ota.bin`, e.g.:
 ```bash
-~/micropython-sonoff-webswitch$ make yaota8266-compile
-~/micropython-sonoff-webswitch$ make compile-firmware
+~/micropython-sonoff-webswitch$ make yaota8266-build
+~/micropython-sonoff-webswitch$ make build-firmware
 ```
 
 The compiled files are stored here:
@@ -155,7 +155,7 @@ The compiled files are stored here:
 
 ### flash yaota8266 and firmware
 
-After you have called `make yaota8266-compile` and `make compile-firmware` you can flash your device:
+After you have called `make yaota8266-build` and `make build-firmware` you can flash your device:
 
 ```bash
 ~/micropython-sonoff-webswitch$ make flash-yaota8266

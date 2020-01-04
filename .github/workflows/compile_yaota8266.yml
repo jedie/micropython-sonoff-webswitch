@@ -23,7 +23,7 @@ jobs:
 
     - name: 'Compile yaota8266.bin via docker'
       run: |
-        make yaota8266-compile
+        make yaota8266-build
         ls -la build/
         file build/yaota8266.bin
 

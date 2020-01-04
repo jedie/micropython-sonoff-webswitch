@@ -23,6 +23,6 @@ jobs:
 
     - name: 'Compile MicroPython Firmware via docker'
       run: |
-        make compile-firmware
+        make build-firmware
         ls -la build/
         file build/firmware-ota.bin
