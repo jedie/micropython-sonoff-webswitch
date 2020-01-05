@@ -114,6 +114,7 @@ make targets:
   build-ota-firmware       compiles the micropython OTA firmware and store it here: /build/firmware-ota.bin
   yaota8266-rsa-keys       Pull/build yaota8266 docker images and Generate RSA keys and/or print RSA modulus line for copy&paste into config.h
   yaota8266-build          Compile ota bootloader and store it here: build/yaota8266.bin
+  verify                   Check RSA key, config.h and compiled "yaota8266.bin"
   erase-flash              call esptool.py erase_flash
   flash-firmware-combined  Flash build/firmware-combined to location 0x3c000 via esptool.py
   flash-yaota8266          Flash build/yaota8266.bin to location 0x0 via esptool.py

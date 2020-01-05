@@ -133,6 +133,8 @@ yaota8266-build: docker-build assert-yaota8266-setup  ## Compile ota bootloader 
 	@echo -n "\n"
 	file build/yaota8266.bin
 
+verify:  ## Check RSA key, config.h and compiled "yaota8266.bin"
+	$(MAKE) -C docker-yaota8266/yaota8266 verify
 
 erase-flash:  ## call esptool.py erase_flash
 	pipenv run esptool.py --port /dev/ttyUSB0 erase_flash
@@ -148,7 +150,7 @@ flash-firmware-combined:  ## Flash build/firmware-combined to location 0x3c000 v
 	pipenv run esptool.py --port /dev/ttyUSB0 --baud 460800 write_flash -fs 1MB -fm dout 0 build/firmware-combined.bin
 
 
-flash-yaota8266:  ## Flash build/yaota8266.bin to location 0x0 via esptool.py
+flash-yaota8266: verify ## Flash build/yaota8266.bin to location 0x0 via esptool.py
 	@if [ -f build/yaota8266.bin ] ; \
 	then \
 		echo -n "\nbuild/yaota8266.bin exists, ok.\n\n" ; \
@@ -159,7 +161,7 @@ flash-yaota8266:  ## Flash build/yaota8266.bin to location 0x0 via esptool.py
 	pipenv run esptool.py --port /dev/ttyUSB0 --baud 460800 write_flash -fs 1MB -fm dout 0x0 build/yaota8266.bin
 
 
-flash-ota-firmware:  ## Flash build/firmware-ota.bin to location 0x3c000 via esptool.py
+flash-ota-firmware: verify ## Flash build/firmware-ota.bin to location 0x3c000 via esptool.py
 	@if [ -f build/firmware-ota.bin ] ; \
 	then \
 		echo -n "\nbuild/firmware-ota.bin exists, ok.\n\n" ; \
