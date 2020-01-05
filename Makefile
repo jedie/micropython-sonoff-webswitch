@@ -73,24 +73,8 @@ unix-port-shell: docker-build  ## start micropython unix port interpreter
 		local/micropython:latest \
 		/mpy/micropython/ports/unix/micropython
 
-
 assert-yaota8266-setup:
-	@if [ -f docker-yaota8266/yaota8266/config.h ] ; \
-	then \
-		echo -n "\ndocker-yaota8266/yaota8266/config.h exists, ok.\n\n" ; \
-	else \
-		echo -n "\nERROR: Please create 'docker-yaota8266/yaota8266/config.h' first!\n\n" ; \
-		exit 1 ; \
-	fi
-
-	@if [ -f docker-yaota8266/yaota8266/ota_client/priv.key ] ; \
-	then \
-		echo -n "\ndocker-yaota8266/yaota8266/ota_client/priv.key exists, ok.\n\n" ; \
-	else \
-		echo -n "\nERROR: RSA priv.key not found! Please call 'make yaota8266-rsa-keys' first!\n\n" ; \
-		exit 1 ; \
-	fi
-
+	$(MAKE) -C docker-yaota8266/yaota8266 assert-yaota8266-setup
 
 build-firmware-combined: sdist docker-build  ## compiles the micropython non-OTA firmware and store it here: /build/firmware-combined.bin
 	docker run \
