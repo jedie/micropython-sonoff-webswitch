@@ -22,16 +22,16 @@ async def get_form(server, reader, writer, querystring, body):
     )
 
 
-async def post_submit(server, reader, writer, querystring, body):
+async def get_submit(server, reader, writer, querystring, body):
     from urllib_parse import request_query2dict
-    body = request_query2dict(body)
+    data = request_query2dict(querystring)
     del request_query2dict
     del sys.modules['urllib_parse']
     gc.collect()
 
     from led_dim_level_cfg import set_power_led_level
 
-    level = int(body['level'])
+    level = int(data['level'])
     print('Set LED dim level to: %r' % level)
     if not 0 <= level <= len(Pins.power_led.duty_values):
         server.message = 'Level is out of range!'
