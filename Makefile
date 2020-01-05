@@ -114,7 +114,7 @@ build-ota-firmware: sdist docker-build assert-yaota8266-setup  ## compiles the m
 				MICROPY_VFS_LFS2=1 \
 			&& cp -u /mpy/micropython/ports/esp8266/build-GENERIC/firmware-ota.bin /mpy/build/firmware-ota.bin"
 	@echo -n "\n"
-	python3 docker-yaota8266/yaota8266/ota-client/ota_client.py sign build/firmware-ota.bin
+	python3 docker-yaota8266/yaota8266/cli.py sign build/firmware-ota.bin
 	@echo -n "\n"
 	ls -la build
 	@echo -n "\n"
