@@ -7,7 +7,7 @@ default: help
 
 help:  ## This help page
 	@echo 'make targets:'
-	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-18s %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-24s %s\n", $$1, $$2}'
 
 
 docker-pull:  ## pull docker images
@@ -92,8 +92,28 @@ assert-yaota8266-setup:
 	fi
 
 
-build-firmware: sdist docker-build assert-yaota8266-setup  ## compiles the micropython firmware and store it here: /build/firmware-ota.bin
+build-firmware-combined: sdist docker-build  ## compiles the micropython non-OTA firmware and store it here: /build/firmware-combined.bin
+	docker run \
+		-e "DOCKER_UID=${DOCKER_UID}" \
+		-e "DOCKER_UGID=${DOCKER_UGID}" \
+		--mount type=bind,src=${PWD}/micropython_config/,dst=/mpy/micropython_config/ \
+		--mount type=bind,src=${PWD}/sdist/,dst=/mpy/micropython/ports/esp8266/sdist/ \
+		--mount type=bind,src=${PWD}/build/,dst=/mpy/build/ \
+		local/micropython:latest \
+		/bin/bash -c "cd /mpy/micropython/ports/esp8266/ \
+			&& make clean \
+			&& make -j12 \
+				FROZEN_MANIFEST=/mpy/micropython_config/manifest.py \
+				MICROPY_PY_BTREE=0 \
+				MICROPY_VFS_FAT=0 \
+				MICROPY_VFS_LFS2=1 \
+			&& cp -u /mpy/micropython/ports/esp8266/build-GENERIC/firmware-combined.bin /mpy/build/firmware-combined.bin"
+	@echo -n "\n"
+	ls -la build
+	@echo -n "\n"
+	file build/firmware-combined.bin
 
+build-ota-firmware: sdist docker-build assert-yaota8266-setup  ## compiles the micropython OTA firmware and store it here: /build/firmware-ota.bin
 	docker run \
 		-e "DOCKER_UID=${DOCKER_UID}" \
 		-e "DOCKER_UGID=${DOCKER_UGID}" \
@@ -133,6 +153,16 @@ yaota8266-build: docker-build assert-yaota8266-setup  ## Compile ota bootloader 
 erase-flash:  ## call esptool.py erase_flash
 	pipenv run esptool.py --port /dev/ttyUSB0 erase_flash
 
+flash-firmware-combined:  ## Flash build/firmware-combined to location 0x3c000 via esptool.py
+	@if [ -f build/firmware-combined.bin ] ; \
+	then \
+		echo -n "\nbuild/firmware-combined.bin exists, ok.\n\n" ; \
+	else \
+		echo -n "\nERROR: Please run 'make build-firmware-combined' first to create 'build/firmware-combined.bin' !\n\n" ; \
+		exit 1 ; \
+	fi
+	pipenv run esptool.py --port /dev/ttyUSB0 --baud 460800 write_flash -fs 1MB -fm dout 0 build/firmware-combined.bin
+
 
 flash-yaota8266:  ## Flash build/yaota8266.bin to location 0x0 via esptool.py
 	@if [ -f build/yaota8266.bin ] ; \
@@ -145,12 +175,12 @@ flash-yaota8266:  ## Flash build/yaota8266.bin to location 0x0 via esptool.py
 	pipenv run esptool.py --port /dev/ttyUSB0 --baud 460800 write_flash -fs 1MB -fm dout 0x0 build/yaota8266.bin
 
 
-flash-firmware:  ## Flash build/firmware-ota.bin to location 0x3c000 via esptool.py
+flash-ota-firmware:  ## Flash build/firmware-ota.bin to location 0x3c000 via esptool.py
 	@if [ -f build/firmware-ota.bin ] ; \
 	then \
 		echo -n "\nbuild/firmware-ota.bin exists, ok.\n\n" ; \
 	else \
-		echo -n "\nERROR: Please run 'make build-firmware' first to create 'build/firmware-ota.bin' !\n\n" ; \
+		echo -n "\nERROR: Please run 'make build-ota-firmware' first to create 'build/firmware-ota.bin' !\n\n" ; \
 		exit 1 ; \
 	fi
 	pipenv run esptool.py --port /dev/ttyUSB0 --baud 460800 write_flash -fs 1MB -fm dout 0x3c000 build/firmware-ota.bin
