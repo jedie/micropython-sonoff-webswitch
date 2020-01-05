@@ -224,10 +224,13 @@ I used [thonny](https://github.com/thonny/thonny) for this. With thonny it's eas
 To connect to your WiFi network, edit and run this:
 
 ```python
-import network
+import time, network
 sta_if = network.WLAN(network.STA_IF)
 sta_if.active(True)
 sta_if.connect('your-ssid', 'Your-WiFi-Password')
+while not sta_if.isconnected():
+    time.sleep(0.5)
+print('connected, ok.')
 ```
 
 ### OTA updates
