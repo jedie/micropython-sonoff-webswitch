@@ -24,13 +24,14 @@ def main():
 
     _RTC_KEY_RUN = 'run'
     _RUN_WEB_SERVER = 'web-server'
+    _RUN_SOFT_OTA = 'soft-ota'
 
     from rtc import get_rtc_value
     if get_rtc_value(_RTC_KEY_RUN) == _RUN_WEB_SERVER:
         print('start webserver')
 
         from rtc import update_rtc_dict
-        update_rtc_dict(data={_RTC_KEY_RUN: None})  # run OTA client on next boot
+        update_rtc_dict(data={_RTC_KEY_RUN: _RUN_SOFT_OTA})  # run OTA client on next boot
 
         del update_rtc_dict
         del get_rtc_value
@@ -44,7 +45,7 @@ def main():
 
         WebServer(context=context, version=__version__).run()
     else:
-        print('start OTA')
+        print('start "soft" OTA')
         Pins.power_led.off()
         from rtc import update_rtc_dict
         update_rtc_dict(data={_RTC_KEY_RUN: _RUN_WEB_SERVER})  # run web server on next boot
