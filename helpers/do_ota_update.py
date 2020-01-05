@@ -1,11 +1,11 @@
 """
-    Force start OTA update client.
+    Start "soft" OTA update client.
     This is normally not needed, see main.py
 """
 
 
 if __name__ == '__main__':
-    print('Start OTA update')
+    print('Start "soft" OTA update')
     import sys
     sys.modules.clear()
 

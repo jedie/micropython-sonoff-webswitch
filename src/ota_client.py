@@ -31,8 +31,8 @@ def reset(reason):
     for no in range(2, 0, -1):
         print('%i Reset because: %s' % (no, reason))
         utime.sleep(1)
-    # machine.reset()
-    # utime.sleep(1)
+    machine.reset()
+    utime.sleep(1)
     sys.exit(-1)
 
 
@@ -65,7 +65,7 @@ class OtaUpdate:
         loop = uasyncio.get_event_loop()
         loop.create_task(uasyncio.start_server(self, '0.0.0.0', _PORT))
 
-        print('Wait %i sec for OTA connection on port %i' % (_CONNECTION_TIMEOUT, _PORT))
+        print('Wait %i sec for "soft" OTA connection on port %i' % (_CONNECTION_TIMEOUT, _PORT))
         self.timeout = Timeout(reason='no connection', timeout_sec=_CONNECTION_TIMEOUT)
 
         try:
