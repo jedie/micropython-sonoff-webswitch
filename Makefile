@@ -83,11 +83,11 @@ assert-yaota8266-setup:
 		exit 1 ; \
 	fi
 
-	@if [ -f docker-yaota8266/yaota8266/ota-client/priv.key ] ; \
+	@if [ -f docker-yaota8266/yaota8266/ota_client/priv.key ] ; \
 	then \
-		echo -n "\ndocker-yaota8266/yaota8266/ota-client/priv.key exists, ok.\n\n" ; \
+		echo -n "\ndocker-yaota8266/yaota8266/ota_client/priv.key exists, ok.\n\n" ; \
 	else \
-		echo -n "\nERROR: Please call 'make yaota8266-rsa-keys' first!\n\n" ; \
+		echo -n "\nERROR: RSA priv.key not found! Please call 'make yaota8266-rsa-keys' first!\n\n" ; \
 		exit 1 ; \
 	fi
 
