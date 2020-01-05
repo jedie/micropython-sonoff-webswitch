@@ -1,5 +1,6 @@
 print('boot.py')   # noqa isort:skip
 import gc
+import sys
 
 import esp
 import micropython
@@ -18,5 +19,12 @@ gc.enable()
 
 # https://forum.micropython.org/viewtopic.php?f=2&t=7345&p=42390#p42390
 gc.threshold(8192)
+
+# default is:
+#   sys.path=['', '/lib', '/']
+# But we would like to be possible to overwrite frozen modues with .mpy on flash drive ;)
+sys.path.insert(0, '.')
+print('sys.path=%r' % sys.path)
+
 
 print('boot.py END')
