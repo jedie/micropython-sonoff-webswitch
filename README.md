@@ -120,6 +120,7 @@ make targets:
   flash-yaota8266          Flash build/yaota8266.bin to location 0x0 via esptool.py
   flash-ota-firmware       Flash build/firmware-ota.bin to location 0x3c000 via esptool.py
   live-ota                 Start ota_client.py to OTA Update the firmware file build/firmware-ota.bin via yaota8266
+  screen                   Low level debug device via screen /dev/ttyUSB0
 ```
 
 ### docker-yaota8266/yaota8266/config.h
