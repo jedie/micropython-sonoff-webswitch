@@ -1,6 +1,6 @@
 """
-    'soft' OTA Server
-    ~~~~~~~~~~~~~~~~~
+    soft-OTA Server
+    ~~~~~~~~~~~~~~~
     Answering requests from devices micropython devices,
     to update all files on device.
 
@@ -76,7 +76,7 @@ async def open_connection(host=None, port=None):
     return reader, writer
 
 
-class OtaServer:
+class SoftOtaServer:
     def __init__(self, verbose=False):
         self.verbose = verbose
 

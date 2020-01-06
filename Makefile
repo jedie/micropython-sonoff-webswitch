@@ -171,8 +171,11 @@ flash-ota-firmware: verify ## Flash build/firmware-ota.bin to location 0x3c000 v
 	fi
 	pipenv run esptool.py --port /dev/ttyUSB0 --baud 460800 write_flash -fs 1MB -fm dout 0x3c000 build/firmware-ota.bin
 
-live-ota:  ## Start ota_client.py to OTA Update the firmware file build/firmware-ota.bin via yaota8266
+hard-ota:  ## Start yaota8266 live-ota to hard-OTA Update the firmware file build/firmware-ota.bin.ota
 	python3 docker-yaota8266/yaota8266/ota-client/ota_client.py live-ota build/firmware-ota.bin.ota
+
+soft-ota:  ## Start soft-OTA updates: Compile .py to .mpy and push missing/updated files (*.mpy, *.css, *.html etc.) to the device
+	python3 start_soft_ota_server.py
 
 miniterm:  ## Low level debug device via miniterm.py (from pyserial) to /dev/ttyUSB0
 	pipenv run miniterm.py /dev/ttyUSB0 115200

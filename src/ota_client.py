@@ -1,6 +1,6 @@
 """
-    OTA Client for micropython devices
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    soft-OTA Client for micropython devices
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     Wait for OTA Server and run commands from him
     to update local files.
 """
@@ -56,17 +56,16 @@ class Timeout:
         self.timer.deinit()
 
 
-class OtaUpdate:
+class SoftOtaUpdate:
     def __init__(self):
         self.timeout = None  # Will be set in run() and __call__()
 
     def run(self):
-
         loop = uasyncio.get_event_loop()
         loop.create_task(uasyncio.start_server(self, '0.0.0.0', _PORT))
 
-        print('Wait %i sec for "soft" OTA connection on port %i' % (_CONNECTION_TIMEOUT, _PORT))
-        self.timeout = Timeout(reason='no connection', timeout_sec=_CONNECTION_TIMEOUT)
+        print('Wait %i sec for soft-OTA connection on port %i' % (_CONNECTION_TIMEOUT, _PORT))
+        self.timeout = Timeout(reason='soft-OTA no connection', timeout_sec=_CONNECTION_TIMEOUT)
 
         try:
             loop.run_forever()
@@ -74,9 +73,9 @@ class OtaUpdate:
             sys.print_exception(e)
         except SystemExit as e:
             if e.args[0] == 0:
-                reset('OTA Update complete successfully!')
-            reset('Unknown sys exit code.')
-        reset('OTA unknown error')
+                reset('soft-OTA Update complete successfully!')
+            reset('soft-OTA unknown sys exit code.')
+        reset('soft-OTA unknown error')
 
     async def read_line_string(self, reader):
         data = await reader.readline()
@@ -94,7 +93,7 @@ class OtaUpdate:
     async def __call__(self, reader, writer):
         self.timeout.deinit()
 
-        self.timeout = Timeout(reason='OTA timeout', timeout_sec=_OTA_TIMEOUT)
+        self.timeout = Timeout(reason='soft-OTA timeout', timeout_sec=_OTA_TIMEOUT)
         address = writer.get_extra_info('peername')
         print('Accepted connection from %s:%s' % address)
         while True:
@@ -251,4 +250,4 @@ class OtaUpdate:
 
 
 if __name__ == '__main__':
-    OtaUpdate().run()
+    SoftOtaUpdate().run()

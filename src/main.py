@@ -51,7 +51,7 @@ def main():
         update_rtc_dict(data={_RTC_KEY_RUN: _RUN_WEB_SERVER})  # run web server on next boot
         from ota_client import OtaUpdate
 
-        OtaUpdate().run()
+        SoftOtaUpdate().run()
 
     from reset import ResetDevice
     ResetDevice(reason='unknown').reset()

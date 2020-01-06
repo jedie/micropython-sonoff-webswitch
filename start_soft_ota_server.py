@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from ota.ota_server import OtaServer
+from soft_ota.ota_server import SoftOtaServer
 from utils.main import lint_and_compile
 
 PORT = 8267
@@ -12,7 +12,7 @@ if __name__ == '__main__':
     print('_' * 100)
     print('Start OTA Server\n')
 
-    ota_server = OtaServer(verbose=False)
+    ota_server = SoftOtaServer(verbose=False)
 
     # Send 'bdist' files to devices:
     clients = ota_server.run(port=PORT)

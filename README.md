@@ -119,7 +119,8 @@ make targets:
   flash-firmware-combined  Flash build/firmware-combined to location 0x3c000 via esptool.py
   flash-yaota8266          Flash build/yaota8266.bin to location 0x0 via esptool.py
   flash-ota-firmware       Flash build/firmware-ota.bin to location 0x3c000 via esptool.py
-  live-ota                 Start ota_client.py to OTA Update the firmware file build/firmware-ota.bin via yaota8266
+  hard-ota                 Start yaota8266 live-ota to hard-OTA Update the firmware file build/firmware-ota.bin.ota
+  soft-ota                 Start soft-OTA updates: Compile .py to .mpy and push missing/updated files (*.mpy, *.css, *.html etc.) to the device
   miniterm                 Low level debug device via miniterm.py (from pyserial) to /dev/ttyUSB0
 ```
 
