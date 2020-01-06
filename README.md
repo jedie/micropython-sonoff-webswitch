@@ -170,8 +170,8 @@ After you have called `make yaota8266-build` and `make build-firmware` you can f
 
 For other devices just use `esptool` directly, e.g.:
 ```bash
-~/micropython-sonoff-webswitch$ pipenv run esptool.py --port /dev/ttyUSB0 write_flash 0 build/yaota8266.bin
-~/micropython-sonoff-webswitch$ pipenv run esptool.py --port /dev/ttyUSB0 write_flash 0x3c000 build/firmware-ota.bin
+~/micropython-sonoff-webswitch$ pipenv run esptool.py --port /dev/ttyUSB0 --baud 460800 write_flash 0 build/yaota8266.bin
+~/micropython-sonoff-webswitch$ pipenv run esptool.py --port /dev/ttyUSB0 --baud 460800 write_flash 0x3c000 build/firmware-ota.bin
 ```
 
 
