@@ -49,7 +49,7 @@ def main():
         Pins.power_led.off()
         from rtc import update_rtc_dict
         update_rtc_dict(data={_RTC_KEY_RUN: _RUN_WEB_SERVER})  # run web server on next boot
-        from ota_client import OtaUpdate
+        from ota_client import SoftOtaUpdate
 
         SoftOtaUpdate().run()
 

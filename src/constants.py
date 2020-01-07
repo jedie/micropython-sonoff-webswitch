@@ -24,7 +24,7 @@ MIME_TYPES = {
 CONTENT_TYPE = b'Content-Type: %s\r\n'
 HTTP_LINE_200 = b'HTTP/1.0 200 OK\r\n'
 HTTP_LINE_303 = b'HTTP/1.0 303 Moved\r\n'
-HTTP_LINE_LOCATION = b'Location: {url}\r\n\r\n'
+HTTP_LINE_LOCATION = 'Location: {url}\r\n\r\n'
 HTTP_LINE_CACHE = b'Cache-Control: max-age=6000\r\n'
 
 CHUNK_SIZE = const(512)

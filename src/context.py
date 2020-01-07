@@ -5,6 +5,7 @@ class Context:
     power_timer_timers = None
     power_timer_turn_on = None
     power_timer_next_timer = None  # epoch
+    power_timer_next_timer_epoch = None
 
     wifi_first_connect_time = None  # epoch
     wifi_connected = 0

@@ -2,7 +2,7 @@ import shutil
 import sys
 from pathlib import Path
 
-from ota import mpy_cross
+from soft_ota import mpy_cross
 from utils import constants
 
 

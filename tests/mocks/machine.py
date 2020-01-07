@@ -1,4 +1,10 @@
 
+def unique_id():
+    """
+    http://docs.micropython.org/en/latest/library/machine.html#machine.unique_id
+    """
+    return (1, 2, 3, 4)
+
 
 class Pin:
     OUT = 'out'
@@ -23,6 +29,7 @@ class PWM:
 
 
 class Timer:
+    PERIODIC = 'periodic'
     ONE_SHOT = 'one shot'
 
     def __init__(self, id):
