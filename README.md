@@ -97,6 +97,15 @@ Clone the sources, and setup virtualenv via `pipenv`:
 ~/micropython-sonoff-webswitch$ make update
 ```
 
+overview:
+
+* Generate yaota8266 RSA keys, create `config.h` and compile yaota8266 and firmware
+* Flash yaota8266 and firmware
+* format device flash to `littlefs2` with: `helpers/convert_filesystem.py`
+* create `_config_wifi.json`
+* Connect device to WiFi
+* start soft-OTA to put all missing files to the device
+
 ## compile own firmware
 
 To see all make targets, just call make, e.g.:
