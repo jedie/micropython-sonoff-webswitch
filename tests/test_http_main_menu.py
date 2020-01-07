@@ -1,45 +1,8 @@
-import os
-from pathlib import Path
-
-import asynctest
-from context import Context
-from uasyncio import StreamReader, StreamWriter
-from watchdog import Watchdog
-from webswitch import WebServer
-
-BASE_PATH = Path(__file__).parent.parent  # .../micropython-sonoff-webswitch/
-SRC_PATH = Path(BASE_PATH, 'src')  # .../micropython-sonoff-webswitch/src/
+import utime
+from tests.base import WebServerTestCase
 
 
-class ChangeWorkDirContext:
-    def __init__(self):
-        self.old_cwd = Path.cwd()
-
-    def __enter__(self):
-        assert SRC_PATH.is_dir()
-        os.chdir(SRC_PATH)
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        os.chdir(self.old_cwd)
-
-
-class TestMockASocket(asynctest.TestCase):
-    async def get_request(self, request_line):
-        with ChangeWorkDirContext():
-            context = Context  # no instance!
-
-            context.watchdog = Watchdog(context)
-
-            web_server = WebServer(context=context, version='v0.1')
-
-            reader = asynctest.mock.Mock(StreamReader)
-            writer = StreamWriter()
-
-            reader.readline.return_value = request_line
-
-            await web_server.request_handler(reader, writer)
-
-            return writer.get_response(), web_server.message
+class HttpMainMenuTestCase(WebServerTestCase):
 
     def assert_response(self, response, expected_response):
         if response == expected_response:
@@ -65,6 +28,7 @@ class TestMockASocket(asynctest.TestCase):
         assert server_message == 'not enough values to unpack (expected 3, got 1)'
 
     async def test_get_main_menu(self):
+        assert utime.localtime() == (2019, 5, 1, 13, 12, 11, 2, 121)
         response, server_message = await self.get_request(request_line=b"GET /main/menu/ HTTP/1.1")
         self.assert_response_parts(
             response,
@@ -75,7 +39,7 @@ class TestMockASocket(asynctest.TestCase):
                 '<p>Power switch state: <strong>OFF</strong></p>',
                 '<p>Web server started...</p>',
                 'RAM total: 1.95 KB, used: 0.98 KB, free: 0.98 KB<br>',
-                'Server local time: 2000-01-01 00:00:00',
+                'Server local time: 2019-05-01 13:12:11',
                 '</html>'
             )
         )
