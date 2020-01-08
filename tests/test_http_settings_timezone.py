@@ -1,11 +1,7 @@
-import unittest
+
 from unittest import mock
 
-from mocks import ntptime
-from power_timer import active_today
-from rtc import get_dict_from_rtc
 from tests.base import WebServerTestCase
-from times_utils import get_active_days, pformat_timers, restore_timers
 from timezone import restore_timezone
 
 

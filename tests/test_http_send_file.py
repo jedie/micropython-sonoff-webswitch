@@ -27,7 +27,7 @@ class HttpSendFileTestCase(WebServerTestCase):
 
     async def test_get_css(self):
         mock_open = MockOpen(open)
-        with mock.patch('builtins.open', mock_open) as m:
+        with mock.patch('builtins.open', mock_open):
             response = await self.get_request(
                 request_line=b"GET /webswitch.css HTTP/1.1"
             )
@@ -48,7 +48,7 @@ class HttpSendFileTestCase(WebServerTestCase):
 
     async def test_get_ico(self):
         mock_open = MockOpen(open)
-        with mock.patch('builtins.open', mock_open) as m:
+        with mock.patch('builtins.open', mock_open):
             response = await self.get_request(
                 request_line=b"GET /favicon.ico HTTP/1.1"
             )
