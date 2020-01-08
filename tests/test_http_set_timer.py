@@ -58,3 +58,23 @@ class HttpMainMenuTestCase(WebServerTestCase):
             )
         )
         assert self.web_server.message == 'Timers saved and activated.'
+
+    async def test_sort_timers(self):
+
+        # send not ordered timer list:
+        #   21:30 - 22:45
+        #   07:00 - 08:00
+
+        response = await self.get_request(
+            request_line=(
+                b"GET"
+                b" /set_timer/submit/"
+                b"?timers=21%3A30+-+22%3A45%0D%0A07%3A00+-+08%3A00"
+                b" HTTP/1.1"
+            )
+        )
+        assert response == b'HTTP/1.0 303 Moved\r\nLocation: /set_timer/form/\r\n\r\n'
+        assert self.web_server.message == 'Timers saved and deactivated.'
+
+        timers = pformat_timers(restore_timers())
+        assert timers == '07:00 - 08:00\n21:30 - 22:45'

@@ -62,7 +62,6 @@ class PowerTimerTestCase(MicropythonBaseTestCase):
             assert pformat_timers(timers) == '10:00 - 20:00'
             assert list(iter_times(timers)) == [(True, (10, 0, 0)), (False, (20, 0, 0))]
 
-            print('***********')
             save_active_days((0, 1, 2, 3, 4, 5, 6))
 
             assert get_active_days() == (0, 1, 2, 3, 4, 5, 6)
