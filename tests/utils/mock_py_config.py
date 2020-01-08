@@ -5,8 +5,6 @@ from contextlib import contextmanager
 from pathlib import Path
 from unittest import mock
 
-from tests.utils.isolates_filesystem import IsolatedFilesystem
-
 
 class NonCachesImporter:
     """
@@ -62,6 +60,5 @@ class NonCachesImporter:
 
 @contextmanager
 def mock_py_config_context():
-    with IsolatedFilesystem():
-        with mock.patch('builtins.__import__', NonCachesImporter()):
-            yield
+    with mock.patch('builtins.__import__', NonCachesImporter()):
+        yield

@@ -23,9 +23,13 @@ class PowerTimerTestCase(MicropythonBaseTestCase):
         self.context.power_timer_timers = None
 
     def test_update_relay_switch_without_timers(self):
-        update_power_timer(self.context)
-        print(get_info_text(self.context))
-        self.assertEqual(get_current_timer(self.context), (None, None, None))
+        with mock_py_config_context():
+            assert restore_timers() == ()
+
+            update_power_timer(self.context)
+
+            print(get_info_text(self.context))
+            self.assertEqual(get_current_timer(self.context), (None, None, None))
 
     def test_update_relay_switch_in_1min(self):
         machine.RTC().deinit()  # start time from 1.1.2000 00:00

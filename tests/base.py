@@ -1,4 +1,4 @@
-import os
+
 from pathlib import Path
 from unittest import TestCase
 
@@ -6,36 +6,19 @@ import asynctest
 import machine
 from context import Context
 from uasyncio import StreamReader, StreamWriter
+from utils.constants import SRC_PATH
 from watchdog import Watchdog
 from webswitch import WebServer
 
-WIFI_EXAMPLE = '_config_wifi-example.json'
-BASE_PATH = Path(__file__).parent.parent  # .../micropython-sonoff-webswitch/
-SRC_PATH = Path(BASE_PATH, 'src')  # .../micropython-sonoff-webswitch/src/
 
-
-class ChangeWorkDirContext:
-    def __init__(self):
-        self.old_cwd = Path.cwd()
-
-    def __enter__(self):
-        assert SRC_PATH.is_dir()
-        os.chdir(SRC_PATH)
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        os.chdir(self.old_cwd)
-
-
-def get_all_config_files(path='.'):
-    path = Path(path)
-    config_files = [i.name for i in path.glob('_config_*.py')]
-    config_files += [i.name for i in path.glob('_config_*.json')]
-    if WIFI_EXAMPLE in config_files:
-        config_files.remove(WIFI_EXAMPLE)
+def get_all_config_files():
+    path = Path('.').resolve()
+    assert path == SRC_PATH, 'Error: Current work dir: %s != %s' % (path, SRC_PATH)
+    config_files = list(path.glob('_config_*.py')) + list(path.glob('_config_*.json'))
     return config_files
 
 
-class MicropythonBaseTestCase(TestCase):
+class MicropythonMixin:
     def setUp(self):
         super().setUp()
         machine.RTC().datetime((2019, 5, 1, 4, 13, 12, 11, 0))
@@ -43,27 +26,63 @@ class MicropythonBaseTestCase(TestCase):
         assert not config_files, f'Config files exists before test start: %s' % config_files
         self.context = Context
         self.context.power_timer_timers = None
+        print('No config files, ok.')
 
     def tearDown(self):
         config_files = get_all_config_files()
-        assert not config_files, f'Mock error: Config files created: %s' % config_files
+        for config_file in config_files:
+            print('Test cleanup, remove: %s' % config_file)
+            config_file.unlink()
+
         super().tearDown()
 
 
-class WebServerTestCase(asynctest.TestCase, MicropythonBaseTestCase):
+class MicropythonBaseTestCase(MicropythonMixin, TestCase):
+    pass
+
+
+class WebServerTestCase(MicropythonMixin, asynctest.TestCase):
+
+    def setUp(self):
+        super().setUp()
+        context = Context  # no instance!
+
+        context.watchdog = Watchdog(context)
+
+        self.web_server = WebServer(context=context, version='v0.1')
+
     async def get_request(self, request_line):
-        with ChangeWorkDirContext():
-            context = Context  # no instance!
+        reader = asynctest.mock.Mock(StreamReader)
+        writer = StreamWriter()
 
-            context.watchdog = Watchdog(context)
+        reader.readline.return_value = request_line
 
-            web_server = WebServer(context=context, version='v0.1')
+        await self.web_server.request_handler(reader, writer)
 
-            reader = asynctest.mock.Mock(StreamReader)
-            writer = StreamWriter()
+        return writer.get_response()
 
-            reader.readline.return_value = request_line
+    def assert_response(self, response, expected_response):
+        if response == expected_response:
+            return
+        print('-' * 100)
+        print(response)
+        print('-' * 100)
+        assert expected_response == response
 
-            await web_server.request_handler(reader, writer)
+    def assert_response_parts(self, response, parts):
+        missing_parts = []
+        for part in parts:
+            if part not in response:
+                missing_parts.append(part)
 
-            return writer.get_response(), web_server.message
+        if not missing_parts:
+            return
+
+        print('-' * 100)
+        print(response)
+        print('-' * 100)
+        print('Missing parts:')
+        for part in missing_parts:
+            print(f'\t* {part!r}')
+        print('-' * 100)
+        raise AssertionError(f'Missing {len(missing_parts)} parts in html!')

@@ -1,10 +1,11 @@
-from unittest import TestCase
 
-import utime
+
 import machine
+import utime
+from tests.base import MicropythonBaseTestCase
 
 
-class MicroPythonMocksTestCase(TestCase):
+class MicroPythonMocksTestCase(MicropythonBaseTestCase):
     def test_utime(self):
         assert utime.localtime(0) == (2000, 1, 1, 0, 0, 0, 5, 1)
         assert utime.mktime(utime.localtime(0)) == 0

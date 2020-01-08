@@ -1,18 +1,17 @@
-from unittest import TestCase
+from pathlib import Path
 
 from config_files import restore_py_config, save_py_config
 from mpy_tests.test_config_files import test_json_config
-from tests.utils.isolates_filesystem import IsolatedFilesystem
+from tests.base import MicropythonBaseTestCase
 from tests.utils.mock_py_config import mock_py_config_context
 
 
-class JsonConfigTestCase(TestCase):
+class JsonConfigTestCase(MicropythonBaseTestCase):
     def test_json_config(self):
-        with IsolatedFilesystem():
-            test_json_config()
+        test_json_config()
 
 
-class PyConfigTestCase(TestCase):
+class PyConfigTestCase(MicropythonBaseTestCase):
     def test_mock_py_config_context(self):
         with mock_py_config_context():
             # check mock if file not exist, yet:
@@ -24,10 +23,14 @@ class PyConfigTestCase(TestCase):
                 'File not found: not_existing_module.py')  # Own error?
 
             # Check mock if file exists:
-            with open('test.py', 'w') as f:
-                f.write('variable=True')
-            test = __import__('test', None, None)
-            assert test.variable is True
+            test_py_path = Path('test.py')
+            try:
+                with test_py_path.open('w') as f:
+                    f.write('variable=True')
+                test = __import__('test', None, None)
+                assert test.variable is True
+            finally:
+                test_py_path.unlink()
 
     def test_py_config(self):
         with mock_py_config_context():

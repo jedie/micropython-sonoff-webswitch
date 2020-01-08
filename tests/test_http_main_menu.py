@@ -21,15 +21,15 @@ class HttpMainMenuTestCase(WebServerTestCase):
                 assert part in response
 
     async def test_non_well_form_request(self):
-        response, server_message = await self.get_request(
+        response = await self.get_request(
             request_line=b"GET-totaly-bullshit-HTTP/1.1"
         )
         assert response == 'HTTP/1.0 303 Moved\r\nLocation: /main/menu/\r\n\r\n'
-        assert server_message == 'not enough values to unpack (expected 3, got 1)'
+        assert self.web_server.message == 'not enough values to unpack (expected 3, got 1)'
 
     async def test_get_main_menu(self):
         assert utime.localtime() == (2019, 5, 1, 13, 12, 11, 2, 121)
-        response, server_message = await self.get_request(request_line=b"GET /main/menu/ HTTP/1.1")
+        response = await self.get_request(request_line=b"GET /main/menu/ HTTP/1.1")
         self.assert_response_parts(
             response,
             parts=(
@@ -43,4 +43,4 @@ class HttpMainMenuTestCase(WebServerTestCase):
                 '</html>'
             )
         )
-        assert 'Web server started...' == server_message
+        assert self.web_server.message == 'Web server started...'
