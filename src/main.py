@@ -1,6 +1,6 @@
 
 
-__version__ = 'v0.11.0'
+__version__ = 'v0.11.1'
 
 
 def main():

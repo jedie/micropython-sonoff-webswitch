@@ -40,7 +40,7 @@ async def get_device_name_form(server, reader, writer, querystring, body, device
     """
     send "set new device name" form
     """
-    if device_name is None:
+    if not device_name:
         from device_name import get_device_name
         device_name = get_device_name()
 
@@ -67,18 +67,16 @@ async def get_submit_device_name(server, reader, writer, querystring, body):
     del request_query2dict
     del sys.modules['urllib_parse']
 
-    new_name = data['name']  # TODO: validate name
+    new_name = data.get('name', '')
+
     from device_name import save_device_name
     try:
-        save_device_name(name=new_name)
+        save_device_name(server, name=new_name)
     except ValueError as cleaned_name:
-        server.message = 'Error: Device name contains not allowed characters!'
         await get_device_name_form(
-            server, reader, writer, querystring, body, device_name=cleaned_name
+            server, reader, writer, querystring, body, device_name=str(cleaned_name)
         )
     else:
-        server.message = 'Device name %r saved.' % new_name
-
         from http_utils import send_redirect
         await send_redirect(writer, url='/settings/device_name_form/')
 
