@@ -1,4 +1,12 @@
 
+class _State:
+    _reset_calls = 0
+
+
+def reset():
+    _State._reset_calls += 1
+
+
 def unique_id():
     """
     http://docs.micropython.org/en/latest/library/machine.html#machine.unique_id

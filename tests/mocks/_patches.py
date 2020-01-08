@@ -28,3 +28,10 @@ def _mem_alloc():
 gc.mem_alloc = _mem_alloc
 
 builtins.__DEBUG__ = True
+
+
+def no_exit(no=None):
+    print(f'sys.exit({no!r}) called!')
+
+
+sys.exit = no_exit

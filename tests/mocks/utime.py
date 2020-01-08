@@ -6,6 +6,11 @@ import calendar as _calendar
 import time as _time
 
 
+def sleep(sec):
+    print(f' *** mock call: utime.sleep({sec!r})')
+    assert isinstance(sec, (int, float))
+
+
 def localtime(sec=None):
     """
     http://docs.micropython.org/en/latest/library/utime.html#utime.localtime
