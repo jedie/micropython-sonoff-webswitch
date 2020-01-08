@@ -70,6 +70,7 @@ class WebServerTestCase(MicropythonMixin, asynctest.TestCase):
         assert expected_response == response
 
     def assert_response_parts(self, response, parts):
+        response = response.decode('UTF-8')
         missing_parts = []
         for part in parts:
             if part not in response:

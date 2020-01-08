@@ -19,7 +19,7 @@ class HttpMainMenuTestCase(WebServerTestCase):
                 b" HTTP/1.1"
             )
         )
-        assert response == 'HTTP/1.0 303 Moved\r\nLocation: /set_timer/form/\r\n\r\n'
+        assert response == b'HTTP/1.0 303 Moved\r\nLocation: /set_timer/form/\r\n\r\n'
         assert self.web_server.message == 'Timers saved and activated.'
 
         timers = pformat_timers(restore_timers())

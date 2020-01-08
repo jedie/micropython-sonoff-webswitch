@@ -12,7 +12,7 @@ class StreamReader(_StreamReader):
 
 class StreamWriter:
     def __init__(self):
-        self.data = io.StringIO()
+        self.data = io.BytesIO()
 
     def get_extra_info(self, key):
         assert key == 'peername', f'Unknown key={key!r}'
@@ -22,8 +22,12 @@ class StreamWriter:
         return self.data.getvalue()
 
     async def awrite(self, data):
-        if isinstance(data, bytes):
-            data = data.decode('UTF-8')
+        if isinstance(data, memoryview):
+            data = bytes(data)
+
+        if isinstance(data, str):
+            data = data.encode('UTF-8')
+
         self.data.write(data)
 
     async def aclose(self):

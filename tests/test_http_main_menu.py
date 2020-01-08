@@ -4,27 +4,11 @@ from tests.base import WebServerTestCase
 
 class HttpMainMenuTestCase(WebServerTestCase):
 
-    def assert_response(self, response, expected_response):
-        if response == expected_response:
-            return
-        print('-' * 100)
-        print(response)
-        print('-' * 100)
-        assert expected_response == response
-
-    def assert_response_parts(self, response, parts):
-        for part in parts:
-            if part not in response:
-                print('-' * 100)
-                print(response)
-                print('-' * 100)
-                assert part in response
-
     async def test_non_well_form_request(self):
         response = await self.get_request(
             request_line=b"GET-totaly-bullshit-HTTP/1.1"
         )
-        assert response == 'HTTP/1.0 303 Moved\r\nLocation: /main/menu/\r\n\r\n'
+        assert response == b'HTTP/1.0 303 Moved\r\nLocation: /main/menu/\r\n\r\n'
         assert self.web_server.message == 'not enough values to unpack (expected 3, got 1)'
 
     async def test_get_main_menu(self):
