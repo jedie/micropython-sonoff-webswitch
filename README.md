@@ -253,7 +253,7 @@ sta_if.active(True)
 sta_if.connect('your-ssid', 'Your-WiFi-Password')
 while not sta_if.isconnected():
     time.sleep(0.5)
-print('connected, ok.')
+print('connected:', sta_if.ifconfig())
 ```
 
 ### OTA updates
