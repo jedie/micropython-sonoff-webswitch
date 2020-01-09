@@ -1,7 +1,7 @@
 """
     Expand existing python modules
 """
-import builtins
+
 import gc
 import sys
 import traceback
@@ -28,8 +28,6 @@ def _mem_alloc():
 
 
 gc.mem_alloc = _mem_alloc
-
-builtins.__DEBUG__ = True
 
 
 def no_exit(no=None):
