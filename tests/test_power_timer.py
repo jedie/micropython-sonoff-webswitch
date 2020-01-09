@@ -19,7 +19,7 @@ class PowerTimerTestCase(MicropythonBaseTestCase):
     def setUp(self):
         super().setUp()
         machine.RTC().datetime((2019, 5, 1, 4, 13, 12, 11, 0))
-        self.context = Context
+        self.context = Context()
         self.context.power_timer_timers = None
 
     def test_update_relay_switch_without_timers(self):

@@ -94,7 +94,7 @@ def run_all_times_utils_tests():
     assert results == (0, 1, 2, 3, 4), results
     print('OK\n')
 
-    context = Context
+    context = Context()
 
     save_timers([])
     results = tuple(restore_timers())

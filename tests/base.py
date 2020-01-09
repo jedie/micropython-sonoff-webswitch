@@ -24,7 +24,7 @@ class MicropythonMixin:
         machine.RTC().datetime((2019, 5, 1, 4, 13, 12, 11, 0))
         config_files = get_all_config_files()
         assert not config_files, f'Config files exists before test start: %s' % config_files
-        self.context = Context
+        self.context = Context()
         self.context.power_timer_timers = None
         print('No config files, ok.')
 
@@ -45,7 +45,7 @@ class WebServerTestCase(MicropythonMixin, asynctest.TestCase):
 
     def setUp(self):
         super().setUp()
-        context = Context  # no instance!
+        context = Context()
 
         context.watchdog = Watchdog(context)
 

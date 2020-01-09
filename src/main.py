@@ -16,7 +16,7 @@ def main():
 
     from context import Context
 
-    context = Context
+    context = Context()
 
     import wifi
     wifi.init(context)
