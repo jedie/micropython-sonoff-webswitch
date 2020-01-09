@@ -3,7 +3,6 @@
 import constants
 import machine
 import utime
-from context import Context
 from mpy_tests.test_times_utils import assert_current_timer, save_active_days, save_timers
 from pins import Pins
 from power_timer import active_today, get_info_text, update_power_timer
@@ -17,10 +16,7 @@ from timezone import localtime_isoformat
 
 class PowerTimerTestCase(MicropythonBaseTestCase):
     def setUp(self):
-        super().setUp()
-        machine.RTC().datetime((2019, 5, 1, 4, 13, 12, 11, 0))
-        self.context = Context()
-        self.context.power_timer_timers = None
+        super().setUp(rtc_time=(2019, 5, 1, 4, 13, 12, 11, 0))
 
     def test_update_relay_switch_without_timers(self):
         with mock_py_config_context():

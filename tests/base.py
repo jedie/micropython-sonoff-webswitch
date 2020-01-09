@@ -5,6 +5,7 @@ from unittest import TestCase
 import asynctest
 import machine
 from context import Context
+from power_timer import update_power_timer
 from uasyncio import StreamReader, StreamWriter
 from utils.constants import SRC_PATH
 from watchdog import Watchdog
@@ -19,13 +20,15 @@ def get_all_config_files():
 
 
 class MicropythonMixin:
-    def setUp(self):
+    def setUp(self, rtc_time=None):
         super().setUp()
-        machine.RTC().datetime((2019, 5, 1, 4, 13, 12, 11, 0))
+        if rtc_time is None:
+            rtc_time = (2019, 5, 1, 4, 13, 12, 11, 0)
+        machine.RTC().datetime(rtc_time)
         config_files = get_all_config_files()
         assert not config_files, f'Config files exists before test start: %s' % config_files
         self.context = Context()
-        self.context.power_timer_timers = None
+        update_power_timer(self.context)
         print('No config files, ok.')
 
     def tearDown(self):
@@ -46,9 +49,7 @@ class WebServerTestCase(MicropythonMixin, asynctest.TestCase):
     def setUp(self):
         super().setUp()
         context = Context()
-
         context.watchdog = Watchdog(context)
-
         self.web_server = WebServer(context=context, version='v0.1')
 
     async def get_request(self, request_line):
