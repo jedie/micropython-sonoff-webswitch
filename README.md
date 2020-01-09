@@ -166,7 +166,9 @@ After you have created your own RSA keys and `config.h`, you can compile `yaota8
 The compiled files are stored here:
 
 * `~/micropython-sonoff-webswitch/build/yaota8266.bin`
-* `~/micropython-sonoff-webswitch/build/firmware-ota.bin`
+* `~/micropython-sonoff-webswitch/build/firmware-ota.bin` <- for flashing
+* `~/micropython-sonoff-webswitch/build/firmware-ota.bin.ota` <- used in hard-OTA process
+
 
 ### flash yaota8266 and firmware
 
@@ -185,6 +187,9 @@ For other devices just use `esptool` directly, e.g.:
 ~/micropython-sonoff-webswitch$ pipenv run esptool.py --port /dev/ttyUSB0 --baud 460800 write_flash 0x3c000 build/firmware-ota.bin
 ```
 
+**Note:**
+
+The file `firmware-ota.bin` must be flash with `esptool.py` **not** the `firmware-ota.bin.ota` ! This file is ues in hard-OTA update process.
 
 ## flash micropython
 
