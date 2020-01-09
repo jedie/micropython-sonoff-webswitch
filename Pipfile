@@ -12,6 +12,7 @@ pttydev = "*"
 flake8 = "*"
 pytest = "*"
 asynctest = "*"
+pytest-randomly = "*"
 pytest-cov = "*"
 
 [requires]
