@@ -6,12 +6,14 @@ verify_ssl = true
 [dev-packages]
 
 [packages]
-pttydev = "*"
-flake8 = "*"
-pytest-cov = "*"
-pytest = "*"
 esptool = "*"
 mpycntrl = "*"
+pttydev = "*"
+flake8 = "*"
+pytest = "*"
+asynctest = "*"
+pytest-randomly = "*"
+pytest-cov = "*"
 
 [requires]
 python_version = "3.6"

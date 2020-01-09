@@ -15,7 +15,7 @@ def print_times():
 
 
 if __name__ == '__main__':
-    context = Context
+    context = Context()
     ntp_sync(context)
 
     print_times()

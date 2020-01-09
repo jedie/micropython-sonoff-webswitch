@@ -3,7 +3,6 @@
 import constants
 import machine
 import utime
-from context import Context
 from mpy_tests.test_times_utils import assert_current_timer, save_active_days, save_timers
 from pins import Pins
 from power_timer import active_today, get_info_text, update_power_timer
@@ -17,15 +16,16 @@ from timezone import localtime_isoformat
 
 class PowerTimerTestCase(MicropythonBaseTestCase):
     def setUp(self):
-        super().setUp()
-        machine.RTC().datetime((2019, 5, 1, 4, 13, 12, 11, 0))
-        self.context = Context
-        self.context.power_timer_timers = None
+        super().setUp(rtc_time=(2019, 5, 1, 4, 13, 12, 11, 0))
 
     def test_update_relay_switch_without_timers(self):
-        update_power_timer(self.context)
-        print(get_info_text(self.context))
-        self.assertEqual(get_current_timer(self.context), (None, None, None))
+        with mock_py_config_context():
+            assert restore_timers() == ()
+
+            update_power_timer(self.context)
+
+            print(get_info_text(self.context))
+            self.assertEqual(get_current_timer(self.context), (None, None, None))
 
     def test_update_relay_switch_in_1min(self):
         machine.RTC().deinit()  # start time from 1.1.2000 00:00
@@ -38,14 +38,11 @@ class PowerTimerTestCase(MicropythonBaseTestCase):
             assert machine.RTC().datetime((2000, 1, 1, 6, 0, 0, 0, 0))
             assert localtime_isoformat(sep=' ') == '2000-01-01 00:00:00'
 
+            timers = restore_timers()
+            assert pformat_timers(timers) == '00:01 - 01:00'
+            assert list(iter_times(timers)) == [(True, (0, 1, 0)), (False, (1, 0, 0))]
+
             update_power_timer(self.context)
-            print(get_info_text(self.context))
-
-            self.assertEqual(
-                get_info_text(self.context),
-                'Switch on in 1 min at 00:01 h.'
-            )
-
             self.assertEqual(get_info_text(self.context), 'Switch on in 1 min at 00:01 h.')
 
     def test_relay_switch_timers_and_overwrite(self):
@@ -58,7 +55,6 @@ class PowerTimerTestCase(MicropythonBaseTestCase):
             assert pformat_timers(timers) == '10:00 - 20:00'
             assert list(iter_times(timers)) == [(True, (10, 0, 0)), (False, (20, 0, 0))]
 
-            print('***********')
             save_active_days((0, 1, 2, 3, 4, 5, 6))
 
             assert get_active_days() == (0, 1, 2, 3, 4, 5, 6)

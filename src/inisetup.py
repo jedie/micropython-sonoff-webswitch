@@ -1,47 +1,47 @@
 """
     based on origin:
-        micropython/ports/esp8266/modules/inisetup.py
+        https://github.com/micropython/micropython/blob/master/ports/esp8266/modules/inisetup.py
+    Will be only called from "_boot.py" if uos.mount(flashbdev.bdev, '/') failed, see:
+        https://github.com/micropython/micropython/blob/master/ports/esp8266/modules/_boot.py
 """
+import esp
+import flashbdev
 import uos
-from flashbdev import bdev
+
+FS_FAT = 'FAT'
+FS_LITTLEFS = 'LittleFS'
 
 
-def check_bootsec():
-    buf = bytearray(bdev.SEC_SIZE)
-    bdev.readblocks(0, buf)
-    empty = True
-    for b in buf:
-        if b != 0xff:
-            empty = False
-            break
-    if empty:
-        return True
-    fs_corrupted()
-
-
-def fs_corrupted():
-    import time
-    while True:
-        print("""\
-The FAT filesystem starting at sector %d with size %d sectors appears to
-be corrupted. If you had important data there, you may want to make a flash
-snapshot to try to recover it. Otherwise, perform factory reprogramming
-of MicroPython firmware (completely erase flash, followed by firmware
-programming).
-""" % (bdev.START_SEC, bdev.blocks))
-        time.sleep(3)
+def detect_filesystem():
+    buf = bytearray(16)
+    flashbdev.bdev.readblocks(0, buf)
+    if buf[3:8] == b'MSDOS':
+        return FS_FAT
+    elif buf[8:16] == b'littlefs':
+        return FS_LITTLEFS
+    return 'unknown'
 
 
 def setup():
-    check_bootsec()
     print("Performing initial setup")
-    uos.VfsLfs2.mkfs(bdev)
-    vfs = uos.VfsLfs2(bdev)
-    uos.mount(vfs, '/')
+
+    filesystem = detect_filesystem()
+    print('Detected filesystem: %r' % filesystem)
+    if filesystem != FS_LITTLEFS:
+        print('Erase flash start sector 0x%x' % flashbdev.bdev.START_SEC)
+        esp.flash_erase(flashbdev.bdev.START_SEC)
+
+        print('convert to littlefs2')
+        uos.VfsLfs2.mkfs(flashbdev.bdev)
+
+    print('mount filesystem')
+    uos.mount(flashbdev.bdev, '/')
+
     with open("boot.py", "w") as f:
         f.write("""\
 print('boot.py')   # noqa isort:skip
 import gc
+import sys
 
 import esp
 import micropython
@@ -61,6 +61,12 @@ gc.enable()
 # https://forum.micropython.org/viewtopic.php?f=2&t=7345&p=42390#p42390
 gc.threshold(8192)
 
+# default is:
+#   sys.path=['', '/lib', '/']
+# But we would like to be possible to overwrite frozen modues with .mpy on flash drive ;)
+sys.path.insert(0, '.')
+print('sys.path=%r' % sys.path)
+
+
 print('boot.py END')
 """)
-    return vfs

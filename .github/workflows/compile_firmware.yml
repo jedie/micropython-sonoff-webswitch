@@ -19,10 +19,16 @@ jobs:
       run: |
         make update
         make yaota8266-rsa-keys
-        cp docker-yaota8266/yaota8266/config.h.example docker-yaota8266/yaota8266/config.h
 
-    - name: 'Compile MicroPython Firmware via docker'
+    - name: 'Compile MicroPython normal Firmware via docker'
       run: |
-        make compile-firmware
+        make build-firmware-combined
+        ls -la build/
+        file build/firmware-combined.bin
+
+    - name: 'Compile MicroPython OTA Firmware via docker'
+      run: |
+        make build-ota-firmware
         ls -la build/
         file build/firmware-ota.bin
+        file build/firmware-ota.bin.ota

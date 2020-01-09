@@ -51,14 +51,11 @@ def update_power_timer(context):
     if __debug__:
         print('Update power timer:', utime.time())
 
-    if context.power_timer_timers is None:
-        if __debug__:
-            print('restore timers')
-        from times_utils import restore_timers
-        context.power_timer_timers = restore_timers()
-        del restore_timers
-        del sys.modules['times_utils']
-        gc.collect()
+    from times_utils import restore_timers
+    context.power_timer_timers = restore_timers()
+    del restore_timers
+    del sys.modules['times_utils']
+    gc.collect()
 
     from rtc import get_dict_from_rtc
     rtc_memory_dict = get_dict_from_rtc()
@@ -67,6 +64,8 @@ def update_power_timer(context):
 
     manual_overwrite = rtc_memory_dict.get(constants.RTC_KEY_MANUAL_OVERWRITE, 0)
     current_state = rtc_memory_dict.get(constants.RTC_KEY_MANUAL_OVERWRITE_TYPE)
+    if __debug__ and current_state:
+        print('manual overwrite:', repr(current_state))
 
     del rtc_memory_dict
     del sys.modules['rtc']
@@ -75,7 +74,8 @@ def update_power_timer(context):
     context.power_timer_today_active = active_today()
 
     if context.power_timer_active and context.power_timer_today_active:
-        # Update power timer state
+        if __debug__:
+            print('Update power timer state')
         from times_utils import get_current_timer
         last_timer_epoch, turn_on, context.power_timer_next_timer_epoch = get_current_timer(context)
 
@@ -86,10 +86,12 @@ def update_power_timer(context):
         context.power_timer_turn_on = turn_on
 
         if last_timer_epoch is None:
-            print('No timer scheduled')
+            if __debug__:
+                print('No timer scheduled')
         else:
             if current_state is None or manual_overwrite < last_timer_epoch:
-                print('Set state from timer')
+                if __debug__:
+                    print('Set state from timer')
                 # Note:
                 # The current power state is the **opposite** of the next one.
                 # In other words: If the **next** timer will "turn on" (==True) then we are
@@ -97,14 +99,17 @@ def update_power_timer(context):
                 current_state = not turn_on
 
     if current_state is None:
-        # No timer to scheduled and no manual overwrite
+        if __debug__:
+            print('No timer to scheduled and no manual overwrite')
         return True
 
     if current_state:
-        print('Switch on')
+        if __debug__:
+            print('Switch on')
         Pins.relay.on()
     else:
-        print('Switch off')
+        if __debug__:
+            print('Switch off')
         Pins.relay.off()
 
     gc.collect()

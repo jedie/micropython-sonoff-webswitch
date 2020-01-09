@@ -19,11 +19,11 @@ jobs:
       run: |
         make update
         make yaota8266-rsa-keys
-        cp docker-yaota8266/yaota8266/config.h.example docker-yaota8266/yaota8266/config.h
+        make assert-yaota8266-setup
 
     - name: 'Compile yaota8266.bin via docker'
       run: |
-        make yaota8266-compile
+        make yaota8266-build
         ls -la build/
         file build/yaota8266.bin
 

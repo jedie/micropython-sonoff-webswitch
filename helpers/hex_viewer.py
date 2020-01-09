@@ -4,7 +4,7 @@ import esp
 import utime
 from micropython import const
 
-LINE_COUNT = const(32)
+LINE_COUNT = const(6)
 CHUNK_SIZE = const(32)
 BUFFER = bytearray(CHUNK_SIZE)
 
@@ -28,26 +28,67 @@ def hex_dump(offset=0):
 
 
 def search(offset, text):
-    print('search for', repr(text))
-    next_update = utime.time() + 1
+    print('search for %r start with offset 0x%x' % (text, offset))
+
+    offset_step = CHUNK_SIZE - len(text)
+
+    if offset_step <= 0:
+        raise AssertionError('Search text too large: increase CHUNK_SIZE!')
+
+    def print_throughput():
+        duration = utime.time() - start_time
+        if duration == 0:
+            throughput = -1
+        else:
+            throughput = (offset - start_offset) / duration / 1024
+        print(
+            '(Search duration: %i sec. - %i KBytes/sec' % (duration, throughput)
+        )
+
+    flash_size = esp.flash_size()
+    start_offset = offset
+    end_researched = False
+    start_time = utime.time()
+    next_update = start_time + 1
     while True:
+        if offset + CHUNK_SIZE > flash_size:
+            # Search to esp.flash_size(), but don't go beyond.
+            offset = flash_size - CHUNK_SIZE
+            end_researched = True
+
         try:
             esp.flash_read(offset, BUFFER)
         except OSError as e:
-            print(b'Error: %s' % e)
-            return 0
+            print('Read flash error: %s at 0x%x - 0x%x' % (e, offset, offset + CHUNK_SIZE))
+            return -1
 
         if text in BUFFER:
-            print('Found in block:', offset)
+            print('Found in 0x%x !' % offset, end=' ')
+            print_throughput()
             return offset
 
-        offset += CHUNK_SIZE
-
         if utime.time() >= next_update:
-            print('Search:', offset)
+            print('Search: 0x%x ...' % offset, end=' ')
+            print_throughput()
             next_update = utime.time() + 1
+
+        if end_researched:
+            print('Memory end researched, searched up to 0x%x' % (offset + CHUNK_SIZE))
+            print_throughput()
+            return -1
+
+        offset += offset_step
 
 
 if __name__ == '__main__':
-    offset = search(offset=0, text='micropython')
-    hex_dump(offset=offset)
+    print('esp.flash_user_start(): 0x%x' % (esp.flash_user_start()))
+    print('esp.flash_size()......: 0x%x' % (esp.flash_size()))
+
+    offset = 0x0
+    while True:
+        offset = search(offset=offset, text='micropython')
+        if offset == -1:
+            # not found or end researched
+            break
+        hex_dump(offset=offset)
+        offset += (CHUNK_SIZE * LINE_COUNT) - 1

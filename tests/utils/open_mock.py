@@ -1,26 +1,47 @@
-from unittest import mock
+
+
+class MicroPythonOpen:
+    def __init__(self, origin_open, filename, mode):
+        self.origin_open = origin_open
+        self.filename = filename
+        self.mode = mode
+
+    def __enter__(self):
+        print(f'open {self.filename!r} mode: {self.mode!r}')
+        self.f = self.origin_open(self.filename, self.mode)
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.f.close()
+
+    def readinto(self, buffer, size):
+        """
+        FIXME: Is there is a easier way to extend readinto() with size argument?
+        """
+        content = self.f.read(size)
+
+        if not isinstance(buffer, memoryview):
+            raise NotImplementedError
+
+        obj = buffer.obj
+        if not isinstance(obj, bytearray):
+            raise NotImplementedError
+
+        # FIXME: How to easier 'transfer' the content into existing bytearray?
+        for pos, char in enumerate(content):
+            obj[pos] = char
+
+        return len(content)
 
 
 class MockOpen:
+    """
+    Replace builtin open currently only to add a `size` argument in `readinto` method.
+    """
 
-    def __init__(self, open_data):
-        self._calls = []
-        self.open_data = open_data
+    def __init__(self, origin_open):
+        self.origin_open = origin_open
 
     def __call__(self, filename, mode):
         print(f'mocked open {filename!r}')
-        self._calls.append((filename, mode))
-
-        try:
-            should_mode, content = self.open_data[filename]
-        except KeyError:
-            raise FileNotFoundError(filename)
-
-        if mode != should_mode:
-            raise AssertionError(
-                f'Wrong file mode used: should: {should_mode!r} is: {mode!r}'
-            )
-
-        file_object = mock.mock_open(read_data=content).return_value
-        file_object.__iter__.return_value = content.splitlines(True)
-        return file_object
+        return MicroPythonOpen(self.origin_open, filename, mode)

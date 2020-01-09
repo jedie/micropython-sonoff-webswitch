@@ -93,9 +93,13 @@ async def get_submit(server, reader, writer, querystring, body):
         else:
             server.message = 'Timers saved and deactivated.'
 
-        # Force set values by update_relay_switch() in update_power_timer():
+        # Force set values by update_power_timer():
         server.context.power_timer_active = None
         server.context.power_timer_today_active = None
+
+        from power_timer import update_power_timer
+        update_power_timer(context=server.context)
+
     gc.collect()
 
     from http_utils import send_redirect

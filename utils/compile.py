@@ -2,22 +2,20 @@ import shutil
 import sys
 from pathlib import Path
 
-from ota import mpy_cross
+from soft_ota import mpy_cross
 from utils import constants
 
 
 def compile(skip_files):
-    cwd = Path().cwd()
-
     print('Compile files from:', constants.SRC_PATH)
     for file_path in sorted(constants.SRC_PATH.glob('*.py')):
-        file_path = file_path.relative_to(cwd)
+        file_path = file_path.relative_to(constants.BASE_PATH)
 
         if file_path.name in skip_files:
             continue
 
         output_path = Path(constants.BDIST_PATH, file_path.name).with_suffix('.mpy')
-        output_path = output_path.relative_to(cwd)
+        output_path = output_path.relative_to(constants.BASE_PATH)
 
         print(f' + {file_path} -> {output_path}')
 
@@ -45,7 +43,7 @@ def create_bdist(ignore_files, copy_files, copy_file_pattern):
     )
     print(' -' * 50)
     print('Copy files...')
-    cwd = Path().cwd()
+
     files2copy = set([Path(constants.SRC_PATH, n) for n in copy_files])
     for pattern in copy_file_pattern:
         files2copy.update(set(constants.SRC_PATH.glob(pattern)))
@@ -54,8 +52,8 @@ def create_bdist(ignore_files, copy_files, copy_file_pattern):
         if file_path.name in ignore_files:
             continue
 
-        file_path = file_path.resolve().relative_to(cwd)
-        output_path = Path(constants.BDIST_PATH, file_path.name).relative_to(cwd)
+        file_path = file_path.resolve().relative_to(constants.BASE_PATH)
+        output_path = Path(constants.BDIST_PATH, file_path.name).relative_to(constants.BASE_PATH)
         print(f' + {file_path} -> {output_path}')
         try:
             shutil.copyfile(file_path, output_path)

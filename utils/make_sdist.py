@@ -15,7 +15,7 @@ from pathlib import Path
 
 BASE_PATH = Path(__file__).parent.parent  # .../micropython-sonoff-webswitch/
 
-SKIP_FILES = ('__init__.py', 'main.py')
+SKIP_FILES = ('__init__.py', 'boot.py', 'main.py')
 
 FROZEN_INFO_NAME = 'frozen_modules_info.py'
 FROZEN_INFO_TEMPLATE = f"""# This file in generated via .../{Path(__file__).relative_to(BASE_PATH.parent)}

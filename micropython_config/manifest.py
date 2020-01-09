@@ -3,9 +3,14 @@
     micropython/ports/esp8266/boards/manifest_release.py
 """
 
-freeze('$(PORT_DIR)/modules')
+# Include only needed files from ".../micropython/ports/esp8266/modules/":
+#freeze('$(PORT_DIR)/modules', '_boot.py') # use own case of: https://github.com/micropython/micropython/pull/5509
+freeze('$(PORT_DIR)/modules', 'flashbdev.py')
+freeze('$(PORT_DIR)/modules', 'ntptime.py')
+
 
 freeze('$(PORT_DIR)/sdist')  # project sources, mounted via docker
+
 
 #freeze('$(MPY_DIR)/tools', ('upip.py', 'upip_utarfile.py'))
 #freeze('$(MPY_DIR)/drivers/dht', 'dht.py')

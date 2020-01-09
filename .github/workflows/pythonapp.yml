@@ -35,7 +35,5 @@ jobs:
         make docker-build
 
     - name: 'Run pytest'
-      env:
-        PYTHONPATH: src
       run: |
         pipenv run pytest

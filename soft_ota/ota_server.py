@@ -1,6 +1,6 @@
 """
-    'soft' OTA Server
-    ~~~~~~~~~~~~~~~~~
+    soft-OTA Server
+    ~~~~~~~~~~~~~~~
     Answering requests from devices micropython devices,
     to update all files on device.
 
@@ -13,7 +13,7 @@ import socket
 import time
 from pathlib import Path
 
-from ota import mpy_cross
+from soft_ota import mpy_cross
 from utils import constants
 
 SOCKET_TIMEOUT = 10
@@ -76,7 +76,7 @@ async def open_connection(host=None, port=None):
     return reader, writer
 
 
-class OtaServer:
+class SoftOtaServer:
     def __init__(self, verbose=False):
         self.verbose = verbose
 

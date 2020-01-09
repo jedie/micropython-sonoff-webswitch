@@ -1,7 +1,16 @@
 import gc
 
+import uos
+
 
 def render(filename, context, content_iterator=None):
+
+    try:
+        uos.stat(filename)  # Check if file exists
+    except OSError:
+        yield 'Error file not found: %r' % filename
+        return
+
     gc.collect()
     with open(filename, 'r') as f:
         while True:
