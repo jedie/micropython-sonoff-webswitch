@@ -54,9 +54,12 @@ class NonSharedContext:
     """
 
     def __init__(self):
-        # print('Init NonSharedContext')
+        self.reset()
+
+    def reset(self):
+        print('NonSharedContext.reset():')
         for attr, value in _default_context.items():
-            # print(attr, repr(value))
+            print(f'\t{attr} = {value!r}')
             setattr(self, attr, value)
 
 

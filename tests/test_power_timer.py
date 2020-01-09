@@ -38,14 +38,11 @@ class PowerTimerTestCase(MicropythonBaseTestCase):
             assert machine.RTC().datetime((2000, 1, 1, 6, 0, 0, 0, 0))
             assert localtime_isoformat(sep=' ') == '2000-01-01 00:00:00'
 
+            timers = restore_timers()
+            assert pformat_timers(timers) == '00:01 - 01:00'
+            assert list(iter_times(timers)) == [(True, (0, 1, 0)), (False, (1, 0, 0))]
+
             update_power_timer(self.context)
-            print(get_info_text(self.context))
-
-            self.assertEqual(
-                get_info_text(self.context),
-                'Switch on in 1 min at 00:01 h.'
-            )
-
             self.assertEqual(get_info_text(self.context), 'Switch on in 1 min at 00:01 h.')
 
     def test_relay_switch_timers_and_overwrite(self):

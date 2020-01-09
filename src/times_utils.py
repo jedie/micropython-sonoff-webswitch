@@ -179,8 +179,12 @@ class Timers:
         return last and next switching point in "(hours, minutes)"
         and if the next point turns ON or OFF
         """
+        if __DEBUG__:
+            print('context.power_timer_timers:', context.power_timer_timers)
         assert context.power_timer_timers is not None, 'Timers not loaded, yet?!?'
         turn_on_times = tuple(iter_times(context.power_timer_timers))
+        if __DEBUG__:
+            print('turn on times:', turn_on_times)
 
         now_hour_minute_sec = (self.hour, self.minute, self.second)
         # print('%02i:%02i:%02i' % now_hour_minute_sec)

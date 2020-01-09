@@ -2,8 +2,10 @@ from pathlib import Path
 
 from config_files import restore_py_config, save_py_config
 from mpy_tests.test_config_files import test_json_config
+from mpy_tests.test_times_utils import save_timers
 from tests.base import MicropythonBaseTestCase
 from tests.utils.mock_py_config import mock_py_config_context
+from times_utils import restore_timers
 
 
 class JsonConfigTestCase(MicropythonBaseTestCase):
@@ -42,3 +44,15 @@ class PyConfigTestCase(MicropythonBaseTestCase):
 
             save_py_config(module_name='test_dict', value={'foo': 1.2})
             assert restore_py_config(module_name='test_dict') == {'foo': 1.2}
+
+    def test_mock_py_config_context_with_timers(self):
+        with mock_py_config_context():
+            save_timers((
+                ((1, 2), (3, 4)),
+            ))
+            assert restore_timers() == (((1, 2), (3, 4)),)
+
+            save_timers((
+                ((5, 6), (7, 8)),
+            ))
+            assert restore_timers() == (((5, 6), (7, 8)),)

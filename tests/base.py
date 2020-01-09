@@ -5,7 +5,9 @@ from unittest import TestCase
 import asynctest
 import machine
 from context import Context
+from pins import Pins
 from power_timer import update_power_timer
+from rtc import clear_rtc_dict
 from uasyncio import StreamReader, StreamWriter
 from utils.constants import SRC_PATH
 from watchdog import Watchdog
@@ -22,14 +24,25 @@ def get_all_config_files():
 class MicropythonMixin:
     def setUp(self, rtc_time=None):
         super().setUp()
+
+        # Always start with OFF state:
+        Pins.relay.off()
+        Pins.power_led.off()
+
+        # Start with empty RTC memory:
+        clear_rtc_dict()
+
         if rtc_time is None:
             rtc_time = (2019, 5, 1, 4, 13, 12, 11, 0)
         machine.RTC().datetime(rtc_time)
+
         config_files = get_all_config_files()
-        assert not config_files, f'Config files exists before test start: %s' % config_files
-        self.context = Context()
-        update_power_timer(self.context)
-        print('No config files, ok.')
+        if config_files:
+            raise AssertionError(f'Config files exists before test start: %s' % config_files)
+        else:
+            print('No config files, ok.')
+
+        self.context = Context()  # mocks._patches.NonSharedContext
 
     def tearDown(self):
         config_files = get_all_config_files()
@@ -46,13 +59,13 @@ class MicropythonBaseTestCase(MicropythonMixin, TestCase):
 
 class WebServerTestCase(MicropythonMixin, asynctest.TestCase):
 
-    def setUp(self):
-        super().setUp()
-        context = Context()
-        context.watchdog = Watchdog(context)
-        self.web_server = WebServer(context=context, version='v0.1')
+    def setUp(self, rtc_time=None):
+        super().setUp(rtc_time=rtc_time)
+        self.context.watchdog = Watchdog(self.context)
+        self.web_server = WebServer(context=self.context, version='v0.1')
 
     async def get_request(self, request_line):
+        update_power_timer(self.context)
         reader = asynctest.mock.Mock(StreamReader)
         writer = StreamWriter()
 

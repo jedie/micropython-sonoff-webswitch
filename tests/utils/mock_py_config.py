@@ -1,9 +1,13 @@
-import importlib
+import ast
 import sys
 import traceback
 from contextlib import contextmanager
 from pathlib import Path
 from unittest import mock
+
+
+class MockedModule:
+    pass
 
 
 class NonCachesImporter:
@@ -33,17 +37,41 @@ class NonCachesImporter:
         else:
             print('Existing file:', file_path)
 
+        # It's very difficult to disable the CPython import caching.
+        # What doesn't work is, e.g.:
+        #   * `del sys.modules[module_name]` before import
+        #   * module = importlib.reload(module)
+        #   * Using low-level stuff from `importlib.util`
+        #
+        # So we parse the content via ast.literal_eval() and create
+        # a mocked sys.modules entry
+
         with file_path.open('r') as f:
-            print('Content:', repr(f.read()))
+            content = f.read()
+        print('Content:', repr(content))
 
-        spec = importlib.util.spec_from_file_location(module_name, file_path)
-        module = importlib.util.module_from_spec(spec)
+        module = MockedModule()
+        for line in content.splitlines():
+            if line == 'from micropython import const':
+                continue
+
+            var_name, data = line.split('=')
+
+            var_name = var_name.strip()
+            data = data.strip()
+
+            if 'const(' in data:
+                # 'const(123)' -> '123'
+                data = data.split('(', 1)[1].rstrip(')')
+
+            data = ast.literal_eval(data)
+            setattr(module, var_name, data)
+            break  # there is currently one one value
+
+        # Add to sys.modules, so that "del sys.modules[module_name]" will work
+        # used in config_files.restore_py_config()
         sys.modules[module_name] = module
-        spec.loader.exec_module(module)
 
-        # module = importlib.reload(module) # will fail!
-
-        print('imported:', module, id(module))
         print('%s.value: %r' % (module_name, getattr(module, 'value', '-')))
 
         return module
