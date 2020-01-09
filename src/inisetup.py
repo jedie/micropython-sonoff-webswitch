@@ -1,6 +1,8 @@
 """
     based on origin:
         https://github.com/micropython/micropython/blob/master/ports/esp8266/modules/inisetup.py
+    Will be only called from "_boot.py" if uos.mount(flashbdev.bdev, '/') failed, see:
+        https://github.com/micropython/micropython/blob/master/ports/esp8266/modules/_boot.py
 """
 import esp
 import flashbdev
@@ -33,8 +35,7 @@ def setup():
         uos.VfsLfs2.mkfs(flashbdev.bdev)
 
     print('mount filesystem')
-    vfs = uos.VfsLfs2(flashbdev.bdev)
-    uos.mount(vfs, '/')
+    uos.mount(flashbdev.bdev, '/')
 
     with open("boot.py", "w") as f:
         f.write("""\
@@ -69,4 +70,3 @@ print('sys.path=%r' % sys.path)
 
 print('boot.py END')
 """)
-    return vfs
