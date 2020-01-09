@@ -58,6 +58,8 @@ def convert_filesystem2littlefs(force=False):
 
         filesystem_hex_dump(line_count=5, chunk_size=16)
         print('Detected filesystem:', detect_filesystem())
+    else:
+        print('No need to format the flash filesystem, ok.')
 
 
 if __name__ == '__main__':
