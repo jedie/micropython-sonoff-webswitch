@@ -80,6 +80,12 @@ All existing screenshots can be found here:
 * [jedie.github.io/blob/master/screenshots/WebSwitch/](https://github.com/jedie/jedie.github.io/blob/master/screenshots/WebSwitch/README.creole)
 
 
+### OTA overview
+
+![ESP8266_OTA.png](https://raw.githubusercontent.com/jedie/jedie.github.io/master/diagrams/micropython/ESP8266_OTA.png)
+
+
+
 # setup a device
 
 
