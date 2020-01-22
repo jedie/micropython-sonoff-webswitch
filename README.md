@@ -105,7 +105,6 @@ Very good information to get started can you found here:
 
 * Generate yaota8266 RSA keys, create `config.h` and compile yaota8266 and firmware
 * Flash yaota8266 and firmware
-* format device flash to `littlefs2` with: `helpers/convert_filesystem.py`
 * create `_config_wifi.json`
 * Connect device to WiFi
 * start soft-OTA to put all missing files to the device
@@ -244,14 +243,6 @@ You can also start scripts on the device:
 * In `This computer` TAB go to: `.../micropython-sonoff-webswitch/helpers`
 * Open a file by double-click e.g.: `mpy_information.py` in the editor
 * Run the script on the device by `F5`
-
-
-### format flash filesystem
-
-Now you have flashed the `yaota8266` bootloader and MicroPython Firmware and you must have access to the Micropython REPL.
-
-To format the flash filesystem to `littlefs2`, just run `.../micropython-sonoff-webswitch/helpers/convert_filesystem.py` on the device.
-
 
 ### copy missing files to the device
 
