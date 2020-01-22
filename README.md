@@ -80,24 +80,22 @@ All existing screenshots can be found here:
 * [jedie.github.io/blob/master/screenshots/WebSwitch/](https://github.com/jedie/jedie.github.io/blob/master/screenshots/WebSwitch/README.creole)
 
 
-## prepare
+# setup a device
+
+
+## prepare the hardware:
 
 * Open the device
 * make a connection with a UART-USB converter with 3.3V option and to the `3.3V`, `GND`, `TX` and `RX` pins
+* **WARNING:** DO NOT CONNECT DEVICES TO MAINS POWER WHILE THE COVER IS OPEN AND CIRCUIT BOARD IS EXPOSED!!!
 
-Very good information to get started can you found here: https://github.com/tsaarni/mqtt-micropython-smartsocket
+Very good information to get started can you found here:
+
+- https://templates.blakadder.com/sonoff_S20.html
+- https://github.com/tsaarni/mqtt-micropython-smartsocket
 
 
-## quickstart
-
-Clone the sources, and setup virtualenv via `pipenv`:
-```bash
-~$ git clone https://github.com/jedie/micropython-sonoff-webswitch.git
-~$ cd micropython-sonoff-webswitch
-~/micropython-sonoff-webswitch$ make update
-```
-
-overview:
+## Overview of installing the software on the device:
 
 * Generate yaota8266 RSA keys, create `config.h` and compile yaota8266 and firmware
 * Flash yaota8266 and firmware
@@ -106,7 +104,15 @@ overview:
 * Connect device to WiFi
 * start soft-OTA to put all missing files to the device
 
-## compile own firmware
+
+## setup project
+
+Clone the sources, and setup virtualenv via `pipenv`:
+```bash
+~$ git clone https://github.com/jedie/micropython-sonoff-webswitch.git
+~$ cd micropython-sonoff-webswitch
+~/micropython-sonoff-webswitch$ make update
+```
 
 To see all make targets, just call make, e.g.:
 ```bash
@@ -116,6 +122,7 @@ make targets:
   docker-pull              pull docker images
   docker-build             pull and build docker images
   update                   update git repositories/submodules, virtualenv, docker images and build local docker image
+  thonny                   run Thonny IDE to access the Micropython REPL (Python prompt)
   test                     Run pytest
   micropython_shell        start a bash shell in docker container "local/micropython:latest"
   unix-port-shell          start micropython unix port interpreter
@@ -132,6 +139,8 @@ make targets:
   soft-ota                 Start soft-OTA updates: Compile .py to .mpy and push missing/updated files (*.mpy, *.css, *.html etc.) to the device
   miniterm                 Low level debug device via miniterm.py (from pyserial) to /dev/ttyUSB0
 ```
+
+## compile own firmware
 
 ### docker-yaota8266/yaota8266/config.h
 
@@ -160,7 +169,7 @@ You should backup theses files;
 After you have created your own RSA keys and `config.h`, you can compile `yaota8266.bin` and `firmware-ota.bin`, e.g.:
 ```bash
 ~/micropython-sonoff-webswitch$ make yaota8266-build
-~/micropython-sonoff-webswitch$ make build-firmware
+~/micropython-sonoff-webswitch$ make build-ota-firmware
 ```
 
 The compiled files are stored here:
@@ -170,86 +179,94 @@ The compiled files are stored here:
 * `~/micropython-sonoff-webswitch/build/firmware-ota.bin.ota` <- used in hard-OTA process
 
 
-### flash yaota8266 and firmware
+### Deploying the firmware: flash yaota8266 and firmware
 
-After you have called `make yaota8266-build` and `make build-firmware` you can flash your device:
+ESP8266 needs to be put into Programming Mode before the firmware can be uploaded. To put the ESP8266 into Programming Mode:
+
+* Press and hold the power button before connecting
+* Connect device via UART-USB converter
+* After about 2 seconds: release the button
+
+Now `esptool` can be used. But only for *one* operation! After each esptool call, you must disconnect the device from the USB and repeat this procedure!
+
+The first time, the flash memory must be erased, call:
 
 ```bash
-~/micropython-sonoff-webswitch$ make flash-yaota8266
-~/micropython-sonoff-webswitch$ make flash-firmware
+~/micropython-sonoff-webswitch$ make erase-flash
 ```
 
-**Importand**: the flash make targets are for the Sonoff ESP8266 and may **not work** on other ESP8266 devices!
+After `erase-flash` and after you have called `make yaota8266-build` and `make build-ota-firmware` you can flash your device:
+
+```bash
+# put into Programming Mode and call:
+~/micropython-sonoff-webswitch$ make flash-yaota8266
+
+# Again, put into Programming Mode and call:
+~/micropython-sonoff-webswitch$ make flash-ota-firmware
+```
+
+**Importand**: These flash commands are for the Sonoff device and may **not work** on other ESP8266 devices!
 
 For other devices just use `esptool` directly, e.g.:
 ```bash
-~/micropython-sonoff-webswitch$ pipenv run esptool.py --port /dev/ttyUSB0 --baud 460800 write_flash 0 build/yaota8266.bin
-~/micropython-sonoff-webswitch$ pipenv run esptool.py --port /dev/ttyUSB0 --baud 460800 write_flash 0x3c000 build/firmware-ota.bin
+~/micropython-sonoff-webswitch$ pipenv run esptool.py --port /dev/ttyUSB0 write_flash 0 build/yaota8266.bin
+~/micropython-sonoff-webswitch$ pipenv run esptool.py --port /dev/ttyUSB0 write_flash 0x3c000 build/firmware-ota.bin
 ```
 
 **Note:**
 
 The file `firmware-ota.bin` must be flash with `esptool.py` **not** the `firmware-ota.bin.ota` ! This file is ues in hard-OTA update process.
 
-## flash micropython
 
-* Flash last MicroPython firmware to your device, see: http://docs.micropython.org/en/latest/esp8266/tutorial/intro.html
+### access the Micropython REPL
 
-overview:
+Once you have the firmware on the device you can access the Micropython REPL (Python prompt).
+There are different ways to do this. I used [thonny](https://github.com/thonny/thonny/) and his [MicroPython support](https://github.com/thonny/thonny/wiki/MicroPython)
 
-* Press and hold the power button before connecting
-* Connect device via UART-USB converter
-* Now you can release the button.
-* To erase the Flash with esptool, call: `./erase_flash.sh`
-* disconnect the device from PC and reconnect with pressed button again
-* To flash micropython call: `./flash_firmware.sh` (This script will download micropython, if not already done and compares the sha256 hash)
-* disconnect device and reconnect **without** pressing the power button
+`thonny` is installed via pipenv, to start the IDE, just call:
+```bash
+~/micropython-sonoff-webswitch$ make thonny
+```
 
-Notes: In my experience flashing the S20 needs `-fs 1MB -fm dout 0x0`.
+First steps in thonny:
+* Activate ESP8266 mode: `Tools / Options / Interpreter` select: `MicroPython (ESP8266)`
+* Activate `files` Tab: `View / Files`
 
-**Importand**:
+Now you should be able to access the Micropython REPL via `Ctrl-F2`.
+You can also start scripts on the device:
 
-The micropython version and the `mpy_cross` version must be **the same**!
-Otherwise the compiled `.mpy` can't run on the device!
+* In `This computer` TAB go to: `.../micropython-sonoff-webswitch/helpers`
+* Open a file by double-click e.g.: `mpy_information.py` in the editor
+* Run the script on the device by `F5`
 
-## WiFi config
 
-To connect the device with your WIFI it needs the SSID/password.
-Several WLAN network access data can be specified.
+### format flash filesystem
+
+Now you have flashed the `yaota8266` bootloader and MicroPython Firmware and you must have access to the Micropython REPL.
+
+To format the flash filesystem to `littlefs2`, just run `.../micropython-sonoff-webswitch/helpers/convert_filesystem.py` on the device.
+
+
+### copy missing files to the device
+
+After format the flash filesystem as `littlefs2`: copy missing files to the device, using soft-OTA:
+
+* Connect Device to your WiFi network
+* start soft-OTA client and server
+
+
+#### create src/_config_wifi.json
+
+The device needs SSID/passwords to be able to log in to different WLANs. It reads the credentials from the file `_config_wifi.json`. This file must be created. The template is [_config_wifi-example.json](https://github.com/jedie/micropython-sonoff-webswitch/blob/master/_config_wifi-example.json).
 
 Copy and edit [_config_wifi-example.json](https://github.com/jedie/micropython-sonoff-webswitch/blob/master/_config_wifi-example.json) to `src/_config_wifi.json`
 
-
-## bootstrap
-
-If micropython is on the device, only the sources and your WiFi credentials file needs to be uploaded.
-
-This 'bootstrapping' can be done in different ways.
+All missing files in `src` will be copied to device via soft-OTA.
 
 
-### bootstrap via USB
+#### connect device to WiFi
 
-Connect device via TTL-USB-converter to your PC and run [upload_files.py](https://github.com/jedie/micropython-sonoff-webswitch/blob/master/upload_files.py)
-
-This script will do this:
-
-* compile `src` files with [mpy-cross](https://pypi.org/project/mpy-cross/) to `bdist`
-* upload all files from `bdist` to the device via [mpycntrl](https://github.com/kr-g/mpycntrl)
-
-The upload is a little bit slow. Bootstrap via WiFi is faster, see below:
-
-
-### bootstrap via WiFi
-
-overview:
-
-* Connect the device to your WiFi network
-* put your `_config_wifi.json` to the root of the device
-* Run `ota_client.py` to upload all `*.mpy` compiled files
-
-I used [thonny](https://github.com/thonny/thonny) for this. With thonny it's easy to upload the config file and execute scripts on the device.
-
-To connect to your WiFi network, edit and run this:
+To connect the device on the fist start to your WiFi network, edit and run this:
 
 ```python
 import time, network
@@ -261,6 +278,30 @@ while not sta_if.isconnected():
 print('connected:', sta_if.ifconfig())
 ```
 
+Just copy&paste this code snippet into Thonny IDE, insert your credentials and run it via `F5`
+
+
+### run soft-OTA manually
+
+After the device is connected to your WiFi, it can run soft-OTA and copy all missing `src` files.
+
+Start soft-OTA server with:
+```bash
+~/micropython-sonoff-webswitch$ make soft-ota
+```
+
+At the same time, open [.../micropython-sonoff-webswitch/src/ota_client.py](https://github.com/jedie/micropython-sonoff-webswitch/blob/master/src/ota_client.py) in Thonny and start it via `F5`.
+
+
+Now the soft-OTA should be run:
+
+* The device will be connected
+* All missing/new files from `src` will be transfered to the device
+
+
+Now the device setup is done ;)
+
+
 ### OTA updates
 
 **Note**: There are two kinds of OTA updates:
@@ -268,7 +309,7 @@ print('connected:', sta_if.ifconfig())
 * 'hard' OTA update via **yaota8266** bootloader that will replace the complete firmware.
 * 'soft' OTA updates via pure micropython script that will only upload new files to the flash filesystem.
 
-The 'hard' OTA via **yaota8266** is work-in-progress and will currenlty not work, see: https://github.com/jedie/micropython-sonoff-webswitch/issues/33
+The 'hard' OTA via **yaota8266** is work-in-progress, see: https://github.com/jedie/micropython-sonoff-webswitch/issues/33
 
 #### 'soft' OTA updates
 
@@ -278,11 +319,10 @@ The device will run the [/src/ota_client.py](https://github.com/jedie/micropytho
 
 The script waits some time for the OTA server and after the timeout the normal web server will be started.
 
-To start the `OTA Server`, do this:
+To start the `soft-OTA Server`, do this:
 
 ```bash
-~$ cd micropython-sonoff-webswitch
-~/micropython-sonoff-webswitch$ pipenv run start_ota_server.py
+~/micropython-sonoff-webswitch$ make soft-ota
 ```
 
 If server runs: reboot device and look to the output of the OTA server.
@@ -297,15 +337,17 @@ The OTA update implementation does:
 
 ## project structure
 
-* `./bdist/` - Contains the compiled files that will be uploaded to the device.
-* `./helpers/` - Some device tests/helper scripts for developing (normaly not needed)
+* `./bdist/` - compiled `.mpy` files (and `.html`, `.css` files) that will be uploaded to the device in `soft-OTA`
+* `./build/` - compiled firmware files (`firmware-*.bin` and `yaota8266.bin`) for flashing and `hard-OTA`
+* `./docker-yaota8266/` - git submodule https://github.com/jedie/docker-yaota8266 to compile yaota8266.bin via docker
+* `./helpers/` - Some device tests/helper scripts for bootstrap and developing
+* `./micropython_config/` - Config files used to compile MicroPython Firmware
 * `./mpy_tests/` - tests that can be run on micropython device (will be also run by pytest with mocks)
-* `./ota/` - source code of the OTA server
+* `./sdist/` - Contains all modules that will be freezes into firmware, created via `utils/make_sdist.py`
+* `./soft_ota/` - source code of the OTA server
 * `./src/` - device source files
 * `./tests/` - some pytest files (run on host with CPython)
 * `./utils/` - utils for local run (compile, code lint, sync with mpycntrl)
-* `./start_ota_server.py` - Starts the local OTA server (will compile, lint the `src` files and create `bdist`)
-* `./upload_files.py` - Upload files via USB (will compile, lint the `src` files and create `bdist`)
 
 
 ## Links

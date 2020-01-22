@@ -43,8 +43,10 @@ update: docker-build  ## update git repositories/submodules, virtualenv, docker 
 		git submodule update --init --recursive ; \
 	fi
 	python3 -m pip install --upgrade pipenv
-	pipenv sync
+	pipenv update
 
+thonny: ## run Thonny IDE to access the Micropython REPL (Python prompt)
+	pipenv run thonny &
 
 test: update  ## Run pytest
 	PYTHONPATH=src pipenv run pytest
