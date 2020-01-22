@@ -116,6 +116,7 @@ make targets:
   docker-pull              pull docker images
   docker-build             pull and build docker images
   update                   update git repositories/submodules, virtualenv, docker images and build local docker image
+  thonny                   run Thonny IDE to access the Micropython REPL (Python prompt)
   test                     Run pytest
   micropython_shell        start a bash shell in docker container "local/micropython:latest"
   unix-port-shell          start micropython unix port interpreter
