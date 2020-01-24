@@ -18,3 +18,6 @@ thonny = "*"
 
 [requires]
 python_version = "3.6"
+
+[scripts]
+make_sdist = "python utils/make_sdist.py"
