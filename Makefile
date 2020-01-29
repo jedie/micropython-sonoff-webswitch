@@ -177,7 +177,7 @@ hard-ota:  ## Start yaota8266 live-ota to hard-OTA Update the firmware file buil
 	pipenv run docker-yaota8266/yaota8266/cli.py ota build/firmware-ota.bin.ota
 
 soft-ota:  ## Start soft-OTA updates: Compile .py to .mpy and push missing/updated files (*.mpy, *.css, *.html etc.) to the device
-	pipenv run start_soft_ota_server.py
+	pipenv run start_soft_ota_server
 
 miniterm:  ## Low level debug device via miniterm.py (from pyserial) to /dev/ttyUSB0
 	pipenv run miniterm.py /dev/ttyUSB0 115200
