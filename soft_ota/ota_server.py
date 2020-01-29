@@ -9,6 +9,7 @@
 """
 import asyncio
 import hashlib
+import os
 import socket
 import time
 from pathlib import Path
@@ -354,6 +355,10 @@ class SoftOtaServer:
                 return clients
 
             print('.', end='', flush=True)
+            if os.environ.get('OTA_NO_LOOP') is not None:
+                # Used in unittests, see: tests/test_soft_ota_server.py
+                print('Exit after one try, because OTA_NO_LOOP is set, ok.')
+                return clients
             time.sleep(2)
 
     def run(self, port):

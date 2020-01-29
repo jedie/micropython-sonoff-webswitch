@@ -20,4 +20,5 @@ thonny = "*"
 python_version = "3.6"
 
 [scripts]
-make_sdist = "python utils/make_sdist.py"
+make_sdist = "python3 utils/make_sdist.py"
+start_soft_ota_server = "python3 start_soft_ota_server.py"
