@@ -39,8 +39,20 @@ RTC_KEY_MANUAL_OVERWRITE_TYPE = 'manual-type'
 
 H2SEC = const(60 * 60)  # multiplier for calc hours into seconds
 ONE_DAY_SEC = const(1 * 24 * 60 * 60)
+
+
 NTP_MIN_TIME_EPOCH = const(599616000)  # epoch 1.1.2019
+
+# The ESP8266 has a very inacurate RTC! So a sync is often needed.
 NTP_SYNC_WAIT_TIME_SEC = const(1 * 60 * 60)  # sync NTP every 1 h
+
+# The NTP sync must not exceed this time span, otherwise the device will be reset.
+# This value should be chosen carefully. With each reset the relay can switch!
+# e.g.: Possibly the wireless overnight is switched off for several hours but during
+# the night a light should be switched on. Then the light would go out from time to time,
+# while reset the device ;)
+NTP_LOST_SYNC_DEFAULT_SEC = const(7 * 60 * 60)  # Reset device if NTP sync lost in this time
+
 
 TIMEZONE_PY_CFG_NAME = 'timezone'
 DEFAULT_OFFSET_H = const(0)

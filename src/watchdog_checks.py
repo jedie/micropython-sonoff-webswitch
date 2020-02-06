@@ -1,5 +1,3 @@
-
-
 import gc
 
 import constants
@@ -38,17 +36,14 @@ def can_bind_web_server_port():
 def check(context):
     gc.collect()
     try:
-        if utime.time() - context.watchdog_last_feed > constants.WATCHDOG_TIMEOUT:
-            reset(reason='Feed timeout')
-
-        from wifi import ensure_connection
-        if ensure_connection(context) is not True:
-            reset(reason='No Wifi connection')
-
-        gc.collect()
+        if utime.time() - context.watchdog_last_feed_epoch > constants.WATCHDOG_TIMEOUT:
+            reset(reason='Watchdog feed timeout')
 
         if can_bind_web_server_port():
             reset(reason='Web Server down')
+
+        if utime.time() - context.ntp_last_sync_epoch > constants.NTP_LOST_SYNC_DEFAULT_SEC:
+            reset(reason='NTP sync lost')
 
     except MemoryError as e:
         context.watchdog.garbage_collection()

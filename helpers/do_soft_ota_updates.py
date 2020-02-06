@@ -21,5 +21,5 @@ if __name__ == '__main__':
     import gc
     gc.collect()
 
-    from ota_client import OtaUpdate
-    OtaUpdate().run()
+    from ota_client import SoftOtaUpdate
+    SoftOtaUpdate().run()

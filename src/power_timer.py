@@ -43,9 +43,7 @@ def active_today():
 def update_power_timer(context):
     """
     Sets relay switch on/off on schedule and manual override.
-
-    Will be called from watchdog_checks.check()
-    Must return True if everything is ok.
+    Called from tasks.periodical_tasks()
     """
     gc.collect()
     if __debug__:
@@ -101,9 +99,7 @@ def update_power_timer(context):
     if current_state is None:
         if __debug__:
             print('No timer to scheduled and no manual overwrite')
-        return True
-
-    if current_state:
+    elif current_state:
         if __debug__:
             print('Switch on')
         Pins.relay.on()
@@ -113,4 +109,3 @@ def update_power_timer(context):
         Pins.relay.off()
 
     gc.collect()
-    return True

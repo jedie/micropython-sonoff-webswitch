@@ -24,11 +24,18 @@ async def get_show(server, reader, writer, querystring, body):
         'minimal_modules': ', '.join(server.context.minimal_modules)
     }
 
+    from timezone import localtime_isoformat
+
     for attr_name in dir(server.context):
         if attr_name.startswith('_'):
             continue
-        value = str(getattr(server.context, attr_name))
+        value = getattr(server.context, attr_name)
         print(attr_name, value)
+
+        if value is not None and attr_name.endswith('_epoch'):
+            value = localtime_isoformat(sep=' ', epoch=value)
+        else:
+            value = str(value)
 
         template_context[attr_name] = value
 
