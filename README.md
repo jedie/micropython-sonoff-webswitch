@@ -365,3 +365,13 @@ The OTA update implementation does:
 ### misc
 
 * S20 Wifi Smart Socket Schematic: https://www.itead.cc/wiki/S20_Smart_Socket
+
+
+## history
+
+
+- *dev* - [compare v0.12.0...master](https://github.com/jedie/micropython-sonoff-webswitch/compare/v0.12.0...master)
+  - TBC
+- v0.12.0 - 2020-02-06 - [compare v0.11.1...v0.12.0](https://github.com/jedie/micropython-sonoff-webswitch/compare/v0.11.1...v0.12.0)
+  - Refactory reset handling: Reset only after 7h WiFi/NTP lost
+- ...
