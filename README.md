@@ -192,6 +192,8 @@ ESP8266 needs to be put into Programming Mode before the firmware can be uploade
 * Connect device via UART-USB converter
 * After about 2 seconds: release the button
 
+Maybe you must give the user the permissions to access the USB Port, e.g.: `sudo usermod -a -G dialout $USER` Otherwise you will get a error message like: `Permission denied: '/dev/ttyUSB0'`
+
 Now `esptool` can be used. But only for *one* operation! After each esptool call, you must disconnect the device from the USB and repeat this procedure!
 
 The first time, the flash memory must be erased, call:
@@ -222,6 +224,7 @@ For other devices just use `esptool` directly, e.g.:
 
 The file `firmware-ota.bin` must be flash with `esptool.py` **not** the `firmware-ota.bin.ota` ! This file is ues in hard-OTA update process.
 
+More information about flashing can be found in the official documentation here: http://docs.micropython.org/en/latest/esp8266/tutorial/intro.html
 
 ### access the Micropython REPL
 
