@@ -132,30 +132,17 @@ class WebServer:
         Pins.power_led.on()
         print('----------------------------------------------------------------------------------')
 
-    async def feed_watchdog(self):
+    async def periodical_tasks(self):
         """
-        Start some periodical tasks and feed the watchdog
+        Start periodical tasks and feed the watchdog
         """
         while True:
 
-            gc.collect()
+            from tasks import periodical_tasks
+            await periodical_tasks(self.context)
 
-            from power_timer import update_power_timer
-            if update_power_timer(self.context) is not True:
-                from reset import ResetDevice
-                ResetDevice(reason='Update power timer error').reset()
-
-            del update_power_timer
-            del sys.modules['power_timer']
-            gc.collect()
-
-            from ntp import ntp_sync
-            if ntp_sync(self.context) is not True:
-                from reset import ResetDevice
-                ResetDevice(reason='NTP sync error').reset()
-
-            del ntp_sync
-            del sys.modules['ntp']
+            del periodical_tasks
+            del sys.modules['tasks']
             gc.collect()
 
             self.context.watchdog.feed()
@@ -166,7 +153,7 @@ class WebServer:
     def run(self):
         loop = uasyncio.get_event_loop()
         loop.create_task(uasyncio.start_server(self.request_handler, '0.0.0.0', 80))
-        loop.create_task(self.feed_watchdog())
+        loop.create_task(self.periodical_tasks())
 
         from led_dim_level_cfg import restore_power_led_level
         Pins.power_led.on()

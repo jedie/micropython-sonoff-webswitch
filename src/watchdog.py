@@ -32,7 +32,10 @@ class Watchdog:
         self.garbage_collection()
 
     def feed(self):
-        self.context.watchdog_last_feed = utime.time()
+        """
+        Will be called from webswitch.WebServer.periodical_tasks()
+        """
+        self.context.watchdog_last_feed_epoch = utime.time()
 
     def collect_import_cache(self):
         if self.context.minimal_modules is not None:

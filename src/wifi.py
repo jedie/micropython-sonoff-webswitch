@@ -2,6 +2,7 @@ import gc
 import sys
 
 import network
+import utime
 from pins import Pins
 
 
@@ -9,7 +10,7 @@ def ensure_connection(context):
     """
     will be called from:
         - main.py
-        - watchdog_checks.check()
+        - tasks.periodical_tasks()
 
     Must return True if connected to WiFi.
     """
@@ -20,6 +21,7 @@ def ensure_connection(context):
     if station.isconnected():
         print('Still connected:', station.ifconfig())
         context.wifi_connected += 1
+        context.wifi_last_connect_epoch = utime.time()
         return True
 
     context.wifi_not_connected += 1
@@ -31,10 +33,10 @@ def ensure_connection(context):
     del connect
     del sys.modules['wifi_connect']
 
-    if context.wifi_first_connect_time is None:
-        context.wifi_first_connect_time = connected_time
-
-    return True
+    if connected_time:
+        if context.wifi_first_connect_epoch is None:
+            context.wifi_first_connect_epoch = connected_time
+        return True
 
 
 def init(context):

@@ -59,15 +59,16 @@ def _ntp_sync():
 
 def ntp_sync(context):
     """
-    will be called from watchdog_checks.check()
-    Must return True if everything is ok.
+    Sync the RTC time via NTP.
+
+    Called from tasks.periodical_tasks()
+    updates context.wifi_last_connect_epoch
     """
-    if context.ntp_next_sync > utime.time():
+    if context.ntp_next_sync_epoch > utime.time():
         print('NTP sync not needed, yet.')
         return True
 
     sync_done = _ntp_sync()  # update RTC via NTP
     if sync_done is True:
-        context.ntp_next_sync = utime.time() + constants.NTP_SYNC_WAIT_TIME_SEC
-
-    return sync_done
+        context.ntp_last_sync_epoch = utime.time()
+        context.ntp_next_sync_epoch = context.ntp_last_sync_epoch + constants.NTP_SYNC_WAIT_TIME_SEC
